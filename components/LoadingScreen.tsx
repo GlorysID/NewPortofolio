@@ -89,6 +89,11 @@ export default function LoadingScreen() {
   const show = phase !== "gone";
   const isEnter = phase === "enter";
 
+  // Fase "gone" → overlay DIBONGKAR dari DOM (bukan cuma opacity-0):
+  // tidak ada lagi layer fullscreen dorman yang menggantung seumur
+  // sesi — satu biaya komposit permanen hilang, FPS lebih stabil.
+  if (phase === "gone") return null;
+
   return (
     <div
       // Loading = region status; Enter = seluruh overlay jadi tombol.
@@ -110,16 +115,16 @@ export default function LoadingScreen() {
       <div className="pointer-events-none relative">
         <p
           aria-hidden={isEnter}
-          className={`font-body text-sm tabular-nums text-white/85 transition-opacity duration-300 ${
-            isEnter ? "opacity-0" : "opacity-100"
+          className={`font-body text-sm tabular-nums text-white/85 transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+            isEnter ? "-translate-y-1 opacity-0" : "translate-y-0 opacity-100"
           }`}
         >
           Memuat pengalaman… {Math.round(progress)}%
         </p>
         <div
           aria-hidden={!isEnter}
-          className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 ${
-            isEnter ? "opacity-100" : "opacity-0"
+          className={`absolute inset-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+            isEnter ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
           }`}
         >
           <p className="whitespace-nowrap font-body text-base text-white/85">Klik untuk mulai</p>

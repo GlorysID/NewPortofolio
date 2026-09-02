@@ -213,8 +213,12 @@ export default function Experience() {
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
           <planeGeometry args={[30, 30]} />
           <MeshReflectorMaterial
-            resolution={isSmall ? 512 : 1024}
-            blur={isSmall ? [150, 50] : [300, 80]}
+            /* Reflektor = pass GPU terberat (scene dirender kedua +
+               blur dua arah tiap frame). Resolusi 768 (dari 1024) di
+               desktop memangkas fill-rate ±44% — lantai gelap membuat
+               beda visual nyaris tak terlihat. */
+            resolution={isSmall ? 512 : 768}
+            blur={isSmall ? [150, 50] : [250, 70]}
             mixBlur={1}
             mixStrength={12}
             depthScale={1.1}
