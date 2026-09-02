@@ -55,6 +55,11 @@ export default function LoadingScreen() {
     // Sinkron animasi masuk halaman utama dengan fade gerbang: hero
     // mendengarkan event ini dan menganimasikan teksnya masuk bersamaan.
     window.dispatchEvent(new Event("gate:dismissed"));
+    // Jendela berat: fade gerbang full-screen di atas canvas WebGL.
+    // FlashRegress (dpr turun) + ReflectorGate (reflektor pause ±700ms)
+    // sudah mendengarkan event ini — mitighasi perf identik dengan
+    // momen shutter, supaya fade tidak penuh frame-drop.
+    window.dispatchEvent(new Event("camera-flash:begin"));
     // Lepaskan fokus dari gerbang sebelum overlay memudar + aria-hidden
     // (hindari fokus menggantung pada elemen yang hilang dari a11y tree).
     if (document.activeElement instanceof HTMLElement) {
@@ -94,6 +99,9 @@ export default function LoadingScreen() {
 
   const show = phase === "loading" || phase === "enter";
   const isEnter = phase === "enter";
+  // Teks "Klik untuk mulai" tetap tampil selama fase leaving (fade
+  // keluar) — jangan crossfade balik ke teks loading saat memudar.
+  const enterVisible = phase === "enter" || phase === "leaving";
 
   // Fase "gone" → overlay DIBONGKAR dari DOM (bukan cuma opacity-0):
   // tidak ada lagi layer fullscreen dorman yang menggantung seumur
@@ -123,23 +131,20 @@ export default function LoadingScreen() {
           bukan target klik — overlay-lah tombolnya. */}
       <div className="pointer-events-none relative">
         <p
-          aria-hidden={isEnter}
+          aria-hidden={enterVisible}
           className={`font-body text-sm tabular-nums text-white/85 transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
-            isEnter ? "-translate-y-1 opacity-0" : "translate-y-0 opacity-100"
+            enterVisible ? "-translate-y-1 opacity-0" : "translate-y-0 opacity-100"
           }`}
         >
           Memuat pengalaman… {Math.round(progress)}%
         </p>
         <div
-          aria-hidden={!isEnter}
+          aria-hidden={!enterVisible}
           className={`absolute inset-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
-            isEnter ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
+            enterVisible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
           }`}
         >
           <p className="whitespace-nowrap font-body text-base text-white/85">Klik untuk mulai</p>
-          <p className="mt-2 whitespace-nowrap font-body text-xs text-white/50">
-            Suara kamera aktif saat masuk
-          </p>
         </div>
       </div>
     </div>
