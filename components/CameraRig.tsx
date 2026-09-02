@@ -32,6 +32,14 @@ const HOLD = 0.4;
 const BOARD_OPEN_POS: [number, number, number] = [3.2, 1.9, 4.6];
 const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 
+// Pose inspeksi papan (boardInspect): dolly-in dari pose open — kamera
+// merapat ke wajah papan sampai grid 2×2 kertas mengisi ~70% frame.
+// Papan: pos (12.8, 0, 0.2) rot -1.1, tinggi 2.8. Posisi ±1.9 unit di
+// depan pose open ke arah wajah papan; target sedikit di atas tengah
+// wajah papan (grid kertas terpusat, tepi atas tak terpotong).
+const BOARD_INSPECT_POS: [number, number, number] = [10.9, 1.7, 1.3];
+const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.55, 0.35];
+
 // Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
 // depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari
 // kamera depan" — baru menoleh ke kanan ke arah papan. Tatapan selama
@@ -110,23 +118,35 @@ export default function CameraRig() {
   const lastProgress = useRef(-1);
   const lastSection = useRef<SectionId>("hero");
   // Fase pan board: "closed" → "front" (waypoint depan karakter) →
-  // "open". Pan SELALU membusur lewat depan karakter — bukan garis
-  // lurus diagonal menembus scene.
-  const boardPhase = useRef<"closed" | "front" | "open">("closed");
+  // "open" → (boardInspect) "inspect". Pan SELALU membusur lewat depan
+  // karakter — bukan garis lurus diagonal menembus scene. Masuk/keluar
+  // inspeksi TIDAK lewat busur: gerakan dolly pendek langsung antar
+  // pose open ↔ inspect.
+  const boardPhase = useRef<"closed" | "front" | "open" | "inspect">("closed");
   const lastBoardOpen = useRef(false);
+  const lastBoardInspect = useRef(false);
   const settled = useRef(false);
 
   useFrame((_, delta) => {
-    const { progress, activeSection, boardOpen } = useScrollStore.getState();
+    const { progress, activeSection, boardOpen, boardInspect } =
+      useScrollStore.getState();
 
     let lambda = 4; // responsif tapi lembut (mode normal)
 
     if (reducedMotion.current) {
       // Reduced motion: tanpa scrub/interpolasi & tanpa busur — shot
-      // statis per section (+ pose board langsung), settle sangat pendek.
-      const boardChanged = boardOpen !== lastBoardOpen.current;
+      // statis per section (+ pose board/inspeksi langsung), settle
+      // sangat pendek.
+      const boardChanged =
+        boardOpen !== lastBoardOpen.current ||
+        boardInspect !== lastBoardInspect.current;
       lastBoardOpen.current = boardOpen;
-      boardPhase.current = boardOpen ? "open" : "closed";
+      lastBoardInspect.current = boardInspect;
+      boardPhase.current = boardOpen
+        ? boardInspect
+          ? "inspect"
+          : "open"
+        : "closed";
       if (
         settled.current &&
         activeSection === lastSection.current &&
@@ -146,26 +166,45 @@ export default function CameraRig() {
       _sampledTgt[1] = shot.target[1];
       _sampledTgt[2] = shot.target[2];
       if (boardOpen && activeSection === "hero") {
-        _sampledPos[0] = BOARD_OPEN_POS[0];
-        _sampledPos[1] = BOARD_OPEN_POS[1];
-        _sampledPos[2] = BOARD_OPEN_POS[2];
-        _sampledTgt[0] = BOARD_OPEN_TGT[0];
-        _sampledTgt[1] = BOARD_OPEN_TGT[1];
-        _sampledTgt[2] = BOARD_OPEN_TGT[2];
+        const P = boardInspect ? BOARD_INSPECT_POS : BOARD_OPEN_POS;
+        const T = boardInspect ? BOARD_INSPECT_TGT : BOARD_OPEN_TGT;
+        _sampledPos[0] = P[0];
+        _sampledPos[1] = P[1];
+        _sampledPos[2] = P[2];
+        _sampledTgt[0] = T[0];
+        _sampledTgt[1] = T[1];
+        _sampledTgt[2] = T[2];
       }
       lambda = 10;
     } else {
       // Transisi fase saat boardOpen berganti — jalur pan SELALU lewat
-      // waypoint depan karakter (busur dari kamera depan).
+      // waypoint depan karakter (busur dari kamera depan). Masuk/keluar
+      // inspeksi berpindah langsung (dolly pendek, tanpa busur).
       if (
         boardOpen &&
         boardPhase.current !== "front" &&
-        boardPhase.current !== "open"
+        boardPhase.current !== "open" &&
+        boardPhase.current !== "inspect"
       ) {
         boardPhase.current = "front";
         settled.current = false;
-      } else if (!boardOpen && boardPhase.current === "open") {
+      } else if (
+        !boardOpen &&
+        (boardPhase.current === "open" || boardPhase.current === "inspect")
+      ) {
         boardPhase.current = "front"; // menutup: kembali lewat depan
+        settled.current = false;
+      } else if (boardOpen && boardInspect && boardPhase.current === "open") {
+        // Klik papan: masuk mode inspeksi
+        boardPhase.current = "inspect";
+        settled.current = false;
+      } else if (
+        boardOpen &&
+        !boardInspect &&
+        boardPhase.current === "inspect"
+      ) {
+        // Keluar inspeksi: mundur ke pose open (tetap menghadap papan)
+        boardPhase.current = "open";
         settled.current = false;
       }
 
@@ -198,18 +237,29 @@ export default function CameraRig() {
         const dy = camera.position.y - BOARD_FRONT_POS[1];
         const dz = camera.position.z - BOARD_FRONT_POS[2];
         if (dx * dx + dy * dy + dz * dz < 0.35) {
-          boardPhase.current = boardOpen ? "open" : "closed";
+          // Sampai di waypoint — fase berikutnya mengikuti store; bila
+          // inspeksi sudah diminta saat pan, langsung ke inspect.
+          boardPhase.current = boardOpen
+            ? boardInspect
+              ? "inspect"
+              : "open"
+            : "closed";
           settled.current = false;
         }
       } else if (boardOpen && activeSection === "hero") {
-        // Leg 2: menoleh ke kanan menyorot chalkboard. Lambda dipelankan
-        // → pan sinematik.
-        _sampledPos[0] = BOARD_OPEN_POS[0];
-        _sampledPos[1] = BOARD_OPEN_POS[1];
-        _sampledPos[2] = BOARD_OPEN_POS[2];
-        _sampledTgt[0] = BOARD_OPEN_TGT[0];
-        _sampledTgt[1] = BOARD_OPEN_TGT[1];
-        _sampledTgt[2] = BOARD_OPEN_TGT[2];
+        // Leg 2 / inspeksi: menghadap papan. Goal mengikuti store —
+        // boardInspect hanya berlaku saat boardOpen + hero (guard sama
+        // dengan open); activeProjectId tak mengubah pose (overlay 2D
+        // yang menampilkan proyek, kamera tetap di inspeksi). Lambda
+        // dipelankan → pan sinematik / dolly halus.
+        const P = boardInspect ? BOARD_INSPECT_POS : BOARD_OPEN_POS;
+        const T = boardInspect ? BOARD_INSPECT_TGT : BOARD_OPEN_TGT;
+        _sampledPos[0] = P[0];
+        _sampledPos[1] = P[1];
+        _sampledPos[2] = P[2];
+        _sampledTgt[0] = T[0];
+        _sampledTgt[1] = T[1];
+        _sampledTgt[2] = T[2];
         lambda = Math.min(lambda, 3);
       }
       // Fase "closed": goal = pose shot hasil sampling (perilaku normal).

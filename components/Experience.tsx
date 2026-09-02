@@ -12,6 +12,7 @@ import CameraRig from "./CameraRig";
 import Chalkboard from "./Chalkboard";
 import LightingRig from "./LightingRig";
 import ContactGlow from "./ContactGlow";
+import { useScrollStore } from "@/store/useScrollStore";
 
 /**
  * DynamicQuality — pengendali kualitas adaptif (perf round 2).
@@ -221,8 +222,17 @@ export default function Experience() {
     () => typeof window !== "undefined" && window.innerWidth < 640
   );
 
+  // Papan terbuka (hero) → canvas harus menerima pointer agar klik
+  // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
+  // (default) supaya teks section & kartu tetap klikabel.
+  const boardOpen = useScrollStore((s) => s.boardOpen);
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-0">
+    <div
+      className={`fixed inset-0 z-0 ${
+        boardOpen ? "pointer-events-auto" : "pointer-events-none"
+      }`}
+    >
       <Canvas
         camera={{ position: [0, 1.6, 6.2], fov: 35 }}
         dpr={[1, 1.75]}

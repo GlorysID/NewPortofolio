@@ -9,6 +9,8 @@ import LoadingScreen from "@/components/LoadingScreen";
 import ContentCards from "@/components/ContentCards";
 import FilmGrain from "@/components/FilmGrain";
 import SectionRail from "@/components/SectionRail";
+import ProjectOverlay from "@/components/ProjectOverlay";
+import SwipeHint from "@/components/SwipeHint";
 
 /**
  * Halaman utama.
@@ -43,6 +45,11 @@ export default function Home() {
       {/* Rail section — pengganti scrollbar native (fixed kanan, z-30,
           di bawah enter gate & kilatan kamera) */}
       <SectionRail />
+
+      {/* Jendela quest MMORPG untuk proyek papan 3D (z-[36]) + petunjuk
+          geser tipis bottom-center (z-30) */}
+      <ProjectOverlay />
+      <SwipeHint />
 
       {/* Konten scroll di depan */}
       <div className="relative z-10">
