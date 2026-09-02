@@ -41,14 +41,14 @@ const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 // dirotasi -1.1 rad → normal wajah ≈ (-0.89, 0, 0.45); kamera berdiri
 // di sepanjang normal, ±3.4 m dari pusat papan): tidak ada kemiringan
 // serong, seluruh papan + kertas terlihat lurus.
-const BOARD_INSPECT_POS: [number, number, number] = [8.9, 2.05, 3.8];
+const BOARD_INSPECT_POS: [number, number, number] = [10.48, 1.7, 1.38];
 const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.45, 0.2];
 
 // Pose inspeksi mobile — mundur lebih jauh (layar sempit + FOV sama
 // membuat papan lebih besar di frame) dan lebih tinggi sedikit agar
 // grid 2×2 kertas terjadi di tengah frame vertikal.
-const BOARD_INSPECT_POS_M: [number, number, number] = [9.2, 1.9, 4.6];
-const BOARD_INSPECT_TGT_M: [number, number, number] = [12.8, 1.35, 0.2];
+const BOARD_INSPECT_POS_M: [number, number, number] = [10.2, 1.8, 1.45];
+const BOARD_INSPECT_TGT_M: [number, number, number] = [12.8, 1.4, 0.2];
 
 // Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
 // depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari
