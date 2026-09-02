@@ -25,10 +25,19 @@ import { useScrollStore } from "@/store/useScrollStore";
 // Porsi segmen untuk "menetap" di tiap shot sebelum bergerak
 const HOLD = 0.4;
 
-// Pose kamera saat project board terbuka (hero + boardOpen): menoleh
-// ke kanan menyorot chalkboard di sisi kanan panggung (Chalkboard.tsx).
-const BOARD_OPEN_POS: [number, number, number] = [1.8, 1.7, 3.6];
-const BOARD_OPEN_TGT: [number, number, number] = [3.2, 1.5, -0.5];
+// Pose kamera saat project board terbuka (hero + boardOpen): kamera
+// hanya berputar/bergoyang ke kanan dari titik awalnya — papan berdiri
+// di spoke 90° kanan (6.2, 0, 6.0; lihat Chalkboard.tsx), jadi cukup
+// yaw ~80° untuk memframanya penuh.
+const BOARD_OPEN_POS: [number, number, number] = [1.4, 1.7, 5.8];
+const BOARD_OPEN_TGT: [number, number, number] = [6.4, 1.5, 0];
+
+// Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
+// depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari
+// kamera depan" — baru menoleh ke kanan ke arah papan. Tatapan selama
+// leg ini tetap ke arah avatar.
+const BOARD_FRONT_POS: [number, number, number] = [-0.6, 1.65, 5.4];
+const BOARD_FRONT_TGT: [number, number, number] = [0, 1.35, 0];
 
 // Clamp delta damping: frame yang lambat (jank/GC) tidak boleh membuat
 // kamera melompat lebih jauh dari setara frame 30fps (≈33ms). Efeknya:
@@ -100,20 +109,24 @@ export default function CameraRig() {
   // nilai skalar — reassign ref bukan alokasi objek)
   const lastProgress = useRef(-1);
   const lastSection = useRef<SectionId>("hero");
+  // Fase pan board: "closed" → "front" (waypoint depan karakter) →
+  // "open". Pan SELALU membusur lewat depan karakter — bukan garis
+  // lurus diagonal menembus scene.
+  const boardPhase = useRef<"closed" | "front" | "open">("closed");
   const lastBoardOpen = useRef(false);
   const settled = useRef(false);
 
   useFrame((_, delta) => {
     const { progress, activeSection, boardOpen } = useScrollStore.getState();
-    const boardChanged = boardOpen !== lastBoardOpen.current;
-    lastBoardOpen.current = boardOpen;
 
     let lambda = 4; // responsif tapi lembut (mode normal)
 
     if (reducedMotion.current) {
-      // Reduced motion: tanpa scrub/interpolasi — shot statis per
-      // section, transisi settle sangat pendek. Setelah presisi & tanpa
-      // pergantian section/board, skip seluruh update (hemat + lookAt).
+      // Reduced motion: tanpa scrub/interpolasi & tanpa busur — shot
+      // statis per section (+ pose board langsung), settle sangat pendek.
+      const boardChanged = boardOpen !== lastBoardOpen.current;
+      lastBoardOpen.current = boardOpen;
+      boardPhase.current = boardOpen ? "open" : "closed";
       if (
         settled.current &&
         activeSection === lastSection.current &&
@@ -132,29 +145,74 @@ export default function CameraRig() {
       _sampledTgt[0] = shot.target[0];
       _sampledTgt[1] = shot.target[1];
       _sampledTgt[2] = shot.target[2];
+      if (boardOpen && activeSection === "hero") {
+        _sampledPos[0] = BOARD_OPEN_POS[0];
+        _sampledPos[1] = BOARD_OPEN_POS[1];
+        _sampledPos[2] = BOARD_OPEN_POS[2];
+        _sampledTgt[0] = BOARD_OPEN_TGT[0];
+        _sampledTgt[1] = BOARD_OPEN_TGT[1];
+        _sampledTgt[2] = BOARD_OPEN_TGT[2];
+      }
       lambda = 10;
-    } else if (progress !== lastProgress.current) {
-      // Input scroll aktif — pastikan rig "bangun" dan terus mengejar
-      lastProgress.current = progress;
-      settled.current = false;
-      sampleShot(progress);
     } else {
-      if (boardChanged) settled.current = false;
-      if (settled.current) return; // tanpa input & sudah presisi → skip
-      sampleShot(progress);
-    }
+      // Transisi fase saat boardOpen berganti — jalur pan SELALU lewat
+      // waypoint depan karakter (busur dari kamera depan).
+      if (
+        boardOpen &&
+        boardPhase.current !== "front" &&
+        boardPhase.current !== "open"
+      ) {
+        boardPhase.current = "front";
+        settled.current = false;
+      } else if (!boardOpen && boardPhase.current === "open") {
+        boardPhase.current = "front"; // menutup: kembali lewat depan
+        settled.current = false;
+      }
 
-    // Board terbuka (hero) — kamera menoleh ke kanan menyorot
-    // chalkboard, menimpa pose hasil sampling; kembali ke shot
-    // normal begitu board ditutup. Lambda dipelankan → pan sinematik.
-    if (boardOpen && activeSection === "hero") {
-      _sampledPos[0] = BOARD_OPEN_POS[0];
-      _sampledPos[1] = BOARD_OPEN_POS[1];
-      _sampledPos[2] = BOARD_OPEN_POS[2];
-      _sampledTgt[0] = BOARD_OPEN_TGT[0];
-      _sampledTgt[1] = BOARD_OPEN_TGT[1];
-      _sampledTgt[2] = BOARD_OPEN_TGT[2];
-      lambda = Math.min(lambda, 3);
+      // Di tengah busur → jangan pernah skip update kamera.
+      if (boardPhase.current === "front") settled.current = false;
+
+      if (progress !== lastProgress.current) {
+        // Input scroll aktif — pastikan rig "bangun" dan terus mengejar
+        lastProgress.current = progress;
+        settled.current = false;
+        sampleShot(progress);
+      } else if (!settled.current) {
+        sampleShot(progress);
+      }
+
+      // Pilih GOAL pan (menimpa hasil sampling shot):
+      if (boardPhase.current === "front") {
+        // Leg 1: ke waypoint di depan karakter; tatapan tetap ke arah
+        // avatar — kamera "melingkar" dari kamera depan sebelum
+        // menoleh ke papan.
+        _sampledPos[0] = BOARD_FRONT_POS[0];
+        _sampledPos[1] = BOARD_FRONT_POS[1];
+        _sampledPos[2] = BOARD_FRONT_POS[2];
+        _sampledTgt[0] = BOARD_FRONT_TGT[0];
+        _sampledTgt[1] = BOARD_FRONT_TGT[1];
+        _sampledTgt[2] = BOARD_FRONT_TGT[2];
+        lambda = Math.min(lambda, 3);
+        // Cukup dekat waypoint → lanjut ke leg berikutnya
+        const dx = camera.position.x - BOARD_FRONT_POS[0];
+        const dy = camera.position.y - BOARD_FRONT_POS[1];
+        const dz = camera.position.z - BOARD_FRONT_POS[2];
+        if (dx * dx + dy * dy + dz * dz < 0.35) {
+          boardPhase.current = boardOpen ? "open" : "closed";
+          settled.current = false;
+        }
+      } else if (boardOpen && activeSection === "hero") {
+        // Leg 2: menoleh ke kanan menyorot chalkboard. Lambda dipelankan
+        // → pan sinematik.
+        _sampledPos[0] = BOARD_OPEN_POS[0];
+        _sampledPos[1] = BOARD_OPEN_POS[1];
+        _sampledPos[2] = BOARD_OPEN_POS[2];
+        _sampledTgt[0] = BOARD_OPEN_TGT[0];
+        _sampledTgt[1] = BOARD_OPEN_TGT[1];
+        _sampledTgt[2] = BOARD_OPEN_TGT[2];
+        lambda = Math.min(lambda, 3);
+      }
+      // Fase "closed": goal = pose shot hasil sampling (perilaku normal).
     }
 
     desiredPos.current.set(

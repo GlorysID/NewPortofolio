@@ -168,19 +168,29 @@ export default function ScrollProgressController() {
       locked || (snapTween !== null && snapTween.isActive()) ||
       performance.now() < cooldownUntil;
 
-    // Wheel — { passive: false } agar preventDefault() menghentikan scroll
-    // native begitu gestur bermakna terdeteksi.
+    // Wheel — { passive: false }. Aturan GERAK (keras):
+    // - Papan TERBUKA  → SEMUA wheel diserap; satu-satunya aksi: geser
+    //   horizontal KE KIRI menutup papan. Vertikal = TIDAK TERJADI APA PUN.
+    // - Papan TERTUTUP → horizontal hanya bermakna di HERO (geser kanan =
+    //   buka); di section lain = TIDAK TERJADI APA PUN.
+    // - Vertikal (papan tertutup) = snap section seperti biasa.
     const onWheel = (e: WheelEvent) => {
-      // Gestur horizontal (trackpad dua arah / shift+wheel): buka/tutup
-      // papan proyek alih-alih snap vertikal. Ambang lebih tinggi dari
-      // vertikal agar tidak salah picu saat gerak diagonal halus.
-      if (
+      const { boardOpen, activeSection } = useScrollStore.getState();
+      const horizontal =
         Math.abs(e.deltaX) >= BOARD_WHEEL_THRESHOLD &&
-        Math.abs(e.deltaX) > Math.abs(e.deltaY)
-      ) {
+        Math.abs(e.deltaX) > Math.abs(e.deltaY);
+
+      if (boardOpen) {
         e.preventDefault();
-        setBoardOpen(e.deltaX > 0);
+        if (horizontal && e.deltaX < 0) setBoardOpen(false); // kiri = tutup
         return;
+      }
+      if (horizontal) {
+        if (activeSection === "hero") {
+          e.preventDefault();
+          if (e.deltaX > 0) setBoardOpen(true); // kanan = buka
+        }
+        return; // di luar hero: benar-benar diabaikan
       }
       if (isLocked()) {
         e.preventDefault();
@@ -221,17 +231,30 @@ export default function ScrollProgressController() {
       if (touchStartY === null) return;
       const t = e.changedTouches[0];
       if (!t) return;
-      const dy = touchStartY - t.clientY; // geser ke atas → deltaY positif
+      const dy = touchStartY - t.clientY; // geser ke atas → dy positif
       const dx = touchStartX === null ? 0 : t.clientX - touchStartX;
+      const axis = touchAxis;
       touchStartY = null;
       touchStartX = null;
       touchAxis = null;
-      // Swipe horizontal dominan → buka/tutup papan proyek.
-      if (
+
+      const { boardOpen, activeSection } = useScrollStore.getState();
+      const horizontal =
+        axis === "x" &&
         Math.abs(dx) >= TOUCH_THRESHOLD &&
-        Math.abs(dx) > Math.abs(dy) * 1.2
-      ) {
-        if (!isLocked()) setBoardOpen(dx < 0); // geser kiri → buka
+        Math.abs(dx) > Math.abs(dy) * 1.2;
+
+      // Papan TERBUKA: vertikal = TIDAK TERJADI APA PUN. Satu-satunya
+      // aksi: geser kiri (dx<0) menutup papan.
+      if (boardOpen) {
+        if (horizontal && dx < 0 && !isLocked()) setBoardOpen(false);
+        return;
+      }
+      // Papan tertutup: horizontal hanya bermakna di HERO — geser kanan
+      // (dx>0) membuka; di section lain & arah lain TIDAK TERJADI APA PUN.
+      if (horizontal) {
+        if (activeSection === "hero" && dx > 0 && !isLocked())
+          setBoardOpen(true);
         return;
       }
       if (Math.abs(dy) < TOUCH_THRESHOLD) return;
@@ -239,28 +262,39 @@ export default function ScrollProgressController() {
       snapAdjacent(dy);
     };
 
-    // Keyboard — navigasi section eksplisit.
+    // Keyboard — papan terbuka → tombol vertikal TIDAK melakukan apa pun
+    // (tidak boleh tabrakan pan-board vs snap). Panah kanan/kiri hanya
+    // bermakna di hero (buka) / saat papan terbuka (tutup).
     const onKeyDown = (e: KeyboardEvent) => {
-      const adjacent = () => {
-        if (isLocked()) return;
-        if (e.key === "ArrowDown" || e.key === "PageDown") snapAdjacent(1);
-        else if (e.key === "ArrowUp" || e.key === "PageUp") snapAdjacent(-1);
-      };
+      const { activeSection, boardOpen } = useScrollStore.getState();
       switch (e.key) {
+        case "ArrowRight":
+          e.preventDefault();
+          if (activeSection === "hero" && !boardOpen && !isLocked())
+            setBoardOpen(true);
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (boardOpen) setBoardOpen(false);
+          break;
         case "ArrowDown":
         case "PageDown":
         case "ArrowUp":
         case "PageUp":
           e.preventDefault();
-          adjacent();
+          if (boardOpen) break; // TIDAK TERJADI APA PUN
+          if (!isLocked())
+            snapAdjacent(
+              e.key === "ArrowDown" || e.key === "PageDown" ? 1 : -1
+            );
           break;
         case "Home":
           e.preventDefault();
-          if (!isLocked()) scrollToSection(0);
+          if (!boardOpen && !isLocked()) scrollToSection(0);
           break;
         case "End":
           e.preventDefault();
-          if (!isLocked()) scrollToSection(SECTION_COUNT - 1);
+          if (!boardOpen && !isLocked()) scrollToSection(SECTION_COUNT - 1);
           break;
         default:
           break;
