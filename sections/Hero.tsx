@@ -47,7 +47,7 @@ export default function Hero() {
             boardOpen ? "opacity-100" : "opacity-0"
           }`}
         >
-          Project
+          My Project
         </span>
       </h1>
       <p
