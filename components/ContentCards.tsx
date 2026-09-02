@@ -43,27 +43,27 @@ const CARD_TITLES: Record<
   CardTitle
 > = {
   about: {
-    word: "ABOUT",
+    word: "About",
     rotate: -6,
     x: -6,
     y: -55,
     sizeClass: "text-[clamp(2.7rem,11vw,4.1rem)]",
   },
   skills: {
-    word: "SKILLS",
+    word: "Skills",
     rotate: 5,
     x: 6,
     y: -62,
   },
   projects: {
-    word: "PROJECTS",
+    word: "Education",
     rotate: -8,
     x: -6,
     y: -50,
     sizeClass: "text-[clamp(2.4rem,10vw,3.6rem)]",
   },
   contact: {
-    word: "CONTACT",
+    word: "Contacts",
     rotate: 7,
     x: 10,
     y: -58,
@@ -331,8 +331,8 @@ export function AboutCard() {
       </h3>
       <p className="mt-2 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
         Creative developer dengan fokus pada pengalaman web interaktif.
-        Menggabungkan desain, teknologi, dan storytelling untuk produk
-        digital yang hidup — saat ini mengeksplorasi web 3D dan motion.
+        Menggabungkan desain, teknologi, dan storytelling untuk produk digital
+        yang hidup — saat ini mengeksplorasi web 3D dan motion.
       </p>
       <ArtifactFoot text="Kodak Portra 400 — Frame 01" className="mt-4" />
     </div>
@@ -393,40 +393,32 @@ export function SkillsCard() {
 /* ------------------------------------------------------------------ */
 
 export function ProjectsCard() {
-  const projects = [
-    {
-      name: "Interactive Data Atlas",
-      desc: "Visualisasi data geospasial real-time berbasis WebGL.",
-      link: "#",
-    },
-    {
-      name: "Generative Brand Studio",
-      desc: "Tool generatif identitas visual untuk brand kecil.",
-      link: "#",
-    },
-    {
-      name: "Spatial UI Prototype",
-      desc: "Eksperimen antarmuka spasial di WebXR.",
-      link: "#",
-    },
+  const education = [
+    { period: "2013 — 2016", name: "SD Negeri", detail: "Sekolah dasar — fondasi literasi & numerasi." },
+    { period: "2016 — 2019", name: "SMP Negeri", detail: "Sekolah menengah pertama — awal rasa penasaran pada komputer." },
+    { period: "2019 — 2022", name: "SMK Negeri", detail: "Sekolah menengah kejuruan — jurusan rekayasa perangkat lunak." },
   ];
 
   return (
     <div>
-      <PaperHead code="Projects" no="03" />
+      <PaperHead code="Education" no="03" />
       <h3 className="mt-4 font-display text-[21px] leading-tight text-[#20201f]">
-        Proyek Pilihan
+        Perjalanan Sekolah
       </h3>
+      <p className="mt-4 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773]">
+        School Records — SD ke SMK
+      </p>
 
-      {/* Strip film vertikal di margin kiri: sprocket hairline — satu
-          kolom kotak kecil di antara dua garis sepanjang tinggi baris. */}
+      {/* Timeline pendidikan — tiap jenjang = satu entri rekaman: periode
+          mono, nama sekolah, satu baris catatan. Sprocket dipertahankan:
+          bahasa film "rekaman" tetap, isinya kini sekolah. */}
       <div className="mt-3 flex gap-3.5">
         <div
           aria-hidden
           className="flex w-[18px] shrink-0 flex-col justify-around border-y border-[#20201f]/10"
         >
-          {projects.map((p) => (
-            <div key={p.name} className="flex flex-1 items-center">
+          {education.map((e) => (
+            <div key={e.name} className="flex flex-1 items-center">
               <div className="flex flex-col gap-[3px]">
                 <span className="block h-[5px] w-[8px] border border-[#20201f]/25" />
                 <span className="block h-[5px] w-[8px] border border-[#20201f]/25" />
@@ -435,29 +427,24 @@ export function ProjectsCard() {
           ))}
         </div>
 
-        {/* Shot list — tiap proyek = satu "shot": nomor SHOT, nama,
-            deskripsi satu baris, tautan */}
         <ul className="flex-1 divide-y divide-[#20201f]/10">
-          {projects.map((p, index) => (
-            <li key={p.name} className="py-2.5 first:pt-1">
+          {education.map((e, index) => (
+            <li key={e.name} className="py-2.5 first:pt-1">
               <span className="font-mono text-[8px] uppercase tracking-[0.22em] text-[#a4a49f]">
-                Shot {String(index + 1).padStart(2, "0")}
+                {String(index + 1).padStart(2, "0")} · {e.period}
               </span>
-              <a
-                href={p.link}
-                className="mt-0.5 flex items-baseline font-display text-[15px] font-semibold text-[#20201f] underline decoration-[#20201f]/25 underline-offset-4 transition-colors hover:decoration-[#6f5a39]"
-              >
-                {p.name}
-              </a>
+              <p className="mt-0.5 font-display text-[15px] font-semibold text-[#20201f]">
+                {e.name}
+              </p>
               <p className="mt-0.5 font-body text-[11px] leading-[1.45] text-[#5a5a56]">
-                {p.desc}
+                {e.detail}
               </p>
             </li>
           ))}
         </ul>
       </div>
 
-      <ArtifactFoot text="Roll 02 — Shot List" className="mt-4" />
+      <ArtifactFoot text="Roll 02 — School Records" className="mt-4" />
     </div>
   );
 }
@@ -487,8 +474,8 @@ export function ContactCard() {
       </div>
 
       <p className="mt-3 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
-        Terbuka untuk kolaborasi, freelance, atau sekadar diskusi soal
-        web 3D dan creative coding.
+        Terbuka untuk kolaborasi, freelance, atau sekadar diskusi soal web 3D
+        dan creative coding.
       </p>
 
       {/* Item kontak — daftar kertas dengan divider hairline */}
