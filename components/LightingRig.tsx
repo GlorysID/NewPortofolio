@@ -216,7 +216,7 @@ function BeamFloorPool({
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0.002, 0]}
+      position={position}
       renderOrder={1}
     >
       <circleGeometry args={[LIGHTING.pool.radius, 48]} />
