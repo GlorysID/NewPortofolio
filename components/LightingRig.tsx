@@ -69,11 +69,25 @@ const LIGHTING = {
   // angle 0.42 + radius cone 2.1 = cakupan lebih lebar untuk papan.
   boardBeam: {
     position: [11, 6.6, 0.4] as [number, number, number],
-    aim: [14, 0, -1.5] as [number, number, number],
+    aim: [12.8, 0, -0.8] as [number, number, number],
     intensity: 14,
     color: "#ffd9a6",
     angle: 0.42,
     penumbra: 0.6,
+  },
+  // Uplight kaki papan — OFFSET identik dengan uplight karakter,
+  // dipindahkan ke kaki chalkboard supaya perlakuan bawah persis sama.
+  boardUplightA: {
+    position: [11.75, 0.25, -0.3] as [number, number, number],
+    intensity: 1.2,
+    color: "#f0a24d",
+    distance: 5,
+  },
+  boardUplightB: {
+    position: [13.8, 0.2, -1.25] as [number, number, number],
+    intensity: 0.85,
+    color: "#ffb15c",
+    distance: 4,
   },
   // Kerucut sorot terlihat — inti lebih sempit dari cone cahaya asli
   // (angle 0.27 → radius penuh ~1.84 di dasar) supaya spill lembut
@@ -351,6 +365,25 @@ export default function LightingRig() {
       />
       <BeamFloorPool
         position={[LIGHTING.boardBeam.aim[0], 0.002, LIGHTING.boardBeam.aim[2]]}
+      />
+
+      {/* UPLIGHT KAKI PAPAN — offset identik dengan uplight karakter;
+          perlakuan bawah chalkboard = persis perlakuan karakter. */}
+      <pointLight
+        position={LIGHTING.boardUplightA.position}
+        intensity={LIGHTING.boardUplightA.intensity}
+        color={LIGHTING.boardUplightA.color}
+        distance={LIGHTING.boardUplightA.distance}
+        decay={2}
+        castShadow={false}
+      />
+      <pointLight
+        position={LIGHTING.boardUplightB.position}
+        intensity={LIGHTING.boardUplightB.intensity}
+        color={LIGHTING.boardUplightB.color}
+        distance={LIGHTING.boardUplightB.distance}
+        decay={2}
+        castShadow={false}
       />
 
       {/* UPLIGHT KAKI PANGGUNG — dua titik hangat asimetris, menggemakan

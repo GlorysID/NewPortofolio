@@ -21,7 +21,7 @@ import * as THREE from "three";
  */
 
 /** Tinggi papan di scene (meter) — acuan auto-fit (pola Avatar.tsx). */
-const BOARD_HEIGHT = 3.2;
+const BOARD_HEIGHT = 2.8;
 const BOARD_URL = "/models/chalkboard.glb";
 
 function BoardModel() {
@@ -100,7 +100,7 @@ export default function Chalkboard() {
       {/* Papan — auto-fit tinggi 3.9 m; penempatan & rotasi hadap di
           sini. Kamera (0,·,6.2) sudutnya, karakter lurus di depan,
           papan di spoke kanan yang dimundurkan ke z=0. */}
-      <group position={[14, 0, -1.5]} rotation={[0, -1.1, 0]}>
+      <group position={[12.8, 0, -0.8]} rotation={[0, -1.1, 0]}>
         <Suspense fallback={null}>
           <BoardModel />
         </Suspense>
@@ -108,7 +108,7 @@ export default function Chalkboard() {
       {/* Aksen hangat wajah papan — world space, arah kamera board-open
           (castShadow false — hard rule: tanpa shadow caster tambahan) */}
       <pointLight
-        position={[12.4, 2.2, 0.6]}
+        position={[11.7, 2, 0.1]}
         intensity={12}
         decay={2}
         distance={9}
