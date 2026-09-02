@@ -37,8 +37,18 @@ const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 // Papan: pos (12.8, 0, 0.2) rot -1.1, tinggi 2.8. Posisi ±1.9 unit di
 // depan pose open ke arah wajah papan; target sedikit di atas tengah
 // wajah papan (grid kertas terpusat, tepi atas tak terpotong).
-const BOARD_INSPECT_POS: [number, number, number] = [10.2, 1.85, 2.4];
-const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.5, 0.35];
+// Pose inspeksi desktop — FRONTAL murni terhadap wajah papan (papan
+// dirotasi -1.1 rad → normal wajah ≈ (-0.89, 0, 0.45); kamera berdiri
+// di sepanjang normal, ±3.4 m dari pusat papan): tidak ada kemiringan
+// serong, seluruh papan + kertas terlihat lurus.
+const BOARD_INSPECT_POS: [number, number, number] = [9.75, 1.7, 3.5];
+const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.35, 0.2];
+
+// Pose inspeksi mobile — mundur lebih jauh (layar sempit + FOV sama
+// membuat papan lebih besar di frame) dan lebih tinggi sedikit agar
+// grid 2×2 kertas terjadi di tengah frame vertikal.
+const BOARD_INSPECT_POS_M: [number, number, number] = [9.2, 1.9, 4.6];
+const BOARD_INSPECT_TGT_M: [number, number, number] = [12.8, 1.35, 0.2];
 
 // Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
 // depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari
@@ -101,16 +111,28 @@ export default function CameraRig() {
   const desiredPos = useRef(new THREE.Vector3(...SHOTS[0].position));
   const desiredTarget = useRef(new THREE.Vector3(...SHOTS[0].target));
 
-  // Deteksi prefers-reduced-motion (live, bisa berubah saat runtime)
+  // Deteksi prefers-reduced-motion (live) + layar kecil (pose inspeksi
+  // mobile: mundur lebih jauh — FOV sama di layar sempit membuat papan
+  // tampak lebih besar, jadi kamera perlu jarak ekstra).
   const reducedMotion = useRef(false);
+  const isMobile = useRef(false);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqSmall = window.matchMedia("(max-width: 640px)");
     reducedMotion.current = mq.matches;
-    const onChange = (e: MediaQueryListEvent) => {
+    isMobile.current = mqSmall.matches;
+    const onChangeM = (e: MediaQueryListEvent) => {
       reducedMotion.current = e.matches;
     };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const onChangeS = (e: MediaQueryListEvent) => {
+      isMobile.current = e.matches;
+    };
+    mq.addEventListener("change", onChangeM);
+    mqSmall.addEventListener("change", onChangeS);
+    return () => {
+      mq.removeEventListener("change", onChangeM);
+      mqSmall.removeEventListener("change", onChangeS);
+    };
   }, []);
 
   // Velocity-gate: ref pointer input & status settle (bebas alokasi,
@@ -166,8 +188,16 @@ export default function CameraRig() {
       _sampledTgt[1] = shot.target[1];
       _sampledTgt[2] = shot.target[2];
       if (boardOpen && activeSection === "hero") {
-        const P = boardInspect ? BOARD_INSPECT_POS : BOARD_OPEN_POS;
-        const T = boardInspect ? BOARD_INSPECT_TGT : BOARD_OPEN_TGT;
+        const P = boardInspect
+          ? isMobile.current
+            ? BOARD_INSPECT_POS_M
+            : BOARD_INSPECT_POS
+          : BOARD_OPEN_POS;
+        const T = boardInspect
+          ? isMobile.current
+            ? BOARD_INSPECT_TGT_M
+            : BOARD_INSPECT_TGT
+          : BOARD_OPEN_TGT;
         _sampledPos[0] = P[0];
         _sampledPos[1] = P[1];
         _sampledPos[2] = P[2];
@@ -252,8 +282,16 @@ export default function CameraRig() {
         // dengan open); activeProjectId tak mengubah pose (overlay 2D
         // yang menampilkan proyek, kamera tetap di inspeksi). Lambda
         // dipelankan → pan sinematik / dolly halus.
-        const P = boardInspect ? BOARD_INSPECT_POS : BOARD_OPEN_POS;
-        const T = boardInspect ? BOARD_INSPECT_TGT : BOARD_OPEN_TGT;
+        const P = boardInspect
+          ? isMobile.current
+            ? BOARD_INSPECT_POS_M
+            : BOARD_INSPECT_POS
+          : BOARD_OPEN_POS;
+        const T = boardInspect
+          ? isMobile.current
+            ? BOARD_INSPECT_TGT_M
+            : BOARD_INSPECT_TGT
+          : BOARD_OPEN_TGT;
         _sampledPos[0] = P[0];
         _sampledPos[1] = P[1];
         _sampledPos[2] = P[2];
