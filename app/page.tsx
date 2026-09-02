@@ -8,6 +8,7 @@ import ScrollProgressController from "@/components/ScrollProgressController";
 import LoadingScreen from "@/components/LoadingScreen";
 import ContentCards from "@/components/ContentCards";
 import FilmGrain from "@/components/FilmGrain";
+import SectionRail from "@/components/SectionRail";
 
 /**
  * Halaman utama.
@@ -38,6 +39,10 @@ export default function Home() {
       {/* Film grain halus — menyatukan scan realistis dengan latar
           digital (z-15: di atas canvas & teks section, di bawah kartu) */}
       <FilmGrain />
+
+      {/* Rail section — pengganti scrollbar native (fixed kanan, z-30,
+          di bawah enter gate & kilatan kamera) */}
+      <SectionRail />
 
       {/* Konten scroll di depan */}
       <div className="relative z-10">

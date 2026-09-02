@@ -15,22 +15,12 @@ html {
   color: #10162a;
 }
 
-/* Scrollbar tipis senada palet */
+/* Scrollbar native disembunyikan sepenuhnya — navigasi section kini
+   memakai rail segmented (components/SectionRail.tsx). Scrolling
+   (wheel/touch/keyboard) tetap berfungsi normal. */
+html {
+  scrollbar-width: none;
+}
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #10162a;
-}
-::-webkit-scrollbar-thumb {
-  background: #2a3350;
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3a4568;
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #2a3350 #10162a;
+  display: none;
 }
