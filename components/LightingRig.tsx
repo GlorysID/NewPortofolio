@@ -65,20 +65,24 @@ const LIGHTING = {
   },
   // Sorot CHALKBOARD — bahasa visual identik dengan beam karakter,
   // dipasang di kaki papan (13, 0, 0): satu panggung, satu cerita.
+  // Apex digeser ke kiri (x 12.2) agar shaft masuk miring dari kiri-atas;
+  // angle 0.42 + radius cone 2.1 = cakupan lebih lebar untuk papan.
   boardBeam: {
-    position: [13, 6.6, 0.8] as [number, number, number],
+    position: [12.2, 6.6, 0.8] as [number, number, number],
     aim: [13, 0, 0] as [number, number, number],
     intensity: 14,
     color: "#ffd9a6",
-    angle: 0.27,
-    penumbra: 0.55,
+    angle: 0.42,
+    penumbra: 0.6,
   },
   // Kerucut sorot terlihat — inti lebih sempit dari cone cahaya asli
   // (angle 0.27 → radius penuh ~1.84 di dasar) supaya spill lembut
-  // membukus batang inti yang terdefinisi.
+  // membukus batang inti yang terdefinisi. radiusBoard lebih lebar:
+  // footprint sorot papan (angle 0.42) + satu keluarga dengan karakter.
   beamVisual: {
     height: 6.3, // apex di lampu, dasar mengambang ~0.2-0.5 di atas lantai
     radius: 1.35,
+    radiusBoard: 2.1,
     opacity: 0.42,
   },
   // Kolam emas — footprint sorot di lantai (radius ≈ tan(0.27)×6.65).
@@ -147,9 +151,11 @@ function makePoolTexture(): THREE.CanvasTexture | null {
 function BeamCone({
   apex: apexProp,
   aim,
+  radius,
 }: {
   apex: [number, number, number];
   aim: [number, number, number];
+  radius: number;
 }) {
   const texture = useMemo(() => makeBeamTexture(), []);
 
@@ -165,7 +171,7 @@ function BeamCone({
     );
     const pos = apex.clone().addScaledVector(down, LIGHTING.beamVisual.height / 2);
     return { position: pos, quaternion: quat };
-  }, [apexProp, aim]);
+  }, [apexProp, aim, radius]);
 
   // Dispose texture saat unmount (pola sama dengan ContactGlow)
   useEffect(() => {
@@ -179,7 +185,7 @@ function BeamCone({
   return (
     <mesh position={position} quaternion={quaternion} renderOrder={2}>
       <coneGeometry
-        args={[LIGHTING.beamVisual.radius, LIGHTING.beamVisual.height, 32, 1, true]}
+        args={[radius, LIGHTING.beamVisual.height, 32, 1, true]}
       />
       <meshBasicMaterial
         map={texture}
@@ -267,7 +273,9 @@ export default function LightingRig() {
 
   return (
     <>
-      {/* KEY — depan-samping kanan, putih netral, soft shadow */}
+      {/* KEY — depan-samping kanan, putih netral, soft shadow.
+          Shadow camera diperluas (x ±14.5) agar mencakup chalkboard di
+          x=13 — bayangan papan jatuh sungguhan, satu-satunya caster. */}
       <directionalLight
         position={LIGHTING.key.position}
         intensity={LIGHTING.key.intensity}
@@ -276,7 +284,7 @@ export default function LightingRig() {
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0002}
         shadow-camera-left={-3}
-        shadow-camera-right={3}
+        shadow-camera-right={14.5}
         shadow-camera-top={3}
         shadow-camera-bottom={-3}
       />
@@ -318,6 +326,7 @@ export default function LightingRig() {
       <BeamCone
         apex={LIGHTING.beam.position}
         aim={[0, 0, 0]}
+        radius={LIGHTING.beamVisual.radius}
       />
       <BeamFloorPool position={[0, 0.002, 0]} />
 
@@ -338,6 +347,7 @@ export default function LightingRig() {
       <BeamCone
         apex={LIGHTING.boardBeam.position}
         aim={LIGHTING.boardBeam.aim}
+        radius={LIGHTING.beamVisual.radiusBoard}
       />
       <BeamFloorPool
         position={[LIGHTING.boardBeam.aim[0], 0.002, LIGHTING.boardBeam.aim[2]]}
