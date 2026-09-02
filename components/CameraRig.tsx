@@ -41,7 +41,7 @@ const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 // dirotasi -1.1 rad → normal wajah ≈ (-0.89, 0, 0.45); kamera berdiri
 // di sepanjang normal, ±3.4 m dari pusat papan): tidak ada kemiringan
 // serong, seluruh papan + kertas terlihat lurus.
-const BOARD_INSPECT_POS: [number, number, number] = [8.4, 2.1, 4.2];
+const BOARD_INSPECT_POS: [number, number, number] = [8.9, 2.05, 3.8];
 const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.45, 0.2];
 
 // Pose inspeksi mobile — mundur lebih jauh (layar sempit + FOV sama

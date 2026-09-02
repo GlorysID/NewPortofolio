@@ -6,6 +6,630 @@
   - Local:        http://localhost:3000
 
  ✓ Starting...
- ✓ Ready in 668ms
+ ✓ Ready in 674ms
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
  ⚠ For production Image Optimization with Next.js, the optional 'sharp' package is strongly recommended. Run 'npm i sharp', and Next.js will use it automatically for Image Optimization.
 Read more: https://nextjs.org/docs/messages/sharp-missing-in-production
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\app\favicon.ico\route.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\app\favicon.ico\route.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}
+ ⨯ Error: Cannot find module 'C:\Users\anjal\Documents\Portofolio v3\portfolio\.next\server\pages\_error.js'
+Require stack:
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\next.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\lib\start-server.js
+- C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\cli\next-start.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16)
+    at requirePage (C:\Users\anjal\Documents\Portofolio v3\portfolio\node_modules\next\dist\server\require.js:109:84) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\require.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\next.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\server\\lib\\start-server.js',
+    'C:\\Users\\anjal\\Documents\\Portofolio v3\\portfolio\\node_modules\\next\\dist\\cli\\next-start.js'
+  ]
+}

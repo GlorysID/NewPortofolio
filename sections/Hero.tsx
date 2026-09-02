@@ -17,6 +17,7 @@ import { useScrollStore } from "@/store/useScrollStore";
  */
 export default function Hero() {
   const boardOpen = useScrollStore((s) => s.boardOpen);
+  const boardInspect = useScrollStore((s) => s.boardInspect);
   const labelRef = useRef<HTMLParagraphElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const paraRef = useRef<HTMLParagraphElement>(null);
@@ -84,7 +85,9 @@ export default function Hero() {
       </p>
       <h1
         ref={titleRef}
-        className="relative font-display text-[19vw] leading-[0.82] tracking-[-0.01em] text-text sm:text-[13vw] lg:text-[10.5vw]"
+        className={`relative font-display text-[19vw] leading-[0.82] tracking-[-0.01em] text-text transition-opacity duration-500 sm:text-[13vw] lg:text-[10.5vw] ${
+          boardInspect ? "opacity-0" : "opacity-100"
+        }`}
       >
         {/* Crossfade nama ↔ "My Project": dua lapis di kotak yang sama,
             opacity ditukar — tanpa layout shift. */}
