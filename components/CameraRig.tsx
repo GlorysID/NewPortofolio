@@ -29,8 +29,8 @@ const HOLD = 0.4;
 // hanya berputar/bergoyang ke kanan dari titik awalnya — papan berdiri
 // di spoke 90° kanan (6.2, 0, 6.0; lihat Chalkboard.tsx), jadi cukup
 // yaw ~80° untuk memframanya penuh.
-const BOARD_OPEN_POS: [number, number, number] = [2.4, 1.8, 5.2];
-const BOARD_OPEN_TGT: [number, number, number] = [9.5, 1.5, 0];
+const BOARD_OPEN_POS: [number, number, number] = [3.2, 1.9, 4.6];
+const BOARD_OPEN_TGT: [number, number, number] = [13, 1.5, 0];
 
 // Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
 // depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari
