@@ -51,8 +51,12 @@ export default function Home() {
       <ProjectOverlay />
       <SwipeHint />
 
-      {/* Konten scroll di depan */}
-      <div className="relative z-10">
+      {/* Konten scroll di depan — pointer-events-none: section-section
+          ini cuma jangkar scroll-spy & teks (tanpa elemen interaktif).
+          Tanpa ini, layer full-screen di atas canvas menyerap klik →
+          chalkboard tak bisa diklik. Semua interaksi DOM (kartu, rail,
+          overlay) hidup di layer fixed di luar wrapper ini. */}
+      <div className="pointer-events-none relative z-10">
         <Hero />
         <About />
         <Skills />
