@@ -176,7 +176,7 @@ function ReflectorGate({ isSmall }: { isSmall: boolean }) {
          render list: pass refleksi terlewat, nol stall, nol recompile. */
       visible={!paused}
     >
-      <planeGeometry args={[30, 30]} />
+      <planeGeometry args={[60, 60]} />
       <MeshReflectorMaterial
         /* Reflektor = pass GPU terberat (scene dirender kedua + blur
            dua arah tiap frame). Resolusi 768 (dari 1024) di desktop
