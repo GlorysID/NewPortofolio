@@ -1,32 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useProgress } from "@react-three/drei";
+import gsap from "gsap";
 import { primeCameraAudio } from "@/hooks/useAudioUnlock";
 
 /**
- * LoadingScreen — gerbang masuk dua fase di atas hitam polos (enter gate).
+ * LoadingScreen — gerbang masuk dua fase di atas hitam polos.
  *
- * Fase LOADING: satu baris teks body "Memuat pengalaman… 47%" — persentase
- * dari useProgress drei (zustand global, valid di luar Canvas). Tanpa bar,
- * tanpa tipografi display, tanpa dekorasi.
- *
- * Fase ENTER: begitu semua asset selesai (progress ≥ 100 & idle), teks
- * loading crossfade (~300ms) ke ajakan masuk "Klik untuk mulai" + sub-hint
- * suara. SELURUH overlay menjadi satu tombol: klik / Enter / Space adalah
- * user activation sesungguhnya → primeCameraAudio() dipanggil DI DALAM
- * gesture itu → audio shutter ter-unlock permanen sejak awal pengalaman
- * (policy autoplay memang hanya menghitung klik/keydown/touchend —
- * dengan gerbang ini aktivasi wajib itu menjadi aksi "masuk studio",
- * bukan interupsi).
- *
- * Setelah masuk: fade 500ms (pola dismiss lama) lalu overlay tidur dalam
- * keadaan opacity-0 + pointer-events-none. Scroll body dikunci selama
- * gerbang tampil (loading/enter/leaving) — wheel-snap tidak menggerakkan
- * halaman di balik gerbang; dilepas saat dismiss & saat unmount.
- *
- * Scene 3D tetap mount di balik gerbang (overlay z-40 murni visual) —
- * first paint & performa tidak berubah.
+ * Transisi keluar DIGERAKKAN GSAP (bukan transisi CSS Tailwind):
+ * deterministik, inline style, tak terpengaruh kondisi generate class.
+ * Klik → GSAP men-fade + scale overlay (iris-out 0.75s) → onComplete
+ * baru overlay dibongkar dari DOM. Event `gate:dismissed` disinkronkan
+ * untuk animasi masuk Hero; `camera-flash:begin` untuk jendela GPU.
  */
 
 type GatePhase = "loading" | "enter" | "leaving" | "gone";
@@ -36,6 +22,7 @@ export default function LoadingScreen() {
   const [phase, setPhase] = useState<GatePhase>(
     progress >= 100 ? "enter" : "loading",
   );
+  const gateRef = useRef<HTMLDivElement>(null);
 
   // LOADING → ENTER begitu useProgress selesai (semua asset termuat).
   useEffect(() => {
@@ -44,41 +31,38 @@ export default function LoadingScreen() {
     }
   }, [active, progress, phase]);
 
-  /** Masuk: unlock audio DI DALAM gesture (klik/Enter/Space), lalu fade. */
+  /** Masuk: unlock audio DI DALAM gesture, lalu GSAP iris-out overlay. */
   const enterExperience = useCallback(() => {
-    // Guard: hanya dari fase enter — klik ganda / key repeat aman.
     setPhase((p) => {
       if (p !== "enter") return p;
       return "leaving";
     });
     primeCameraAudio();
-    // Sinkron animasi masuk halaman utama dengan fade gerbang: hero
-    // mendengarkan event ini dan menganimasikan teksnya masuk bersamaan.
+    // Sinkron animasi masuk Hero + jendela GPU murah (reflektor pause,
+    // dpr turun — sama seperti momen shutter).
     window.dispatchEvent(new Event("gate:dismissed"));
-    // Jendela berat: fade gerbang full-screen di atas canvas WebGL.
-    // FlashRegress (dpr turun) + ReflectorGate (reflektor pause ±700ms)
-    // sudah mendengarkan event ini — mitighasi perf identik dengan
-    // momen shutter, supaya fade tidak penuh frame-drop.
     window.dispatchEvent(new Event("camera-flash:begin"));
-    // Lepaskan fokus dari gerbang sebelum overlay memudar + aria-hidden
-    // (hindari fokus menggantung pada elemen yang hilang dari a11y tree).
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    // GSAP menggerakkan fade — onComplete baru unmount dari DOM.
+    const el = gateRef.current;
+    if (el) {
+      gsap.set(el, { pointerEvents: "none" });
+      gsap.to(el, {
+        opacity: 0,
+        scale: 1.05,
+        transformOrigin: "50% 45%",
+        duration: 0.75,
+        ease: "power2.inOut",
+        onComplete: () => setPhase("gone"),
+      });
+    } else {
+      setPhase("gone");
+    }
   }, []);
 
-  // LEAVING → GONE: tunggu fade selesai SEBELUM unmount (fade dulu,
-  // baru bongkar dari DOM — potongan hitam terjadi kalau unmount
-  // mencapai frame sebelum transisi opacity sempat jalan).
-  useEffect(() => {
-    if (phase !== "leaving") return;
-    // 780ms ≈ durasi fade 750ms + buffer satu frame
-    const t = setTimeout(() => setPhase("gone"), 780);
-    return () => clearTimeout(t);
-  }, [phase]);
-
-  // Scroll lock selama gerbang tampil (loading & enter & leaving).
-  // Restore otomatis saat dismiss (phase → gone) maupun saat unmount.
+  // Scroll lock selama gerbang tampil (loading/enter/leaving).
   useEffect(() => {
     if (phase === "gone") return;
     const prev = document.body.style.overflow;
@@ -88,8 +72,7 @@ export default function LoadingScreen() {
     };
   }, [phase]);
 
-  // Keyboard: Enter/Space memicu masuk — keydown adalah user activation,
-  // jadi pengguna keyboard mendapat audio juga.
+  // Keyboard: Enter/Space memicu masuk.
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -97,40 +80,29 @@ export default function LoadingScreen() {
     }
   };
 
-  const show = phase === "loading" || phase === "enter";
-  const isEnter = phase === "enter";
-  // Teks "Klik untuk mulai" tetap tampil selama fase leaving (fade
-  // keluar) — jangan crossfade balik ke teks loading saat memudar.
-  const enterVisible = phase === "enter" || phase === "leaving";
-
-  // Fase "gone" → overlay DIBONGKAR dari DOM (bukan cuma opacity-0):
-  // tidak ada lagi layer fullscreen dorman yang menggantung seumur
-  // sesi — satu biaya komposit permanen hilang, FPS lebih stabil.
-  // (Fade benar-benar terjadi di fase "leaving": show=false → opacity
-  // transisi 650ms; unmount BARU setelah fade selesai.)
+  // Fase "gone" → overlay DIBONGKAR dari DOM.
   if (phase === "gone") return null;
+
+  const isEnter = phase === "enter";
+  // Teks "Klik untuk mulai" tetap tampil selama leaving (fade keluar).
+  const enterVisible = phase === "enter" || phase === "leaving";
 
   return (
     <div
+      ref={gateRef}
       data-gate="true"
-      // Loading = region status; Enter = seluruh overlay jadi tombol.
       role={isEnter ? "button" : "status"}
       aria-live={isEnter ? undefined : "polite"}
       aria-label={isEnter ? "Mulai pengalaman dengan suara" : undefined}
       tabIndex={isEnter ? 0 : undefined}
       onClick={isEnter ? enterExperience : undefined}
       onKeyDown={isEnter ? onKeyDown : undefined}
-      aria-hidden={!show}
-      className={`fixed inset-0 z-40 flex items-center justify-center bg-black transition-[opacity,transform] duration-[750ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
-        show
-          ? "opacity-100 scale-100"
-          : "pointer-events-none opacity-0 scale-[1.04]"
-      } ${isEnter ? "cursor-pointer select-none" : ""}`}
+      aria-hidden={phase === "leaving"}
+      className={`fixed inset-0 z-40 flex items-center justify-center bg-black ${
+        isEnter ? "cursor-pointer select-none" : ""
+      }`}
     >
-      {/* Dua lapis teks yang ber-crossfade (~300ms). Lapisan loading
-          tetap di alur (penentu ukuran wrapper) supaya posisi tengah
-          stabil; lapisan enter diposisikan absolut di atasnya. Teks
-          bukan target klik — overlay-lah tombolnya. */}
+      {/* Dua lapis teks crossfade (CSS kecil, bukan jalur kritis). */}
       <div className="pointer-events-none relative">
         <p
           aria-hidden={enterVisible}
@@ -146,7 +118,9 @@ export default function LoadingScreen() {
             enterVisible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
           }`}
         >
-          <p className="whitespace-nowrap font-body text-base text-white/85">Klik untuk mulai</p>
+          <p className="whitespace-nowrap font-body text-base text-white/85">
+            Klik untuk mulai
+          </p>
         </div>
       </div>
     </div>
