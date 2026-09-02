@@ -68,7 +68,7 @@ const LIGHTING = {
   // Apex digeser ke kiri (x 12.2) agar shaft masuk miring dari kiri-atas;
   // angle 0.42 + radius cone 2.1 = cakupan lebih lebar untuk papan.
   boardBeam: {
-    position: [10.4, 6.6, 1.4] as [number, number, number],
+    position: [10.25, 6.6, 1.4] as [number, number, number],
     aim: [12.8, 0, 0.2] as [number, number, number],
     intensity: 14,
     color: "#ffd9a6",
