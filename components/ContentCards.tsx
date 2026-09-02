@@ -313,7 +313,7 @@ export function AboutCard() {
           muat vertikal di viewport pendek; sedikit diturunkan (mt-6)
           di dalam bingkai agar komposisi cetakan lebih seimbang.
           Bingkai putih + strip bawah disediakan chrome "print". */}
-      <div className="mt-12 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)]">
+      <div className="mt-7 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)]">
         <div className="relative aspect-[3/2] overflow-hidden">
           <Image
             src="/me.jpg"
