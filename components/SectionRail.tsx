@@ -47,7 +47,11 @@ export default function SectionRail() {
   return (
     <nav
       aria-label="Navigasi section"
-      className="fixed right-4 top-1/2 z-30 -translate-y-1/2 sm:right-6"
+      className={`fixed right-4 top-1/2 z-30 -translate-y-1/2 transition-opacity duration-300 sm:right-6 ${
+        boardOpen && activeSection === "hero"
+          ? "pointer-events-none opacity-0" // papan terbuka → rail hilang
+          : "opacity-100"
+      }`}
     >
       <ul className="flex flex-col items-center gap-[10px]">
         {RAIL_SECTIONS.map((section, index) => {
