@@ -175,14 +175,22 @@ export default function ScrollProgressController() {
     //   buka); di section lain = TIDAK TERJADI APA PUN.
     // - Vertikal (papan tertutup) = snap section seperti biasa.
     const onWheel = (e: WheelEvent) => {
-      const { boardOpen, activeSection } = useScrollStore.getState();
+      const { boardOpen, activeSection, boardInspect, setBoardInspect } =
+        useScrollStore.getState();
       const horizontal =
         Math.abs(e.deltaX) >= BOARD_WHEEL_THRESHOLD &&
         Math.abs(e.deltaX) > Math.abs(e.deltaY);
 
       if (boardOpen) {
         e.preventDefault();
-        if (horizontal && e.deltaX < 0) setBoardOpen(false); // kiri = tutup
+        if (horizontal && e.deltaX < 0) {
+          // Geser kiri bertahap: inspeksi → pan normal → tutup papan.
+          if (boardInspect) setBoardInspect(false);
+          else setBoardOpen(false);
+        } else if (!horizontal && boardInspect) {
+          // Vertikal saat inspeksi = keluar inspeksi (tanpa snap).
+          setBoardInspect(false);
+        }
         return;
       }
       if (horizontal) {
@@ -238,16 +246,23 @@ export default function ScrollProgressController() {
       touchStartX = null;
       touchAxis = null;
 
-      const { boardOpen, activeSection } = useScrollStore.getState();
+      const { boardOpen, activeSection, boardInspect, setBoardInspect } =
+        useScrollStore.getState();
       const horizontal =
         axis === "x" &&
         Math.abs(dx) >= TOUCH_THRESHOLD &&
         Math.abs(dx) > Math.abs(dy) * 1.2;
 
-      // Papan TERBUKA: vertikal = TIDAK TERJADI APA PUN. Satu-satunya
-      // aksi: geser kiri (dx<0) menutup papan.
+      // Papan TERBUKA: vertikal saat inspeksi = keluar inspeksi (tanpa
+      // snap); vertikal saat pan normal = TIDAK TERJADI APA PUN. Satu-
+      // satunya aksi: geser kiri (dx<0) — bertahap inspeksi → pan → tutup.
       if (boardOpen) {
-        if (horizontal && dx < 0 && !isLocked()) setBoardOpen(false);
+        if (horizontal && dx < 0 && !isLocked()) {
+          if (boardInspect) setBoardInspect(false);
+          else setBoardOpen(false);
+        } else if (!horizontal && boardInspect) {
+          setBoardInspect(false);
+        }
         return;
       }
       // Papan tertutup: horizontal hanya bermakna di HERO — geser kanan
@@ -266,8 +281,20 @@ export default function ScrollProgressController() {
     // (tidak boleh tabrakan pan-board vs snap). Panah kanan/kiri hanya
     // bermakna di hero (buka) / saat papan terbuka (tutup).
     const onKeyDown = (e: KeyboardEvent) => {
-      const { activeSection, boardOpen } = useScrollStore.getState();
+      const {
+        activeSection,
+        boardOpen,
+        boardInspect,
+        setBoardInspect,
+      } = useScrollStore.getState();
       switch (e.key) {
+        case "Escape": {
+          // Bertahap: quest window → inspeksi → pan normal.
+          const st = useScrollStore.getState();
+          if (st.activeProjectId) st.setActiveProjectId(null);
+          else if (boardInspect) setBoardInspect(false);
+          break;
+        }
         case "ArrowRight":
           e.preventDefault();
           if (activeSection === "hero" && !boardOpen && !isLocked())
@@ -275,13 +302,18 @@ export default function ScrollProgressController() {
           break;
         case "ArrowLeft":
           e.preventDefault();
-          if (boardOpen) setBoardOpen(false);
+          if (boardInspect) setBoardInspect(false);
+          else if (boardOpen) setBoardOpen(false);
           break;
         case "ArrowDown":
         case "PageDown":
         case "ArrowUp":
         case "PageUp":
           e.preventDefault();
+          if (boardInspect) {
+            setBoardInspect(false); // vertikal = keluar inspeksi
+            break;
+          }
           if (boardOpen) break; // TIDAK TERJADI APA PUN
           if (!isLocked())
             snapAdjacent(

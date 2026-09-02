@@ -37,8 +37,8 @@ const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 // Papan: pos (12.8, 0, 0.2) rot -1.1, tinggi 2.8. Posisi ±1.9 unit di
 // depan pose open ke arah wajah papan; target sedikit di atas tengah
 // wajah papan (grid kertas terpusat, tepi atas tak terpotong).
-const BOARD_INSPECT_POS: [number, number, number] = [10.9, 1.7, 1.3];
-const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.55, 0.35];
+const BOARD_INSPECT_POS: [number, number, number] = [10.2, 1.85, 2.4];
+const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.5, 0.35];
 
 // Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
 // depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari

@@ -6,17 +6,15 @@ import { BOARD_PROJECTS } from "@/data/projects";
 import { useScrollStore } from "@/store/useScrollStore";
 
 /**
- * ProjectOverlay — jendela quest (quest window) bergaya MMORPG untuk
- * proyek aktif dari papan 3D. Murni DOM (di luar Canvas) — kamera
- * tetap di pose inspeksi; jendela ini yang menampilkan detail.
+ * ProjectOverlay — jendela quest BERGAYA KERTAS (bukan panel gelap):
+ * selebaran kertas hangat yang dipin di atas panggung — satu keluarga
+ * dengan kertas-kertas di chalkboard (#f4efe4, tinta #20201f, aksen
+ * #e8a33d, label mono coklat #6f5a39). Sedikit miring seperti kertas
+ * quest sungguhan, pin di atas, bayangan dalam.
  *
  * - Mount/unmount via activeProjectId (store). GSAP entrance: fade +
- *   slide x dari +24px, 0.4s power3.out. Exit sederhana = unmount
- *   (quest window tutupnya tegas, tanpa animasi keluar).
- * - Tutup: tombol "Tutup" atau Escape → setActiveProjectId(null).
- *   Kamera tetap di inspeksi — menutup quest = kembali memandang papan.
- * - Panel: parchment-dark, hairline accent, aksen sudut, backdrop blur.
- *   Di atas kilatan kamera (z-[35]), di bawah enter gate (z-40).
+ *   slide x dari +24px, 0.4s power3.out. Escape/Tutup → null.
+ * - Kamera tetap di pose inspeksi; jendela ini yang menampilkan detail.
  */
 
 export default function ProjectOverlay() {
@@ -56,42 +54,32 @@ export default function ProjectOverlay() {
       aria-label={`Proyek: ${project.title}`}
       className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2"
     >
-      <div className="relative bg-[#141815]/95 p-6 backdrop-blur-sm ring-1 ring-[#e8a33d]/25">
-        {/* Aksen sudut — bingkai quest window sederhana */}
+      {/* Kertas quest — hangat, miring -0.75°, pin di atas-tengah */}
+      <div className="relative -rotate-[0.75deg] bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15">
+        {/* Pin — bulatan gelap di atas-tengah, seperti kertas tersemat */}
         <span
           aria-hidden
-          className="absolute left-0 top-0 h-4 w-4 border-l-2 border-t-2 border-[#e8a33d]/60"
-        />
-        <span
-          aria-hidden
-          className="absolute right-0 top-0 h-4 w-4 border-r-2 border-t-2 border-[#e8a33d]/60"
-        />
-        <span
-          aria-hidden
-          className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[#e8a33d]/60"
-        />
-        <span
-          aria-hidden
-          className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-[#e8a33d]/60"
+          className="absolute left-1/2 top-2.5 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-[#3a2f22] shadow-[0_2px_4px_rgba(0,0,0,0.4)]"
         />
 
-        {/* Header quest */}
-        <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#e8a33d]/80">
+        {/* Header quest — mono coklat, aksen garis */}
+        <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#6f5a39]">
           Quest Board — {project.year}
         </p>
-        <h3 className="mt-3 font-display text-[22px] leading-tight text-[#f4efe4]">
+        <div className="mt-2.5 h-[7px] w-[120px] bg-[#e8a33d]" />
+        <h3 className="mt-4 font-display text-[23px] leading-tight text-[#20201f]">
           {project.title}
         </h3>
-        <p className="mt-2 font-body text-[13px] leading-[1.6] text-[#b9b6ad]">
+        <p className="mt-2 font-body text-[13px] leading-[1.6] text-[#4c4c49]">
           {project.blurb}
         </p>
 
-        {/* Tag chips — mono hairline */}
+        {/* Tag chips — mono hairline coklat */}
         <div className="mt-4 flex flex-wrap gap-1.5">
           {project.tags.map((tag) => (
             <span
               key={tag}
-              className="border border-[#e8a33d]/30 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#e8a33d]/75"
+              className="border border-[#6f5a39]/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#6f5a39]"
             >
               {tag}
             </span>
@@ -99,21 +87,27 @@ export default function ProjectOverlay() {
         </div>
 
         {/* CTA + Tutup */}
-        <div className="mt-5 flex items-center justify-between border-t border-[#e8a33d]/20 pt-4">
+        <div className="mt-5 flex items-center justify-between border-t border-[#20201f]/15 pt-4">
           <a
             href={project.link}
-            className="font-display text-[14px] text-[#f4efe4] underline decoration-[#e8a33d]/40 underline-offset-4 transition-colors hover:text-[#e8a33d]"
+            className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39]"
           >
             Buka Proyek ↗
           </a>
           <button
             type="button"
             onClick={() => setActiveProjectId(null)}
-            className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50 transition-colors hover:text-white/90"
+            className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#20201f]/45 transition-colors hover:text-[#20201f]"
           >
             Tutup
           </button>
         </div>
+
+        {/* Tepi kertas — garis gelap tipis (kertas dipotong) */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 border-4 border-[#20201f]/8"
+        />
       </div>
     </div>
   );
