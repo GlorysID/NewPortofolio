@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import CameraRig from "./CameraRig";
+import Chalkboard from "./Chalkboard";
 import LightingRig from "./LightingRig";
 import ContactGlow from "./ContactGlow";
 
@@ -197,6 +198,10 @@ export default function Experience() {
 
         {/* Karakter (.glb otomatis) di tengah panggung */}
         <Avatar position={[0, 0, 0]} />
+
+        {/* Papan proyek 3D di kanan panggung (di dalam Suspense-nya
+            sendiri; useProgress enter gate menunggu model ini juga) */}
+        <Chalkboard />
 
         {/* Pool cahaya putih di titik pijak — melapisi shadow,
             avatar tampak berpijak di titik cahaya */}

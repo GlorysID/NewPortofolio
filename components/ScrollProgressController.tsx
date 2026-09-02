@@ -47,13 +47,15 @@ if (typeof window !== "undefined") {
 const SECTION_COUNT = SHOTS.length; // 5 section
 
 const WHEEL_THRESHOLD = 4; // px deltaY minimum — bunuh event phantom trackpad
+const BOARD_WHEEL_THRESHOLD = 24; // px deltaX minimum — board open/close
 const TOUCH_THRESHOLD = 40; // px swipe minimum (touchstart → touchend)
 const SNAP_DURATION = 0.6; // detik per animasi snap
 const COOLDOWN_MS = 250; // jeda setelah snap selesai sebelum menerima input lagi
 
 export default function ScrollProgressController() {
   useEffect(() => {
-    const { setProgress, setActiveSection } = useScrollStore.getState();
+    const { setProgress, setActiveSection, setBoardOpen } =
+      useScrollStore.getState();
     let lastActive: string | null = null;
     let lastWritten = -1; // nilai progress terakhir yang benar-benar ditulis
     let pending: number | null = null;
@@ -104,6 +106,8 @@ export default function ScrollProgressController() {
             if (section !== lastActive) {
               lastActive = section;
               setActiveSection(section);
+              // Pindah section keluar hero → papan proyek otomatis tertutup.
+              if (section !== "hero") setBoardOpen(false);
             }
           },
         },
@@ -120,6 +124,10 @@ export default function ScrollProgressController() {
     let cooldownUntil = 0; // timestamp ms — setelah animasi, tunggu sejenak
     let snapTween: gsap.core.Tween | null = null;
     let touchStartY: number | null = null;
+    let touchStartX: number | null = null;
+    // Arah dominan gestur touch ("x" | "y" | null) — diputuskan sekali
+    // di touchmove pertama yang bermakna: horizontal → board, vertikal → snap.
+    let touchAxis: "x" | "y" | null = null;
 
     const maxScroll = () =>
       Math.max(
@@ -163,6 +171,17 @@ export default function ScrollProgressController() {
     // Wheel — { passive: false } agar preventDefault() menghentikan scroll
     // native begitu gestur bermakna terdeteksi.
     const onWheel = (e: WheelEvent) => {
+      // Gestur horizontal (trackpad dua arah / shift+wheel): buka/tutup
+      // papan proyek alih-alih snap vertikal. Ambang lebih tinggi dari
+      // vertikal agar tidak salah picu saat gerak diagonal halus.
+      if (
+        Math.abs(e.deltaX) >= BOARD_WHEEL_THRESHOLD &&
+        Math.abs(e.deltaX) > Math.abs(e.deltaY)
+      ) {
+        e.preventDefault();
+        setBoardOpen(e.deltaX > 0);
+        return;
+      }
       if (isLocked()) {
         e.preventDefault();
         return;
@@ -176,9 +195,26 @@ export default function ScrollProgressController() {
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
       touchStartY = t ? t.clientY : null;
+      touchStartX = t ? t.clientX : null;
+      touchAxis = null; // arah dominan gestur belum diketahui
     };
     const onTouchMove = (e: TouchEvent) => {
-      // Halangi scroll native sepanjang gestur; snap dikejar di touchend.
+      // Tentukan arah dominan sekali di gerak pertama yang bermakna:
+      // horizontal → biarkan lewat (tanpa preventDefault) supaya gestur
+      // sampai ke touchend; vertikal → halangi scroll native (snap
+      // dikejar di touchend). Tidak ada scroll horizontal di halaman,
+      // jadi melepas kunci horizontal aman.
+      if (touchAxis === null) {
+        const t = e.touches[0];
+        if (t && touchStartX !== null && touchStartY !== null) {
+          const dx = Math.abs(t.clientX - touchStartX);
+          const dy = Math.abs(t.clientY - touchStartY);
+          if (dx > 8 || dy > 8) {
+            touchAxis = dx > dy ? "x" : "y";
+          }
+        }
+      }
+      if (touchAxis === "x") return;
       e.preventDefault();
     };
     const onTouchEnd = (e: TouchEvent) => {
@@ -186,7 +222,18 @@ export default function ScrollProgressController() {
       const t = e.changedTouches[0];
       if (!t) return;
       const dy = touchStartY - t.clientY; // geser ke atas → deltaY positif
+      const dx = touchStartX === null ? 0 : t.clientX - touchStartX;
       touchStartY = null;
+      touchStartX = null;
+      touchAxis = null;
+      // Swipe horizontal dominan → buka/tutup papan proyek.
+      if (
+        Math.abs(dx) >= TOUCH_THRESHOLD &&
+        Math.abs(dx) > Math.abs(dy) * 1.2
+      ) {
+        if (!isLocked()) setBoardOpen(dx < 0); // geser kiri → buka
+        return;
+      }
       if (Math.abs(dy) < TOUCH_THRESHOLD) return;
       if (isLocked()) return;
       snapAdjacent(dy);

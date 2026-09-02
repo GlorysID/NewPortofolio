@@ -11,6 +11,14 @@
  * - Projects → "strip": shot list dengan strip sprocket hairline
  * - Contact  → "card": kartu nama studio (chrome "card" di ContentCard)
  *
+ * Sisi belakang cetakan (CARD BACKS): kertas belakang foto cetak —
+ * hampir kosong (ker tuaan kertas justru realistis), satu-dua stempel
+ * tinta emas hangat (blok bingkai-ganda / cincin, rotasi tetap per
+ * kartu — deterministik, SSR-safe), satu catatan "tangan" (italic body
+ * sedikit miring, tanpa font baru) + tanggal coret, dan micro-label
+ * kaki senada ArtifactFoot. Back face terlihat selama luncuran
+ * (back-facing) sebelum kartu berbalik ke depan — flip di ContentCard.
+ *
  * Budget vertikal: semua kartu dirancang ≤ ~530px tinggi (fotos 4/3,
  * sel ringkas, spacing rapat) supaya muat penuh di viewport pendek
  * (640–768px) — kartu fixed tidak bisa di-scroll, jadi konten
@@ -19,6 +27,7 @@
  * CameraFlash + suara shutter tetap dipasang di sini; animasi luncur
  * dari tengah viewport tidak berubah (ContentCard).
  */
+import type { ReactNode } from "react";
 import Image from "next/image";
 import ContentCard, { type CardTitle } from "./ContentCard";
 import CameraFlash from "./CameraFlash";
@@ -94,6 +103,200 @@ function ArtifactFoot({
     >
       {text}
     </p>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sisi belakang cetakan — kertas kosong + stempel + catatan tangan    */
+/* Satu keluarga tinta: emas hangat #e8a33d / coklat #6f5a39, opacity  */
+/* rendah — stempel lama di kertas, bukan dekorasi mencolok.           */
+/* ------------------------------------------------------------------ */
+
+/** Stempel blok — bingkai ganda hairline, tinta coklat-emas redup.
+    Rotasi tetap per kartu (deterministik, SSR-safe). */
+function BackStamp({
+  text,
+  rotate,
+  className = "",
+}: {
+  text: string;
+  rotate: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`absolute border border-[#6f5a39]/35 p-[3px] ${className}`}
+      style={{ transform: `rotate(${rotate}deg)` }}
+    >
+      <div className="border border-[#6f5a39]/20 px-2.5 py-1.5">
+        <span className="block whitespace-nowrap font-mono text-[7px] uppercase tracking-[0.28em] text-[#6f5a39]/60">
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Stempel cincin — lingkaran ganda hairline, tinta emas redup. */
+function BackRingStamp({
+  center,
+  sub,
+  rotate,
+  size = 72,
+  className = "",
+}: {
+  center: string;
+  sub?: string;
+  rotate: number;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`absolute flex items-center justify-center rounded-full border border-[#e8a33d]/40 p-[3px] ${className}`}
+      style={{ width: size, height: size, transform: `rotate(${rotate}deg)` }}
+    >
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-full border border-[#e8a33d]/20">
+        <span className="font-display text-[14px] leading-none text-[#e8a33d]/55">
+          {center}
+        </span>
+        {sub && (
+          <span className="mt-1 font-mono text-[5.5px] uppercase tracking-[0.3em] text-[#6f5a39]/50">
+            {sub}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Catatan "tangan" — italic body sedikit miring (tanpa font baru) +
+    tanggal coret kecil di bawahnya. */
+function HandNote({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`absolute ${className}`}>
+      <p
+        className="max-w-[250px] font-body text-[13px] italic leading-[1.6] text-[#20201f]/75"
+        style={{ transform: "rotate(-1.5deg)" }}
+      >
+        {children}
+      </p>
+      <p
+        className="mt-1.5 font-body text-[10px] italic text-[#6f5a39]/55"
+        style={{ transform: "rotate(-2.5deg)" }}
+      >
+        — 02.09
+      </p>
+    </div>
+  );
+}
+
+/** Micro-label kaki sisi belakang — senada ArtifactFoot. */
+function BackFoot({ text }: { text: string }) {
+  return (
+    <p className="absolute bottom-3.5 left-0 right-0 text-center font-mono text-[8px] uppercase tracking-[0.18em] text-[#777773]">
+      {text}
+    </p>
+  );
+}
+
+/* Back per kartu — posisi & rotasi bervariasi agar tidak seragam;
+   80% kertas dibiarkan kosong. */
+
+function AboutCardBack() {
+  return (
+    <div className="relative h-full w-full">
+      <BackStamp
+        text="TERCETAK 2026 · STUDIO ANJAL"
+        rotate={-8}
+        className="left-6 top-8"
+      />
+      <BackRingStamp
+        center="01"
+        sub="FRAME"
+        rotate={10}
+        size={64}
+        className="right-6 top-6"
+      />
+      <HandNote className="bottom-16 left-6">
+        frame favorit roll ini — cahaya jatuh pas hari itu
+      </HandNote>
+      <BackFoot text="BACK OF PRINT — 01/04" />
+    </div>
+  );
+}
+
+function SkillsCardBack() {
+  return (
+    <div className="relative h-full w-full">
+      <BackRingStamp
+        center="10"
+        sub="FRAMES"
+        rotate={-12}
+        size={84}
+        className="left-7 top-7"
+      />
+      <BackStamp
+        text="ROLL 01 · CONTACT SHEET"
+        rotate={6}
+        className="right-5 top-24"
+      />
+      <HandNote className="bottom-20 left-6">
+        sepuluh frame, sepuluh senjata
+      </HandNote>
+      <BackFoot text="BACK OF PRINT — 02/04" />
+    </div>
+  );
+}
+
+function ProjectsCardBack() {
+  return (
+    <div className="relative h-full w-full">
+      <BackStamp
+        text="ROLL 02 · SHOT LIST"
+        rotate={-7}
+        className="left-6 top-8"
+      />
+      <BackRingStamp
+        center="03"
+        sub="SHOT"
+        rotate={12}
+        size={64}
+        className="right-6 top-6"
+      />
+      <HandNote className="bottom-16 left-6">
+        tiga shot, tiga cerita — eksekusi nyata menyusul
+      </HandNote>
+      <BackFoot text="BACK OF PRINT — 03/04" />
+    </div>
+  );
+}
+
+function ContactCardBack() {
+  return (
+    <div className="relative h-full w-full">
+      <BackRingStamp
+        center="OPEN"
+        rotate={8}
+        size={84}
+        className="right-7 top-7"
+      />
+      <BackStamp
+        text="STUDIO CARD · ANJAL"
+        rotate={-6}
+        className="left-6 top-24"
+      />
+      <HandNote className="bottom-20 left-6">
+        pintu studio selalu terbuka
+      </HandNote>
+      <BackFoot text="BACK OF PRINT — 04/04" />
+    </div>
   );
 }
 
@@ -341,12 +544,15 @@ export default function ContentCards() {
       <CameraFlash />
 
       {/* Kemiringan photo paper — beda tiap kartu; judul display
-          menumpang tepi atas dengan rotasi bebas per kartu */}
+          menumpang tepi atas dengan rotasi bebas per kartu. Sisi
+          belakang: stempel + catatan, terlihat selama luncuran
+          sebelum flip ke depan. */}
       <ContentCard
         section="about"
         side="right"
         tilt={-1.2}
         cardTitle={CARD_TITLES.about}
+        back={<AboutCardBack />}
       >
         <AboutCard />
       </ContentCard>
@@ -356,6 +562,7 @@ export default function ContentCards() {
         tilt={0.8}
         variant="sheet"
         cardTitle={CARD_TITLES.skills}
+        back={<SkillsCardBack />}
       >
         <SkillsCard />
       </ContentCard>
@@ -365,6 +572,7 @@ export default function ContentCards() {
         tilt={-1.5}
         variant="strip"
         cardTitle={CARD_TITLES.projects}
+        back={<ProjectsCardBack />}
       >
         <ProjectsCard />
       </ContentCard>
@@ -374,6 +582,7 @@ export default function ContentCards() {
         tilt={1.4}
         variant="card"
         cardTitle={CARD_TITLES.contact}
+        back={<ContactCardBack />}
       >
         <ContactCard />
       </ContentCard>

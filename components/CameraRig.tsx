@@ -25,6 +25,11 @@ import { useScrollStore } from "@/store/useScrollStore";
 // Porsi segmen untuk "menetap" di tiap shot sebelum bergerak
 const HOLD = 0.4;
 
+// Pose kamera saat project board terbuka (hero + boardOpen): menoleh
+// ke kanan menyorot chalkboard di sisi kanan panggung (Chalkboard.tsx).
+const BOARD_OPEN_POS: [number, number, number] = [1.8, 1.7, 3.6];
+const BOARD_OPEN_TGT: [number, number, number] = [3.2, 1.5, -0.5];
+
 // Clamp delta damping: frame yang lambat (jank/GC) tidak boleh membuat
 // kamera melompat lebih jauh dari setara frame 30fps (≈33ms). Efeknya:
 // gerakan tetap kontinu saat load berat, hanya sedikit lebih terlambat
@@ -95,22 +100,31 @@ export default function CameraRig() {
   // nilai skalar — reassign ref bukan alokasi objek)
   const lastProgress = useRef(-1);
   const lastSection = useRef<SectionId>("hero");
+  const lastBoardOpen = useRef(false);
   const settled = useRef(false);
 
   useFrame((_, delta) => {
-    const { progress, activeSection } = useScrollStore.getState();
+    const { progress, activeSection, boardOpen } = useScrollStore.getState();
+    const boardChanged = boardOpen !== lastBoardOpen.current;
+    lastBoardOpen.current = boardOpen;
 
     let lambda = 4; // responsif tapi lembut (mode normal)
 
     if (reducedMotion.current) {
       // Reduced motion: tanpa scrub/interpolasi — shot statis per
       // section, transisi settle sangat pendek. Setelah presisi & tanpa
-      // pergantian section, skip seluruh update (hemat find + lookAt).
-      if (settled.current && activeSection === lastSection.current) return;
+      // pergantian section/board, skip seluruh update (hemat + lookAt).
+      if (
+        settled.current &&
+        activeSection === lastSection.current &&
+        !boardChanged
+      )
+        return;
       if (activeSection !== lastSection.current) {
         lastSection.current = activeSection;
         settled.current = false;
       }
+      if (boardChanged) settled.current = false;
       const shot = SHOT_BY_ID[activeSection] ?? SHOTS[0];
       _sampledPos[0] = shot.position[0];
       _sampledPos[1] = shot.position[1];
@@ -125,8 +139,22 @@ export default function CameraRig() {
       settled.current = false;
       sampleShot(progress);
     } else {
+      if (boardChanged) settled.current = false;
       if (settled.current) return; // tanpa input & sudah presisi → skip
       sampleShot(progress);
+    }
+
+    // Board terbuka (hero) — kamera menoleh ke kanan menyorot
+    // chalkboard, menimpa pose hasil sampling; kembali ke shot
+    // normal begitu board ditutup. Lambda dipelankan → pan sinematik.
+    if (boardOpen && activeSection === "hero") {
+      _sampledPos[0] = BOARD_OPEN_POS[0];
+      _sampledPos[1] = BOARD_OPEN_POS[1];
+      _sampledPos[2] = BOARD_OPEN_POS[2];
+      _sampledTgt[0] = BOARD_OPEN_TGT[0];
+      _sampledTgt[1] = BOARD_OPEN_TGT[1];
+      _sampledTgt[2] = BOARD_OPEN_TGT[2];
+      lambda = Math.min(lambda, 3);
     }
 
     desiredPos.current.set(
