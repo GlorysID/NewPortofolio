@@ -63,6 +63,16 @@ const LIGHTING = {
     angle: 0.27,
     penumbra: 0.55,
   },
+  // Sorot CHALKBOARD — bahasa visual identik dengan beam karakter,
+  // dipasang di kaki papan (13, 0, 0): satu panggung, satu cerita.
+  boardBeam: {
+    position: [13, 6.6, 0.8] as [number, number, number],
+    aim: [13, 0, 0] as [number, number, number],
+    intensity: 14,
+    color: "#ffd9a6",
+    angle: 0.27,
+    penumbra: 0.55,
+  },
   // Kerucut sorot terlihat — inti lebih sempit dari cone cahaya asli
   // (angle 0.27 → radius penuh ~1.84 di dasar) supaya spill lembut
   // membukus batang inti yang terdefinisi.
@@ -134,22 +144,28 @@ function makePoolTexture(): THREE.CanvasTexture | null {
  *  JS). depthWrite off + additive = bebas masalah sorting transparansi;
  *  depth test tetap aktif sehingga avatar meng-occlude sisi belakang
  *  kerucut dengan benar. */
-function BeamCone() {
+function BeamCone({
+  apex: apexProp,
+  aim,
+}: {
+  apex: [number, number, number];
+  aim: [number, number, number];
+}) {
   const texture = useMemo(() => makeBeamTexture(), []);
 
   const { position, quaternion } = useMemo(() => {
-    const apex = new THREE.Vector3(...LIGHTING.beam.position);
-    const down = new THREE.Vector3(0, 0, 0).sub(apex).normalize();
+    const apex = new THREE.Vector3(...apexProp);
+    const down = new THREE.Vector3(...aim).sub(apex).normalize();
     const up = down.clone().negate();
     // ConeGeometry: apex di +Y, dasar di -Y → selaraskan +Y dengan
-    // arah dasar→apex (memakai target sorot (0,0,0) sebagai acuan).
+    // arah dasar→apex (acuan: titik aim sorot).
     const quat = new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 1, 0),
       up
     );
     const pos = apex.clone().addScaledVector(down, LIGHTING.beamVisual.height / 2);
     return { position: pos, quaternion: quat };
-  }, []);
+  }, [apexProp, aim]);
 
   // Dispose texture saat unmount (pola sama dengan ContactGlow)
   useEffect(() => {
@@ -182,7 +198,11 @@ function BeamCone() {
  *  Additive & di bawah ContactGlow (y 0.002 vs 0.004): inti putih
  *  ContactGlow tetap dominan, halo emas menyambungkan batang cahaya
  *  dari atas ke lantai. */
-function BeamFloorPool() {
+function BeamFloorPool({
+  position,
+}: {
+  position: [number, number, number];
+}) {
   const texture = useMemo(() => makePoolTexture(), []);
 
   useEffect(() => {
@@ -215,17 +235,33 @@ function BeamFloorPool() {
 export default function LightingRig() {
   const rimRef = useRef<THREE.SpotLight>(null);
   const rimTarget = useRef(new THREE.Object3D());
+  const boardRef = useRef<THREE.SpotLight>(null);
+  const boardTarget = useRef(new THREE.Object3D());
   const scene = useThree((s) => s.scene);
 
-  // Registrasi target spotlight rim ke scene (arahkan ke center avatar)
+  // Registrasi target spotlight rim & board beam ke scene
   useEffect(() => {
     const target = rimTarget.current;
-    if (scene && !target.parent) {
-      scene.add(target);
-      if (rimRef.current) rimRef.current.target = target;
+    const bTarget = boardTarget.current;
+    // Target sorot chalkboard = kaki papan (13, 0, 0)
+    bTarget.position.set(
+      LIGHTING.boardBeam.aim[0],
+      LIGHTING.boardBeam.aim[1],
+      LIGHTING.boardBeam.aim[2]
+    );
+    if (scene) {
+      if (!target.parent) {
+        scene.add(target);
+        if (rimRef.current) rimRef.current.target = target;
+      }
+      if (!bTarget.parent) {
+        scene.add(bTarget);
+        if (boardRef.current) boardRef.current.target = bTarget;
+      }
     }
     return () => {
       if (target.parent) scene.remove(target);
+      if (bTarget.parent) scene.remove(bTarget);
     };
   }, [scene]);
 
@@ -279,8 +315,33 @@ export default function LightingRig() {
       />
 
       {/* Batang sorot terlihat (fake volumetric) + kolam pendarannya */}
-      <BeamCone />
-      <BeamFloorPool />
+      <BeamCone
+        apex={LIGHTING.beam.position}
+        aim={[0, 0, 0]}
+      />
+      <BeamFloorPool position={[0, 0.002, 0]} />
+
+      {/* SOROT CHALKBOARD — lampu + kerucut + kolam, bahasa visual
+          identik dengan sorot karakter, dipasang di kaki papan
+          (satu panggung, satu cerita cahaya). */}
+      <spotLight
+        ref={boardRef}
+        position={LIGHTING.boardBeam.position}
+        angle={LIGHTING.boardBeam.angle}
+        penumbra={LIGHTING.boardBeam.penumbra}
+        distance={9}
+        decay={1.6}
+        intensity={LIGHTING.boardBeam.intensity}
+        color={LIGHTING.boardBeam.color}
+        castShadow={false}
+      />
+      <BeamCone
+        apex={LIGHTING.boardBeam.position}
+        aim={LIGHTING.boardBeam.aim}
+      />
+      <BeamFloorPool
+        position={[LIGHTING.boardBeam.aim[0], 0.002, LIGHTING.boardBeam.aim[2]]}
+      />
 
       {/* UPLIGHT KAKI PANGGUNG — dua titik hangat asimetris, menggemakan
           sorot dari bawah; tanpa shadow, jarak terbatas (hemat fill-rate). */}
