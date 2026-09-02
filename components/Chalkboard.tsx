@@ -28,21 +28,52 @@ function BoardModel() {
   const { scene } = useGLTF(BOARD_URL);
   const group = useRef<THREE.Group>(null);
 
-  // Auto-fit: skala ke BOARD_HEIGHT, bottom ke lantai (y=0), center x/z.
+  // Auto-fit (pola Avatar) — dengan satu koreksi penting: Box3.
+  // setFromObject mengukur dalam RUANG DUNIA, dan parent group ini
+  // memiliki transform (position [13,0,0] + rotasi) — bukan identitas
+  // seperti Avatar. Hasil ukur dikonversi ke ruang LOKAL via inversi
+  // matrixWorld sebelum dipakai, kalau tidak papan "nyasar".
   useLayoutEffect(() => {
     const g = group.current;
     if (!g) return;
-    const box = new THREE.Box3().setFromObject(g);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const scale = BOARD_HEIGHT / (size.y || 1);
+    g.updateWorldMatrix(true, true);
+
+    const worldBox = new THREE.Box3().setFromObject(g);
+    const inv = new THREE.Matrix4().copy(g.matrixWorld).invert();
+    // 8 sudut world box → ruang lokal g (titik tertransformasi eksak)
+    const corners = [
+      new THREE.Vector3(worldBox.min.x, worldBox.min.y, worldBox.min.z),
+      new THREE.Vector3(worldBox.max.x, worldBox.min.y, worldBox.min.z),
+      new THREE.Vector3(worldBox.min.x, worldBox.max.y, worldBox.min.z),
+      new THREE.Vector3(worldBox.max.x, worldBox.max.y, worldBox.min.z),
+      new THREE.Vector3(worldBox.min.x, worldBox.min.y, worldBox.max.z),
+      new THREE.Vector3(worldBox.max.x, worldBox.min.y, worldBox.max.z),
+      new THREE.Vector3(worldBox.min.x, worldBox.max.y, worldBox.max.z),
+      new THREE.Vector3(worldBox.max.x, worldBox.max.y, worldBox.max.z),
+    ].map((c) => c.applyMatrix4(inv));
+
+    const localMin = new THREE.Vector3(
+      Math.min(...corners.map((c) => c.x)),
+      Math.min(...corners.map((c) => c.y)),
+      Math.min(...corners.map((c) => c.z))
+    );
+    const localMax = new THREE.Vector3(
+      Math.max(...corners.map((c) => c.x)),
+      Math.max(...corners.map((c) => c.y)),
+      Math.max(...corners.map((c) => c.z))
+    );
+
+    const sizeY = localMax.y - localMin.y;
+    const scale = BOARD_HEIGHT / (sizeY || 1);
     g.scale.setScalar(scale);
-    const fitted = new THREE.Box3().setFromObject(g);
-    const center = new THREE.Vector3();
-    fitted.getCenter(center);
-    g.position.x -= center.x;
-    g.position.y -= fitted.min.y;
-    g.position.z -= center.z;
+
+    // Bottom ke y=0, center x/z ke 0 — dalam ruang lokal (offset
+    // g.position berada di ruang parent yang dirotasi; karena anchor
+    // yang kita inginkan adalah titik origin group, cukup koreksi
+    // center hasil skala — rotasi parent diterapkan setelahnya).
+    const cx = ((localMin.x + localMax.x) / 2) * scale;
+    const cz = ((localMin.z + localMax.z) / 2) * scale;
+    g.position.set(-cx, -localMin.y * scale, -cz);
   }, []);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
