@@ -309,17 +309,18 @@ export function AboutCard() {
     <div>
       <PaperHead code="About" no="01" />
 
-      {/* Foto di dalam area bingkai — rasio 3/2 (landscape) agar kartu
-          muat vertikal di viewport pendek; sedikit diturunkan (mt-6)
-          di dalam bingkai agar komposisi cetakan lebih seimbang.
-          Bingkai putih + strip bawah disediakan chrome "print". */}
-      <div className="mt-7 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)]">
-        <div className="relative aspect-[3/2] overflow-hidden">
+      {/* Foto di dalam area bingkai — rasio 6/5: window crop menampilkan
+          ~5.6%–68% tinggi foto asli (object 15%) → kepala utuh SAMPAI
+          dagu terlihat (frame 3/2 lama hanya memuat atas 50% foto —
+          dagu selalu terpotong). mt-6 menjaga kartu dalam budget
+          viewport pendek. Bingkai putih + strip bawah = chrome "print". */}
+      <div className="mt-6 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)]">
+        <div className="relative aspect-[6/5] overflow-hidden">
           <Image
             src="/me.jpg"
             alt="Foto profil"
             fill
-            className="object-cover object-top"
+            className="object-cover object-[center_15%]"
             sizes="(max-width: 640px) calc(100vw - 4rem), 332px"
           />
         </div>
