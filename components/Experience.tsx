@@ -140,6 +140,56 @@ function FlashRegress() {
 }
 
 /**
+ * ReflectorGate — reflektor lantai adalah pass GPU terberat (scene
+ * dirender kedua + blur dua arah TIAP frame). Saat shutter kamera
+ * berbunyi (flash + launch kartu + pan = momen paling ramai), dia
+ * disembunyikan ±450ms: layar sedang dominan putih sehingga hilangnya
+ * tak terlihat, lalu kembali — GPU mendapat jeda napas di puncak beban.
+ * (visibility dulu — `visible=false` menghentikan pass refleksi; jauh
+ * lebih murah daripada unmount yang memicu shader recompile.)
+ */
+function ReflectorGate({ isSmall }: { isSmall: boolean }) {
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const onFlashBegin = () => {
+      setPaused(true);
+      if (t) clearTimeout(t);
+      t = setTimeout(() => setPaused(false), 450);
+    };
+    window.addEventListener("camera-flash:begin", onFlashBegin);
+    return () => {
+      window.removeEventListener("camera-flash:begin", onFlashBegin);
+      if (t) clearTimeout(t);
+    };
+  }, []);
+
+  if (paused) return null;
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
+      <planeGeometry args={[30, 30]} />
+      <MeshReflectorMaterial
+        /* Reflektor = pass GPU terberat (scene dirender kedua + blur
+           dua arah tiap frame). Resolusi 768 (dari 1024) di desktop
+           memangkas fill-rate ±44% — lantai gelap membuat beda visual
+           nyaris tak terlihat. */
+        resolution={isSmall ? 512 : 768}
+        blur={isSmall ? [150, 50] : [250, 70]}
+        mixBlur={1}
+        mixStrength={12}
+        depthScale={1.1}
+        minDepthThreshold={0.35}
+        maxDepthThreshold={1.35}
+        roughness={0.85}
+        metalness={0.45}
+        color="#050507"
+        mirror={0.35}
+      />
+    </mesh>
+  );
+}
+
+/**
  * Experience — scene utama R3F (final, fase 6).
  *
  * Performa mobile / low-end:
@@ -207,29 +257,9 @@ export default function Experience() {
             avatar tampak berpijak di titik cahaya */}
         <ContactGlow />
 
-        {/* Lantai reflektif gelap (kombinasi #5): seperti studio
-            dengan lantai kaca aspal — bayangan scan terpantul samar.
-            Resolusi refleksi diturunkan di layar kecil (hemat GPU). */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
-          <planeGeometry args={[30, 30]} />
-          <MeshReflectorMaterial
-            /* Reflektor = pass GPU terberat (scene dirender kedua +
-               blur dua arah tiap frame). Resolusi 768 (dari 1024) di
-               desktop memangkas fill-rate ±44% — lantai gelap membuat
-               beda visual nyaris tak terlihat. */
-            resolution={isSmall ? 512 : 768}
-            blur={isSmall ? [150, 50] : [250, 70]}
-            mixBlur={1}
-            mixStrength={12}
-            depthScale={1.1}
-            minDepthThreshold={0.35}
-            maxDepthThreshold={1.35}
-            roughness={0.85}
-            metalness={0.45}
-            color="#050507"
-            mirror={0.35}
-          />
-        </mesh>
+        {/* Lantai reflektif gelap — di-pause ±450ms saat shutter flash
+            (pass GPU terberat dilewati di momen paling ramai). */}
+        <ReflectorGate isSmall={isSmall} />
 
         {/* Kamera sinematik berbasis scroll (reduced-motion aware) */}
         <CameraRig />

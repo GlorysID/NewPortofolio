@@ -52,6 +52,9 @@ export default function LoadingScreen() {
       return "leaving";
     });
     primeCameraAudio();
+    // Sinkron animasi masuk halaman utama dengan fade gerbang: hero
+    // mendengarkan event ini dan menganimasikan teksnya masuk bersamaan.
+    window.dispatchEvent(new Event("gate:dismissed"));
     // Lepaskan fokus dari gerbang sebelum overlay memudar + aria-hidden
     // (hindari fokus menggantung pada elemen yang hilang dari a11y tree).
     if (document.activeElement instanceof HTMLElement) {
@@ -59,10 +62,13 @@ export default function LoadingScreen() {
     }
   }, []);
 
-  // LEAVING → GONE: tunggu fade 500ms selesai (pola dismiss lama).
+  // LEAVING → GONE: tunggu fade selesai SEBELUM unmount (fade dulu,
+  // baru bongkar dari DOM — potongan hitam terjadi kalau unmount
+  // mencapai frame sebelum transisi opacity sempat jalan).
   useEffect(() => {
     if (phase !== "leaving") return;
-    const t = setTimeout(() => setPhase("gone"), 500);
+    // 680ms ≈ durasi fade 650ms + buffer satu frame
+    const t = setTimeout(() => setPhase("gone"), 680);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -86,16 +92,19 @@ export default function LoadingScreen() {
     }
   };
 
-  const show = phase !== "gone";
+  const show = phase === "loading" || phase === "enter";
   const isEnter = phase === "enter";
 
   // Fase "gone" → overlay DIBONGKAR dari DOM (bukan cuma opacity-0):
   // tidak ada lagi layer fullscreen dorman yang menggantung seumur
   // sesi — satu biaya komposit permanen hilang, FPS lebih stabil.
+  // (Fade benar-benar terjadi di fase "leaving": show=false → opacity
+  // transisi 650ms; unmount BARU setelah fade selesai.)
   if (phase === "gone") return null;
 
   return (
     <div
+      data-gate="true"
       // Loading = region status; Enter = seluruh overlay jadi tombol.
       role={isEnter ? "button" : "status"}
       aria-live={isEnter ? undefined : "polite"}
@@ -104,7 +113,7 @@ export default function LoadingScreen() {
       onClick={isEnter ? enterExperience : undefined}
       onKeyDown={isEnter ? onKeyDown : undefined}
       aria-hidden={!show}
-      className={`fixed inset-0 z-40 flex items-center justify-center bg-black transition-opacity duration-500 ${
+      className={`fixed inset-0 z-40 flex items-center justify-center bg-black transition-opacity duration-[650ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
         show ? "opacity-100" : "pointer-events-none opacity-0"
       } ${isEnter ? "cursor-pointer select-none" : ""}`}
     >
@@ -129,7 +138,7 @@ export default function LoadingScreen() {
         >
           <p className="whitespace-nowrap font-body text-base text-white/85">Klik untuk mulai</p>
           <p className="mt-2 whitespace-nowrap font-body text-xs text-white/50">
-            Suara kamera menyala saat masuk
+            Suara kamera aktif saat masuk
           </p>
         </div>
       </div>
