@@ -100,7 +100,7 @@ export default function Chalkboard() {
       {/* Papan — auto-fit tinggi 3.9 m; penempatan & rotasi hadap di
           sini. Kamera (0,·,6.2) sudutnya, karakter lurus di depan,
           papan di spoke kanan yang dimundurkan ke z=0. */}
-      <group position={[12.8, 0, -0.8]} rotation={[0, -1.1, 0]}>
+      <group position={[12.8, 0, 0.2]} rotation={[0, -1.1, 0]}>
         <Suspense fallback={null}>
           <BoardModel />
         </Suspense>

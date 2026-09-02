@@ -68,8 +68,8 @@ const LIGHTING = {
   // Apex digeser ke kiri (x 12.2) agar shaft masuk miring dari kiri-atas;
   // angle 0.42 + radius cone 2.1 = cakupan lebih lebar untuk papan.
   boardBeam: {
-    position: [11, 6.6, 0.4] as [number, number, number],
-    aim: [12.8, 0, -0.8] as [number, number, number],
+    position: [11, 6.6, 1.4] as [number, number, number],
+    aim: [12.8, 0, 0.2] as [number, number, number],
     intensity: 14,
     color: "#ffd9a6",
     angle: 0.42,
@@ -78,13 +78,13 @@ const LIGHTING = {
   // Uplight kaki papan — OFFSET identik dengan uplight karakter,
   // dipindahkan ke kaki chalkboard supaya perlakuan bawah persis sama.
   boardUplightA: {
-    position: [11.75, 0.25, -0.3] as [number, number, number],
+    position: [11.75, 0.25, 0.7] as [number, number, number],
     intensity: 1.2,
     color: "#f0a24d",
     distance: 5,
   },
   boardUplightB: {
-    position: [13.8, 0.2, -1.25] as [number, number, number],
+    position: [13.8, 0.2, -0.45] as [number, number, number],
     intensity: 0.85,
     color: "#ffb15c",
     distance: 4,
