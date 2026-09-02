@@ -28,6 +28,11 @@ const RAIL_SECTIONS: ReadonlyArray<{ id: SectionId; label: string }> = [
 
 export default function SectionRail() {
   const activeSection = useScrollStore((s) => s.activeSection);
+  const boardOpen = useScrollStore((s) => s.boardOpen);
+
+  // Papan terbuka di hero = konteks proyek → garis "projects" menyala.
+  const effective =
+    boardOpen && activeSection === "hero" ? "projects" : activeSection;
 
   const jumpTo = (index: number) => {
     const max =
@@ -46,7 +51,7 @@ export default function SectionRail() {
     >
       <ul className="flex flex-col items-center gap-[10px]">
         {RAIL_SECTIONS.map((section, index) => {
-          const isActive = section.id === activeSection;
+          const isActive = section.id === effective;
           return (
             <li key={section.id}>
               <button
