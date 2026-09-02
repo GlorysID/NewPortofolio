@@ -72,8 +72,8 @@ export default function LoadingScreen() {
   // mencapai frame sebelum transisi opacity sempat jalan).
   useEffect(() => {
     if (phase !== "leaving") return;
-    // 680ms ≈ durasi fade 650ms + buffer satu frame
-    const t = setTimeout(() => setPhase("gone"), 680);
+    // 780ms ≈ durasi fade 750ms + buffer satu frame
+    const t = setTimeout(() => setPhase("gone"), 780);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -121,8 +121,10 @@ export default function LoadingScreen() {
       onClick={isEnter ? enterExperience : undefined}
       onKeyDown={isEnter ? onKeyDown : undefined}
       aria-hidden={!show}
-      className={`fixed inset-0 z-40 flex items-center justify-center bg-black transition-opacity duration-[650ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
-        show ? "opacity-100" : "pointer-events-none opacity-0"
+      className={`fixed inset-0 z-40 flex items-center justify-center bg-black transition-[opacity,transform] duration-[750ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        show
+          ? "opacity-100 scale-100"
+          : "pointer-events-none opacity-0 scale-[1.04]"
       } ${isEnter ? "cursor-pointer select-none" : ""}`}
     >
       {/* Dua lapis teks yang ber-crossfade (~300ms). Lapisan loading

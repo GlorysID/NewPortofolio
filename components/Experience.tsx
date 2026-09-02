@@ -164,9 +164,18 @@ function ReflectorGate({ isSmall }: { isSmall: boolean }) {
     };
   }, []);
 
-  if (paused) return null;
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.001, 0]}
+      receiveShadow
+      /* visible (BUKAN unmount): unmount MeshReflectorMaterial =
+         shader recompile + FBO recreation = STALL ratusan ms di
+         tengah transisi — inilah biang "freeze" saat klik gerbang &
+         beratnya shutter. visible=false hanya melewatkan mesh dari
+         render list: pass refleksi terlewat, nol stall, nol recompile. */
+      visible={!paused}
+    >
       <planeGeometry args={[30, 30]} />
       <MeshReflectorMaterial
         /* Reflektor = pass GPU terberat (scene dirender kedua + blur
