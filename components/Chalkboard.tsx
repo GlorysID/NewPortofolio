@@ -32,7 +32,7 @@ export default function Chalkboard() {
           adalah sudutnya, karakter lurus di depan (0,0,0), papan di
           spoke kanan lalu dimundurkan jauh ke z≈0, diputar menghadap
           kamera (lihat BOARD_OPEN_* di CameraRig.tsx). */}
-      <group position={[13, 0, 0]} rotation={[0, -0.45, 0]} scale={4.2}>
+      <group position={[13, 0, 0]} rotation={[0, -1.1, 0]} scale={4.2}>
         <Suspense fallback={null}>
           <BoardModel />
         </Suspense>
