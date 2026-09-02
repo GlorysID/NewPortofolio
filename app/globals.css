@@ -2,26 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+html {
+  scroll-behavior: auto; /* navigasi scroll ditangani GSAP nanti */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+::selection {
+  background: #e8a33d;
+  color: #10162a;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* Scrollbar tipis senada palet */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+::-webkit-scrollbar-track {
+  background: #10162a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3350;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4568;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3350 #10162a;
 }
