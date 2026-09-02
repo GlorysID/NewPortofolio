@@ -24,30 +24,29 @@ export default function Hero() {
   useEffect(() => {
     const onDismissed = () => setEntered(true);
     window.addEventListener("gate:dismissed", onDismissed);
-    const fallback = window.setTimeout(() => setEntered(true), 2500);
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(mq.matches);
     const onMq = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener("change", onMq);
     return () => {
       window.removeEventListener("gate:dismissed", onDismissed);
-      window.clearTimeout(fallback);
       mq.removeEventListener("change", onMq);
     };
   }, []);
 
-  // State tampil per elemen: papan terbuka → fade out (tanpa gerak);
-  // belum masuk → tersembunyi + turun 12px; masuk → tampil. Stagger
-  // via inline style (class dinamis tak ter-generate Tailwind).
-  const stateOf = (stagger: number) => {
-    if (boardOpen) return { cls: "opacity-0", delay: stagger };
+  // State tampil per elemen. PENTING: judul TIDAK ikut fade saat
+  // boardOpen — span di dalamnya yang crossfade ke "My Project";
+  // kalau outer ikut opacity-0, "My Project" ikut lenyap (bug lama).
+  // Label & deskripsi memang disembunyikan saat papan terbuka.
+  const stateOf = (stagger: number, hideOnBoard = true) => {
+    if (hideOnBoard && boardOpen) return { cls: "opacity-0", delay: stagger };
     return entered
       ? { cls: "opacity-100 translate-y-0", delay: stagger }
       : { cls: "opacity-0 translate-y-3", delay: stagger };
   };
 
   const label = stateOf(0);
-  const title = stateOf(90);
+  const title = stateOf(90, false);
   const para = stateOf(180);
   const motion = reduced
     ? "duration-0"
