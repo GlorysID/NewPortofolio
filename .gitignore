@@ -37,3 +37,7 @@ next-env.d.ts
 
 # original heavy source models (compressed versions live in public/models)
 models-src/
+
+# build/test artifacts
+build*.log
+smoke.log
