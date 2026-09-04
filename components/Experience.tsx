@@ -1,12 +1,8 @@
 "use client";
 
 import { Canvas, useThree } from "@react-three/fiber";
-import {
-  AdaptiveDpr,
-  MeshReflectorMaterial,
-  PerformanceMonitor,
-} from "@react-three/drei";
-import { useEffect, useRef, useState } from "react";
+import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
+import { useEffect, useRef } from "react";
 import Avatar from "./Avatar";
 import CameraRig from "./CameraRig";
 import Chalkboard from "./Chalkboard";
@@ -141,28 +137,19 @@ function FlashRegress() {
 }
 
 /**
- * ReflectorFloor — lantai reflektif, SELALU dirender (tanpa toggle
- * visible: hilang-muncul di tiap flash = glitch). Resolusi 512 +
- * blur ringan: pass GPU terberat tetap terpangkas setengah secara
- * permanen — FlashRegress (dpr turun) yang menangani jendela flash.
+ * StudioFloor — lantai studio GELAP STATIS. Keputusan final: tanpa
+ * real-time reflection sama sekali. MeshReflectorMaterial (scene
+ * dirender KEDUA + blur tiap frame + FBO resize saat dpr berubah)
+ * adalah akar lag di semua interaksi, glitch kilatan hitam, dan
+ * frame-drop — biayanya jauh melampaui nilai kilau mirror di lantai
+ * near-black. Mood studio tetap utuh via: kolam emas, ContactGlow,
+ * beam + kerucut, dan bayangan avatar/papan yang jatuh ke lantai ini.
  */
-function ReflectorFloor({ isSmall }: { isSmall: boolean }) {
+function StudioFloor() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
       <planeGeometry args={[60, 60]} />
-      <MeshReflectorMaterial
-        resolution={512}
-        blur={isSmall ? [120, 40] : [160, 55]}
-        mixBlur={1}
-        mixStrength={12}
-        depthScale={1.1}
-        minDepthThreshold={0.35}
-        maxDepthThreshold={1.35}
-        roughness={0.85}
-        metalness={0.45}
-        color="#050507"
-        mirror={0.35}
-      />
+      <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
     </mesh>
   );
 }
@@ -186,10 +173,6 @@ function ReflectorFloor({ isSmall }: { isSmall: boolean }) {
  *   (layar dominan putih saat itu, jadi tak terlihat).
  */
 export default function Experience() {
-  const [isSmall] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < 640
-  );
-
   // Papan terbuka (hero) → canvas harus menerima pointer agar klik
   // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
   // (default) supaya teks section & kartu tetap klikabel.
@@ -244,9 +227,8 @@ export default function Experience() {
             avatar tampak berpijak di titik cahaya */}
         <ContactGlow />
 
-        {/* Lantai reflektif — selalu dirender, resolusi 512 permanen
-            (tanpa toggle: hilang-muncul = glitch). */}
-        <ReflectorFloor isSmall={isSmall} />
+        {/* Lantai studio gelap statis — tanpa real-time reflection */}
+        <StudioFloor />
 
         {/* Kamera sinematik berbasis scroll (reduced-motion aware) */}
         <CameraRig />
