@@ -42,7 +42,7 @@ const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 // dirotasi -1.1 rad → normal wajah ≈ (-0.89, 0, 0.45); kamera berdiri
 // di sepanjang normal, ±3.4 m dari pusat papan): tidak ada kemiringan
 // serong, seluruh papan + kertas terlihat lurus.
-const BOARD_INSPECT_POS: [number, number, number] = [10.48, 1.7, 1.38];
+const BOARD_INSPECT_POS: [number, number, number] = [10.13, 1.7, 1.6];
 const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.45, 0.2];
 
 // Tangent wajah papan — arah "kanan-layar" bagi penonton yang menghadap
@@ -184,14 +184,14 @@ export default function CameraRig() {
       dragLastY.current = e.clientY;
       dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
       if (dragMovedDist.current > 8) boardDrag.moved = true;
-      // Grab-style: drag kanan → pandangan bergeser ke kanan
+      // Grab-style halus: drag kanan → pandangan bergeser ke kanan
       panX.current = Math.max(
         -1.2,
-        Math.min(1.2, panX.current - dx * 0.0028),
+        Math.min(1.2, panX.current - dx * 0.0016),
       );
       panY.current = Math.max(
         -0.6,
-        Math.min(0.6, panY.current + dy * 0.0028),
+        Math.min(0.6, panY.current + dy * 0.0016),
       );
     };
     const onUp = () => {
@@ -388,10 +388,6 @@ export default function CameraRig() {
         // tangkapan, atas-layar = naik. Nol alokasi (ref scalar).
         if (boardInspect) {
           inspectPhase.current = true;
-          const amp = 0.35;
-          _sampledPos[0] += BOARD_TX * parallaxX.current * amp;
-          _sampledPos[2] += BOARD_TZ * parallaxX.current * amp;
-          _sampledPos[1] += -parallaxY.current * 0.2;
         } else {
           inspectPhase.current = false;
         }
