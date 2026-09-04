@@ -810,16 +810,9 @@ export default function Chalkboard() {
           </Html>
         )}
       </group>
-      {/* Aksen hangat wajah papan — world space, arah kamera board-open
-          (castShadow false — hard rule: tanpa shadow caster tambahan) */}
-      <pointLight
-        position={[11.7, 2, 0.1]}
-        intensity={6}
-        decay={2}
-        distance={9}
-        color="#ffd9a6"
-        castShadow={false}
-      />
+      {/* Aksen pointLight dekat wajah DIHAPUS: decay² pada jarak ±1.3m
+          memusat cahaya jadi satu titik menyilang. Papan cukup diterangi
+          beam utama (dari atas) + key/fill directional global. */}
     </group>
   );
 }
