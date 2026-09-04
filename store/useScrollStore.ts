@@ -46,7 +46,14 @@ export const useScrollStore = create<ScrollState>((set) => ({
       boardOpen: open,
       ...(open ? {} : { boardInspect: false, activeProjectId: null }),
     }),
-  setBoardInspect: (inspect) => set({ boardInspect: inspect }),
+  setBoardInspect: (inspect) =>
+    set({
+      boardInspect: inspect,
+      // Keluar inspeksi (zoom-out) → quest window ikut tertutup
+      // otomatis — jendela kertas tidak boleh selamat dari kamera
+      // yang sudah mundur. (Membuka inspeksi tidak mengubahnya.)
+      ...(inspect ? {} : { activeProjectId: null }),
+    }),
   setActiveProjectId: (id) => set({ activeProjectId: id }),
   setAssetsLoaded: (loaded) => set({ assetsLoaded: loaded }),
   setSceneReady: (ready) => set({ sceneReady: ready }),
