@@ -142,6 +142,31 @@ function StudioFloor() {
 }
 
 /**
+ * StaticShadows — scene ini STATIS (tanpa animasi): bayangan tidak
+ * berubah sepanjang sesi. Pass bayangan (me-render ulang SEMUA model
+ * tiap frame — papan sendiri ±1 juta render-vertex) dimatikan dan
+ * hanya di-bake sekali setelah semua aset masuk scene + saat gate
+ * dibuka. Hemat ~50% beban vertex per frame secara permanen.
+ */
+function StaticShadows() {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    const bake = () => {
+      gl.shadowMap.needsUpdate = true;
+    };
+    bake();
+    const t = setTimeout(bake, 1500); // model sudah masuk scene
+    window.addEventListener("gate:dismissed", bake);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("gate:dismissed", bake);
+    };
+  }, [gl]);
+  return null;
+}
+
+/**
  * Experience — scene utama R3F (final, fase 6).
  *
  * Performa mobile / low-end:
@@ -160,6 +185,8 @@ export default function Experience() {
   // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
   // (default) supaya teks section & kartu tetap klikabel.
   const boardOpen = useScrollStore((s) => s.boardOpen);
+  // Gerbang menutupi layar → scene tak perlu render sama sekali.
+  const gateUp = useScrollStore((s) => s.gateUp);
 
   return (
     <div
@@ -171,10 +198,13 @@ export default function Experience() {
         camera={{ position: [0, 1.6, 6.2], fov: 35 }}
         dpr={[1, 1.75]}
         gl={{
-          antialias: true,
+          antialias: false, // dpr 1.75 sudah supersample — AA mubazir
           alpha: true,
           powerPreference: "high-performance",
         }}
+        /* Gerbang menutupi layar → nol frame dirender (hemat GPU saat
+           loading); resume otomatis saat fade mulai. */
+        frameloop={gateUp ? "never" : "always"}
         shadows="percentage"
         /* Background void di-set via <color attach="background"> */
         style={{ background: "#000000" }}
@@ -185,6 +215,7 @@ export default function Experience() {
             berbasis fps rata-rata, bukan noise. */}
         <DynamicQuality />
         <AdaptiveDpr pixelated={false} />
+        <StaticShadows />
 
         {/* Background void: hitam pekat solid, tanpa gradasi */}
         <color attach="background" args={["#000000"]} />

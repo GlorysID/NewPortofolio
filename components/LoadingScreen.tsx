@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "re
 import { useProgress } from "@react-three/drei";
 import gsap from "gsap";
 import { primeCameraAudio } from "@/hooks/useAudioUnlock";
+import { useScrollStore } from "@/store/useScrollStore";
 
 /**
  * LoadingScreen — gerbang masuk dua fase di atas hitam polos.
@@ -38,6 +39,10 @@ export default function LoadingScreen() {
       return "leaving";
     });
     primeCameraAudio();
+    // Rendering scene dilanjutkan PERSIS saat fade mulai (gerbang masih
+    // menutupi 100% layar sebelum titik ini → GPU tidak buang-buang
+    // frame di balik overlay hitam).
+    useScrollStore.getState().setGateUp(false);
     // Sinkron animasi masuk Hero + jendela GPU murah (reflektor pause,
     // dpr turun — sama seperti momen shutter).
     window.dispatchEvent(new Event("gate:dismissed"));
@@ -70,6 +75,12 @@ export default function LoadingScreen() {
     return () => {
       document.body.style.overflow = prev;
     };
+  }, [phase]);
+
+  // Gerbang menutupi layar → tandai scene agar berhenti render
+  // (frameloop "never" di Experience) sampai fade dimulai.
+  useEffect(() => {
+    useScrollStore.getState().setGateUp(phase !== "gone");
   }, [phase]);
 
   // Keyboard: Enter/Space memicu masuk.

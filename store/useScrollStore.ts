@@ -14,11 +14,14 @@ interface ScrollState {
   boardInspect: boolean;
   /** Proyek aktif di jendela quest overlay (2D) — null = tertutup */
   activeProjectId: string | null;
+  /** Gerbang loading menutupi layar penuh → scene 3D tak perlu render */
+  gateUp: boolean;
   setProgress: (progress: number) => void;
   setActiveSection: (section: SectionId) => void;
   setBoardOpen: (open: boolean) => void;
   setBoardInspect: (inspect: boolean) => void;
   setActiveProjectId: (id: string | null) => void;
+  setGateUp: (up: boolean) => void;
 }
 
 export const useScrollStore = create<ScrollState>((set) => ({
@@ -27,6 +30,7 @@ export const useScrollStore = create<ScrollState>((set) => ({
   boardOpen: false,
   boardInspect: false,
   activeProjectId: null,
+  gateUp: true,
   setProgress: (progress) => set({ progress }),
   setActiveSection: (section) => set({ activeSection: section }),
   // Menutup board me-reset semua turunannya — inspeksi & quest window
@@ -38,4 +42,5 @@ export const useScrollStore = create<ScrollState>((set) => ({
     }),
   setBoardInspect: (inspect) => set({ boardInspect: inspect }),
   setActiveProjectId: (id) => set({ activeProjectId: id }),
+  setGateUp: (up) => set({ gateUp: up }),
 }));
