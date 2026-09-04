@@ -44,6 +44,12 @@ const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
 const BOARD_INSPECT_POS: [number, number, number] = [10.48, 1.7, 1.38];
 const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.45, 0.2];
 
+// Tangent wajah papan — arah "kanan-layar" bagi penonton yang menghadap
+// papan (cross(up, −normal) dengan normal (-0.891, 0, 0.454)). Dipakai
+// parallax kursor saat inspeksi: kursor kanan → kamera geser kanan.
+const BOARD_TX = -0.454;
+const BOARD_TZ = -0.891;
+
 // Pose inspeksi mobile — mundur lebih jauh (layar sempit + FOV sama
 // membuat papan lebih besar di frame) dan lebih tinggi sedikit agar
 // grid 2×2 kertas terjadi di tengah frame vertikal.
@@ -139,6 +145,22 @@ export default function CameraRig() {
   // nilai skalar — reassign ref bukan alokasi objek)
   const lastProgress = useRef(-1);
   const lastSection = useRef<SectionId>("hero");
+  // Parallax kursor saat inspeksi papan — dilacak global (pointermove
+  // pasif), offset RELATIF terhadap normal wajah papan: kursor kanan →
+  // kamera geser kanan-tangkapan, kursor atas → naik. Aktif HANYA di
+  // fase inspect; amplitudo kecil supaya framing tetap terjaga.
+  const parallaxX = useRef(0); // -1..1 (kiri→kanan layar)
+  const parallaxY = useRef(0); // -1..1 (atas→bawah layar)
+  const inspectPhase = useRef(false);
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      parallaxX.current = (e.clientX / window.innerWidth) * 2 - 1;
+      parallaxY.current = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    return () =>
+      window.removeEventListener("pointermove", onPointerMove);
+  }, []);
   // Fase pan board: "closed" → "front" (waypoint depan karakter) →
   // "open" → (boardInspect) "inspect". Pan SELALU membusur lewat depan
   // karakter — bukan garis lurus diagonal menembus scene. Masuk/keluar
@@ -298,6 +320,19 @@ export default function CameraRig() {
         _sampledTgt[0] = T[0];
         _sampledTgt[1] = T[1];
         _sampledTgt[2] = T[2];
+        // Parallax kursor — HANYA saat inspeksi (guard di atas): offset
+        // kecil sepanjang tangent wajah papan. Basis tangent dihitung
+        // dari normal wajah (-0.891, 0, 0.454): kanan-layar = kanan-
+        // tangkapan, atas-layar = naik. Nol alokasi (ref scalar).
+        if (boardInspect) {
+          inspectPhase.current = true;
+          const amp = 0.35;
+          _sampledPos[0] += BOARD_TX * parallaxX.current * amp;
+          _sampledPos[2] += BOARD_TZ * parallaxX.current * amp;
+          _sampledPos[1] += -parallaxY.current * 0.2;
+        } else {
+          inspectPhase.current = false;
+        }
         lambda = Math.min(lambda, 3);
       }
       // Fase "closed": goal = pose shot hasil sampling (perilaku normal).
