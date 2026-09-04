@@ -162,13 +162,16 @@ export default function CameraRig() {
   const dragLastY = useRef(0);
   const dragMovedDist = useRef(0);
 
-  // Drag-pan inspeksi: pointerdown pada canvas saat inspeksi → drag
-  // menggeser pandangan sepanjang tangent & vertikal (ter-clamp).
-  // Gerakan > 8px menandai boardDrag.moved → klik berikutnya ditekan
-  // oleh resolver papan (drag bukan klik).
+  // Drag-pan papan: pointerdown pada canvas saat boardOpen (BUKAN saat
+  // boardInspect — pointerdown dari klik yang MEMASUKKI inspeksi terjadi
+  // sebelum flag inspect terpasang, yang di-set saat click = pointerup;
+  // kalau nunggu inspect, press-drag satu gerakan tak pernah engage).
+  // Drag menggeser pandangan sepanjang tangent & vertikal (ter-clamp).
+  // Drag > 8px saat belum inspeksi = PROMOSI ke inspeksi; boardDrag.moved
+  // menekan klik di akhir drag (drag bukan klik).
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
-      if (!useScrollStore.getState().boardInspect) return;
+      if (!useScrollStore.getState().boardOpen) return;
       if (!(e.target instanceof HTMLCanvasElement)) return;
       dragActive.current = true;
       dragLastX.current = e.clientX;
@@ -183,15 +186,30 @@ export default function CameraRig() {
       dragLastX.current = e.clientX;
       dragLastY.current = e.clientY;
       dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
+      const st = useScrollStore.getState();
+      // Tekan-and-drag dari papan terbuka: drag bermakna (>8px) langsung
+      // PROMOSI ke inspeksi (pan berlaku di fase inspect) + moved=true
+      // agar klik di akhir drag ditekan resolver papan.
+      if (dragMovedDist.current > 8 && !st.boardInspect) {
+        st.setBoardInspect(true);
+        boardDrag.moved = true;
+      }
       if (dragMovedDist.current > 24) boardDrag.moved = true;
-      // Grab-style: drag BAWAH → pandangan turun mengikuti (sign fix)
-      panY.current = Math.max(
+      // Pan hanya bermakna saat inspeksi (termasuk hasil promosi di atas)
+      if (!useScrollStore.getState().boardInspect) return;
+      // Pandangan mengikuti arah drag (grab/pan). BUG DIPERBAIKI: versi
+      // lama menulis panY DUA kali (−dy lalu +dy) yang saling menghapus —
+      // drag vertikal netral total; panX tidak pernah ditulis sama sekali
+      // (selalu 0). Sekarang SATU tulisan per sumbu:
+      //   drag kanan (dx>0) → pandangan geser kanan (sepanjang tangent)
+      //   drag bawah (dy>0) → pandangan turun
+      panX.current = Math.max(
         -0.6,
-        Math.min(0.6, panY.current - dy * 0.0016),
+        Math.min(0.6, panX.current - dx * 0.0016),
       );
       panY.current = Math.max(
         -0.6,
-        Math.min(0.6, panY.current + dy * 0.0016),
+        Math.min(0.6, panY.current - dy * 0.0016),
       );
     };
     const onUp = () => {
@@ -250,7 +268,8 @@ export default function CameraRig() {
       if (
         settled.current &&
         activeSection === lastSection.current &&
-        !boardChanged
+        !boardChanged &&
+        !dragActive.current // drag berjalan → jangan skip (pan harus masuk)
       )
         return;
       if (activeSection !== lastSection.current) {
@@ -258,6 +277,11 @@ export default function CameraRig() {
         settled.current = false;
       }
       if (boardChanged) settled.current = false;
+      // Keluar inspeksi → pan drag di-reset (jalur reduced-motion)
+      if (!boardInspect) {
+        panX.current = 0;
+        panY.current = 0;
+      }
       const shot = SHOT_BY_ID[activeSection] ?? SHOTS[0];
       _sampledPos[0] = shot.position[0];
       _sampledPos[1] = shot.position[1];
@@ -282,6 +306,14 @@ export default function CameraRig() {
         _sampledTgt[0] = T[0];
         _sampledTgt[1] = T[1];
         _sampledTgt[2] = T[2];
+        // Pan drag user — sama dengan mode normal (drag = input user
+        // eksplisit, tetap diizinkan untuk reduced-motion)
+        _sampledPos[0] += BOARD_TX * panX.current;
+        _sampledPos[2] += BOARD_TZ * panX.current;
+        _sampledPos[1] += panY.current;
+        _sampledTgt[0] += BOARD_TX * panX.current;
+        _sampledTgt[2] += BOARD_TZ * panX.current;
+        _sampledTgt[1] += panY.current;
       }
       lambda = 10;
     } else {

@@ -255,9 +255,11 @@ export default function ScrollProgressController() {
         Math.abs(dx) > Math.abs(dy) * 1.2;
 
       // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,
-      // bukan gesture keluar; tekan flag dan reset.
+      // bukan gesture keluar. BACA SAJA — jangan reset di sini: flag
+      // juga dibaca resolver klik papan SETELAH touchend (click event
+      // menyusul touchend); reset dilakukan pointerdown berikutnya
+      // (CameraRig.onDown).
       if (boardDrag.moved) {
-        boardDrag.moved = false;
         return;
       }
 

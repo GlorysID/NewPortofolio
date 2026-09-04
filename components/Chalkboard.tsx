@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import gsap from "gsap";
 import * as THREE from "three";
@@ -46,12 +46,12 @@ import { boardDrag } from "@/lib/boardDrag";
 const BOARD_HEIGHT = 2.8;
 const BOARD_URL = "/models/chalkboard.glb";
 
-/** Grid kertas 2×2 — koordinat board-local (papan menghadap +z lokal).
-    Kertas 0.62×0.82; kolom ±0.52, baris atas/bawah; z 0.06 = kertas
-    "tersemat" sedikit melayang di depan wajah (bayangan pin nyata). */
+/** Grid kertas 2×2 — koordinat board-local TER-FIT (papan menghadap
+    +z lokal). Kertas 0.62×0.82; kolom ±0.52; baris 2.18/1.26 (align
+    vertikal terhadap wajah, terverifikasi); z dihitung dari bbox
+    ter-fit (faceZ + float kecil) — bukan konstanta. */
 const PAPER_W = 0.62;
 const PAPER_H = 0.82;
-const PAPER_Z = 0.06;
 const COLS = [-0.52, 0.52];
 const ROWS = [2.18, 1.26];
 /** Rotasi z (°) & jitter posisi per kertas — tetap per index (SSR-safe). */
@@ -65,7 +65,23 @@ const PAPER_JITTER: Array<[number, number]> = [
 /** Kemiringan rotation.x per kertas (rad) — menangkap cahaya beda. */
 const PAPER_TILT_X = [-0.05, 0.06, 0.045, -0.06];
 
-function BoardModel() {
+/** Bounding box papan ter-fit — dilaporkan BoardModel setelah auto-fit
+    (dalam ruang group luar: x/z ter-center, bottom y=0, tinggi 2.8).
+    Dipakai untuk menempelkan kertas & proxy ke WAJAH papan sesungguhnya
+    — bug lama: kertas di z hardcode 0.06 padahal wajah ter-fit ada di
+    z ≈ +0.97 (D/2) → kertas terkubur di dalam mesh papan, tak terlihat. */
+interface FittedBoard {
+  /** Wajah depan papan = max z ter-fit (kertas melayang di depannya) */
+  faceZ: number;
+  /** Lebar papan ter-fit (informasi — grid tetap ±0.52) */
+  width: number;
+}
+
+function BoardModel({
+  onFitted,
+}: {
+  onFitted?: (board: FittedBoard) => void;
+}) {
   const { scene } = useGLTF(BOARD_URL);
   const group = useRef<THREE.Group>(null);
 
@@ -115,7 +131,16 @@ function BoardModel() {
     const cx = ((localMin.x + localMax.x) / 2) * scale;
     const cz = ((localMin.z + localMax.z) / 2) * scale;
     g.position.set(-cx, -localMin.y * scale, -cz);
-  }, []);
+
+    // Lapor bbox ter-fit — wajah depan papan = max z (setelah centering
+    // = setengah kedalaman ter-fit). Kertas & proxy dihitung dari angka
+    // ini (bukan z hardcode) → selalu tepat di depan wajah, apapun
+    // proporsi glb. Dipanggil sekali per mount (setBoard stabil).
+    onFitted?.({
+      faceZ: (localMax.z - (localMin.z + localMax.z) / 2) * scale,
+      width: (localMax.x - localMin.x) * scale,
+    });
+  }, [onFitted]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
   useEffect(() => {
@@ -197,7 +222,7 @@ function drawPaperTexture(title: string, year: string): HTMLCanvasElement {
 /** Satu kertas proyek — mesh + tekstur canvas + hover. KLIK tidak di
     sini: resolver di depannya (BoardClickProxy) yang memutuskan via
     e.intersections — kertas hanya perlu userData.projectId. */
-function QuestPaper({ index }: { index: number }) {
+function QuestPaper({ index, z }: { index: number; z: number }) {
   const project = BOARD_PROJECTS[index];
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -262,7 +287,7 @@ function QuestPaper({ index }: { index: number }) {
   return (
     <mesh
       ref={meshRef}
-      position={[col + jx, row + jy, PAPER_Z]}
+      position={[col + jx, row + jy, z]}
       rotation={[PAPER_TILT_X[index], 0, (PAPER_ROT_Z[index] * Math.PI) / 180]}
       castShadow={false}
       receiveShadow
@@ -284,10 +309,10 @@ function QuestPaper({ index }: { index: number }) {
       klik area papan kosong → keluar inspeksi (kembali ke pan normal).
     Alur lengkap: open → inspeksi → quest (klik kertas) → inspeksi
     (Tutup/ESC) → pan normal (klik area kosong papan). */
-function BoardClickProxy() {
+function BoardClickProxy({ z }: { z: number }) {
   return (
     <mesh
-      position={[0, 1.72, 0.35]}
+      position={[0, 1.72, z]}
       rotation={[0, 0, 0]}
       onPointerOver={() => {
         const { boardInspect } = useScrollStore.getState();
@@ -336,6 +361,14 @@ export default function Chalkboard() {
   const activeProjectId = useScrollStore((s) => s.activeProjectId);
   const showAffordance = boardOpen && !boardInspect && !activeProjectId;
 
+  // Bbox papan ter-fit — null selama model belum termuat/ter-fit.
+  const [board, setBoard] = useState<FittedBoard | null>(null);
+  // Kertas melayang 3cm di depan wajah ter-fit; proxy 14cm di depan
+  // wajah (di depan kertas juga — resolver membaca intersections di
+  // belakangnya). Semua relatif ke wajah ter-fit, bukan z hardcode.
+  const paperZ = board ? board.faceZ + 0.03 : 0;
+  const proxyZ = board ? board.faceZ + 0.14 : 0;
+
   return (
     <group>
       {/* Papan — auto-fit tinggi 2.8 m; penempatan & rotasi hadap di
@@ -343,16 +376,17 @@ export default function Chalkboard() {
           papan di spoke kanan yang dimundurkan ke z=0. */}
       <group position={[12.8, 0, 0.2]} rotation={[0, -1.1, 0]}>
         <Suspense fallback={null}>
-          <BoardModel />
+          <BoardModel onFitted={setBoard} />
         </Suspense>
 
-        {/* Kertas quest — grid 2×2 di wajah papan (board-local) */}
-        {BOARD_PROJECTS.map((_, i) => (
-          <QuestPaper key={i} index={i} />
-        ))}
+        {/* Kertas quest — grid 2×2 tepat di wajah papan ter-fit */}
+        {board &&
+          BOARD_PROJECTS.map((_, i) => (
+            <QuestPaper key={i} index={i} z={paperZ} />
+          ))}
 
-        {/* Resolver klik — bidang transparan di depan segalanya */}
-        <BoardClickProxy />
+        {/* Resolver klik — bidang transparan di depan wajah ter-fit */}
+        {board && <BoardClickProxy z={proxyZ} />}
 
         {/* Affordance "lihat dekat" — label layar kecil di atas papan,
             hanya saat papan menghadap kita & belum inspeksi. Non-transform
