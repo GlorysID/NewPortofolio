@@ -46,41 +46,55 @@ import { boardDrag } from "@/lib/boardDrag";
 const BOARD_HEIGHT = 2.8;
 const BOARD_URL = "/models/chalkboard.glb";
 
-/** Grid kertas 2×2 — koordinat board-local TER-FIT (papan menghadap
-    +z lokal). Kertas 0.42×0.56 (diperkecil ~35% dari 0.62×0.82 —
-    ukuran lama terbaca sebagai kartu raksasa lepas, bukan catatan
-    tersemat); kolom ±0.42, baris 1.85/1.15 — grid terpusat di area
-    tulis dengan margin dari bingkai; clamp defensif terhadap lebar/
-    tinggi ter-fit di runtime. z per slot = hasil RAYCAST ke permukaan
-    nyata (bukan bbox) + epsilon 0.01 → menempel di permukaan apa adanya. */
+/** Kertas quest — ukuran dalam ruang ter-fit. Posisi/rotasi BUKAN
+    konstanta: area papan dianalisis dulu (scan ray per sampel), lalu
+    4 kertas ditempatkan acak-ter-seed DI DALAM region writable, dengan
+    z masing-masing diraycast ke permukaan nyata (lihat BoardModel). */
 const PAPER_W = 0.42;
 const PAPER_H = 0.56;
-const COLS = [-0.42, 0.42];
-const ROWS = [1.85, 1.15];
-/** Rotasi z (°) & jitter posisi per kertas — tetap per index (SSR-safe). */
-const PAPER_ROT_Z = [-3.5, 2.5, -2, 4];
-const PAPER_JITTER: Array<[number, number]> = [
-  [0.02, 0.03],
-  [-0.03, -0.02],
-  [0.03, -0.03],
-  [-0.02, 0.02],
-];
-/** Kemiringan rotation.x per kertas (rad) — menangkap cahaya beda. */
-const PAPER_TILT_X = [-0.05, 0.06, 0.045, -0.06];
+/** Jarak minimum antar-pusat kertas (rejection sampling) */
+const MIN_PAPER_DIST = 0.5;
 
-/** Ukuran papan ter-fit + z permukaan per slot — dilaporkan BoardModel
-    setelah auto-fit (ruang group luar: x/z ter-center, bottom y=0,
-    tinggi 2.8). slotZ diukur via RAYCAST ke mesh model: permukaan
-    terdepan pada titik slot itu (wajah tulis/bingkai), BUKAN bbox —
-    bug sebelumnya: faceZ dari bbox maxZ mencakup bingkai/kaki yang
-    menonjol → kertas melayang di udara depan papan. */
+/** Hasil analisis papan ter-fit — dilaporkan BoardModel sekali di
+    mount (ruang group luar: x/z ter-center, bottom y=0, tinggi 2.8).
+    region = area papan yang BENAR-BENAR bisa memuat kertas, diukur via
+    scan ray (wajah menghadap penonton; kaki/badan/bingkai dalam
+    tereliminasi); papers = posisi final ter-seed + z permukaan. */
+interface WritableRegion {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  /** Median z permukaan region — fallback kedalaman */
+  z: number;
+}
+interface PaperPlacement {
+  x: number;
+  y: number;
+  z: number;
+  /** Rotasi z acak (rad, ±6°) */
+  rotZ: number;
+  /** Kemiringan x (rad, ±0.05) — penangkap cahaya */
+  tiltX: number;
+}
 interface FittedBoard {
-  /** Fallback: max z ter-fit (bbox) — dipakai bila ray slot meleset */
-  faceZ: number;
-  /** z permukaan nyata per slot kertas (urutan BOARD_PROJECTS) */
-  slotZ: [number, number, number, number];
-  /** Lebar papan ter-fit (untuk clamp grid & lebar resolver) */
+  region: WritableRegion;
   width: number;
+  papers: PaperPlacement[];
+}
+
+/** mulberry32 — PRNG deterministik untuk penempatan kertas. Seed tetap
+    → hasil "acak" identik di setiap load/HMR/re-render (tanpa
+    Math.random — SSR-safe & stabil seperti konstanta). */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function BoardModel({
@@ -138,58 +152,181 @@ function BoardModel({
     const cz = ((localMin.z + localMax.z) / 2) * scale;
     g.position.set(-cx, -localMin.y * scale, -cz);
 
-    // faceZ (fallback) = max z ter-fit = D/2 setelah centering
+    // faceZ (fallback kasar) = max z ter-fit = D/2 setelah centering
     const faceZ = (localMax.z - (localMin.z + localMax.z) / 2) * scale;
     const fittedWidth = (localMax.x - localMin.x) * scale;
 
     // -----------------------------------------------------------------
-    // RAYCAST-TO-SURFACE — z permukaan NYATA per slot kertas. Bbox maxZ
-    // mencakup bagian yang paling menonjol (bingkai/kaki); wajah tulis
-    // biasanya RESES di dalamnya → kertas di faceZ melayang. Solusi:
-    // lempar ray dari depan (z +10) ke arah −z tepat di titik slot,
-    // ambil hit terdekat = permukaan pada spot itu, z kertas = hit + 1cm.
-    // Sekali saat mount, deterministik, bebas biaya runtime.
+    // SURFACE SCAN — peta area papan yang BENAR-BENAR bisa memuat
+    // kertas. Grid sampel ray (step 0.12): x melintasi lebar ter-fit,
+    // y 0.25–2.7. Sampel WRITABLE bila: ada hit, normal wajah menghadap
+    // penonton (z > 0.5 di ruang parent), dan bukan geometri dalam
+    // (hit.z > faceZ − 0.4). Bug "nembus kebawah" berasal dari slot
+    // TETAP yang mengenai kaki/badan/bingkai bawah — scan mengukur
+    // area writable-nya secara langsung, bukan menebak.
     // -----------------------------------------------------------------
     g.updateWorldMatrix(true, true); // matriks g + parent + anak: current
     const parent = g.parent;
-    const raycaster = new THREE.Raycaster();
-    raycaster.far = 40;
-    const rayOrigin = new THREE.Vector3();
-    const rayEnd = new THREE.Vector3();
-    const rayDir = new THREE.Vector3();
-    const hitLocal = new THREE.Vector3();
-    const slotZ: [number, number, number, number] = [faceZ, faceZ, faceZ, faceZ];
-    for (let i = 0; i < 4; i++) {
-      const col = COLS[i % 2];
-      const row = ROWS[Math.floor(i / 2)];
-      if (!parent) break;
-      // Origin & arah ray di ruang DUNIA, dari koordinat slot di ruang
-      // group luar (parent g = tempat kertas diparent-kan).
-      rayOrigin.set(col, row, 10);
-      parent.localToWorld(rayOrigin);
-      rayEnd.set(col, row, 0);
-      parent.localToWorld(rayEnd);
-      rayDir.subVectors(rayEnd, rayOrigin).normalize();
-      raycaster.set(rayOrigin, rayDir);
-      const hits = raycaster.intersectObject(scene, true);
-      if (hits.length > 0) {
-        // Hit terdekat = permukaan terdepan pada titik slot; konversi
-        // balik ke ruang group luar → z untuk penempatan kertas.
-        hitLocal.copy(hits[0].point);
-        parent.worldToLocal(hitLocal);
-        slotZ[i] = hitLocal.z + 0.01; // epsilon anti z-fight
+    let region: WritableRegion = {
+      minX: -fittedWidth / 2 + 0.3,
+      maxX: fittedWidth / 2 - 0.3,
+      minY: 1.0,
+      maxY: 2.5,
+      z: faceZ,
+    };
+    let medianZ = faceZ;
+    if (parent) {
+      const raycaster = new THREE.Raycaster();
+      raycaster.far = 40;
+      const rayOrigin = new THREE.Vector3();
+      const rayEnd = new THREE.Vector3();
+      const rayDir = new THREE.Vector3();
+      const hitLocal = new THREE.Vector3();
+      const nrmWorld = new THREE.Vector3();
+      const nrmParent = new THREE.Vector3();
+      const invParent = new THREE.Matrix4()
+        .copy(parent.matrixWorld)
+        .invert();
+      const meshNormal = new THREE.Matrix3();
+
+      const samples: Array<{ x: number; y: number; z: number }> = [];
+      const step = 0.12;
+      for (let sx = -fittedWidth / 2; sx <= fittedWidth / 2; sx += step) {
+        for (let sy = 0.25; sy <= 2.7; sy += step) {
+          rayOrigin.set(sx, sy, 10);
+          parent.localToWorld(rayOrigin);
+          rayEnd.set(sx, sy, 0);
+          parent.localToWorld(rayEnd);
+          rayDir.subVectors(rayEnd, rayOrigin).normalize();
+          raycaster.set(rayOrigin, rayDir);
+          const hit = raycaster.intersectObject(scene, true)[0];
+          if (!hit || !hit.face) continue;
+          // Normal wajah hit: lokal mesh → dunia (normal matrix mesh),
+          // lalu dunia → ruang parent (transformDirection invers parent)
+          // — ruang tempat kertas diparent-kan; wajah tulis menghadap
+          // +z parent (arah penonton).
+          meshNormal.getNormalMatrix(hit.object.matrixWorld);
+          nrmWorld.copy(hit.face.normal).applyMatrix3(meshNormal).normalize();
+          nrmParent.copy(nrmWorld).transformDirection(invParent);
+          hitLocal.copy(hit.point);
+          parent.worldToLocal(hitLocal);
+          if (nrmParent.z > 0.5 && hitLocal.z > faceZ - 0.4) {
+            samples.push({ x: sx, y: sy, z: hitLocal.z });
+          }
+        }
       }
-      // Meleset → fallback faceZ (sudah terisi di awal)
+
+      if (samples.length > 0) {
+        const xs = samples.map((s) => s.x);
+        const ys = samples.map((s) => s.y);
+        const zs = samples.map((s) => s.z).sort((a, b) => a - b);
+        medianZ = zs[Math.floor(zs.length / 2)];
+        region = {
+          minX: Math.min(...xs),
+          maxX: Math.max(...xs),
+          minY: Math.min(...ys),
+          maxY: Math.max(...ys),
+          z: medianZ,
+        };
+      }
     }
 
-    onFitted?.({ faceZ, slotZ, width: fittedWidth });
-    // Diagnostik ukur (dev saja): bukti permukaan slot ≠ bbox maxZ —
-    // bila semua slotZ < faceZ, wajah tulis memang reses di dalam bbox.
+    // -----------------------------------------------------------------
+    // PLACEMENT — 4 kertas acak-ter-seed DI DALAM region writable.
+    // Rejection sampling: jarak antar-pusat ≥ MIN_PAPER_DIST; ≤40 coba;
+    // gagal → fallback even-grid 2×2 di dalam region. z final kertas:
+    // raycast TEPAT di titik terpilih + 1cm (fallback region.z / median).
+    // Seed tetap 1337 → deterministik lintas load/HMR/re-render; tekstur
+    // kertas (memoized per index) tetap stabil menghadap pasangan-nya.
+    // -----------------------------------------------------------------
+    const papers: PaperPlacement[] = [];
+    {
+      const rng = mulberry32(1337);
+      const loX = region.minX + PAPER_W / 2 + 0.05;
+      const hiX = region.maxX - PAPER_W / 2 - 0.05;
+      const loY = region.minY + PAPER_H / 2 + 0.04;
+      const hiY = region.maxY - PAPER_H / 2 - 0.04;
+      const raycaster = new THREE.Raycaster();
+      raycaster.far = 40;
+      const rayOrigin = new THREE.Vector3();
+      const rayEnd = new THREE.Vector3();
+      const rayDir = new THREE.Vector3();
+      const hitLocal = new THREE.Vector3();
+      const castZ = (x: number, y: number): number => {
+        if (!parent) return medianZ;
+        rayOrigin.set(x, y, 10);
+        parent.localToWorld(rayOrigin);
+        rayEnd.set(x, y, 0);
+        parent.localToWorld(rayEnd);
+        rayDir.subVectors(rayEnd, rayOrigin).normalize();
+        raycaster.set(rayOrigin, rayDir);
+        const hit = raycaster.intersectObject(scene, true)[0];
+        if (hit) {
+          hitLocal.copy(hit.point);
+          parent.worldToLocal(hitLocal);
+          return hitLocal.z + 0.01; // epsilon anti z-fight
+        }
+        return medianZ;
+      };
+      const wideEnough = hiX - loX > 0.1;
+      const tallEnough = hiY - loY > 0.1;
+      for (let i = 0; i < 4; i++) {
+        let px = 0;
+        let py = 0;
+        let placed = false;
+        if (wideEnough && tallEnough) {
+          for (let attempt = 0; attempt < 40; attempt++) {
+            const cx = loX + rng() * (hiX - loX);
+            const cy = loY + rng() * (hiY - loY);
+            if (
+              papers.every(
+                (p) => Math.hypot(cx - p.x, cy - p.y) >= MIN_PAPER_DIST,
+              )
+            ) {
+              px = cx;
+              py = cy;
+              placed = true;
+              break;
+            }
+          }
+        }
+        if (!placed) {
+          // Fallback even-grid 2×2 di dalam region (deterministik)
+          const col = i % 2;
+          const row = Math.floor(i / 2);
+          px = wideEnough
+            ? loX + col * (hiX - loX)
+            : (region.minX + region.maxX) / 2;
+          py = tallEnough
+            ? loY + row * (hiY - loY)
+            : (region.minY + region.maxY) / 2;
+        }
+        papers.push({
+          x: px,
+          y: py,
+          z: castZ(px, py),
+          rotZ: (rng() * 12 - 6) * (Math.PI / 180), // ±6°
+          tiltX: rng() * 0.1 - 0.05, // ±0.05 rad
+        });
+      }
+    }
+
+    onFitted?.({ region, width: fittedWidth, papers });
+    // Diagnostik ukur (dev saja): bukti region writable ≠ bbox/area
+    // penuh — bila minY region jauh di atas 0.25, area kaki/bawah
+    // memang tereliminasi dari kandidat kertas.
     if (process.env.NODE_ENV !== "production") {
       console.debug(
-        "[Chalkboard] faceZ(bbox) =", faceZ.toFixed(3),
-        "| slotZ(ray) =", slotZ.map((z) => z.toFixed(3)).join(", "),
+        "[Chalkboard] region =",
+        `x[${region.minX.toFixed(2)}, ${region.maxX.toFixed(2)}]`,
+        `y[${region.minY.toFixed(2)}, ${region.maxY.toFixed(2)}]`,
+        "z(median) =", region.z.toFixed(3),
+        "| faceZ(bbox) =", faceZ.toFixed(3),
         "| width =", fittedWidth.toFixed(3),
+        "| papers =",
+        papers.map(
+          (p) => `(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, z ${p.z.toFixed(2)})`,
+        ).join(" "),
       );
     }
     // scene termasuk deps: glb baru (identitas scene beda) harus
@@ -273,21 +410,25 @@ function drawPaperTexture(title: string, year: string): HTMLCanvasElement {
   return canvas;
 }
 
-/** Satu kertas proyek — mesh + tekstur canvas + hover. Posisi x/y/z
-    sudah dihitung & di-clamp di Chalkboard (grid + raycast slot z).
-    KLIK tidak di sini: resolver di depannya (BoardClickProxy) yang
-    memutuskan via e.intersections — kertas hanya perlu
-    userData.projectId. */
+/** Satu kertas proyek — mesh + tekstur canvas + hover. Posisi, rotasi,
+    dan z permukaan sudah ditentukan analisis papan (region + seeded
+    placement + raycast). KLIK tidak di sini: resolver di depannya
+    (BoardClickProxy) yang memutuskan via e.intersections — kertas
+    hanya perlu userData.projectId. */
 function QuestPaper({
   index,
   x,
   y,
   z,
+  rotZ,
+  tiltX,
 }: {
   index: number;
   x: number;
   y: number;
   z: number;
+  rotZ: number;
+  tiltX: number;
 }) {
   const project = BOARD_PROJECTS[index];
   const meshRef = useRef<THREE.Mesh>(null);
@@ -305,8 +446,6 @@ function QuestPaper({
   }, [project.title, project.year]);
 
   useEffect(() => () => texture.dispose(), [texture]);
-
-  const [jx, jy] = PAPER_JITTER[index];
 
   const onOver = () => {
     const { boardInspect } = useScrollStore.getState();
@@ -351,8 +490,8 @@ function QuestPaper({
   return (
     <mesh
       ref={meshRef}
-      position={[x + jx, y + jy, z]}
-      rotation={[PAPER_TILT_X[index], 0, (PAPER_ROT_Z[index] * Math.PI) / 180]}
+      position={[x, y, z]}
+      rotation={[tiltX, 0, rotZ]}
       castShadow={false}
       receiveShadow
       userData={{ projectId: project.id }}
@@ -378,14 +517,18 @@ function BoardClickProxy({
   z,
   w,
   h,
+  x,
+  y,
 }: {
   z: number;
   w: number;
   h: number;
+  x: number;
+  y: number;
 }) {
   return (
     <mesh
-      position={[0, 1.5, z]}
+      position={[x, y, z]}
       rotation={[0, 0, 0]}
       onPointerOver={() => {
         const { boardInspect } = useScrollStore.getState();
@@ -437,23 +580,33 @@ export default function Chalkboard() {
   // Bbox papan ter-fit — null selama model belum termuat/ter-fit.
   const [board, setBoard] = useState<FittedBoard | null>(null);
 
-  // Grid slot final — x/y di-clamp defensif terhadap dimensi ter-fit
-  // (grid wajib tetap di papan), z dari RAYCAST permukaan per slot.
-  const halfW = board ? board.width / 2 : 0;
-  const maxCol = Math.max(0.2, halfW - PAPER_W / 2 - 0.08);
-  const minRow = PAPER_H / 2 + 0.2;
-  const maxRow = BOARD_HEIGHT - PAPER_H / 2 - 0.2;
-  const clamp = (v: number, lo: number, hi: number) =>
-    Math.max(lo, Math.min(hi, v));
-  const slots = BOARD_PROJECTS.map((_, i) => ({
-    x: clamp(COLS[i % 2], -maxCol, maxCol),
-    y: clamp(ROWS[Math.floor(i / 2)], minRow, maxRow),
-    z: board ? board.slotZ[i] : 0,
-  }));
-  // Resolver: di depan kertas terjauh + 8cm, memeluk papan (lebar
-  // di-clamp ke 90% lebar ter-fit, tinggi 2.6 dari total 2.8).
-  const proxyZ = board ? Math.max(...board.slotZ) + 0.08 : 0;
-  const proxyW = board ? Math.min(2.2, Math.max(1.2, board.width * 0.9)) : 2.2;
+  // Resolver: tepat di depan kertas terjauh (max z + 8cm), memeluk
+  // region writable — pusat & ukuran mengikuti region (clamped ke
+  // lebar papan × 0.9 dan tinggi 2.6).
+  const proxyZ = board
+    ? Math.max(...board.papers.map((p) => p.z)) + 0.08
+    : 0;
+  const proxyW = board
+    ? Math.min(
+        board.width * 0.9,
+        (board.region.maxX - board.region.minX) + 0.6,
+      )
+    : 2.2;
+  const proxyH = board
+    ? Math.min(2.6, (board.region.maxY - board.region.minY) + 0.5)
+    : 2.6;
+  const proxyX = board
+    ? (board.region.minX + board.region.maxX) / 2
+    : 0;
+  const proxyY = board
+    ? (board.region.minY + board.region.maxY) / 2
+    : 1.5;
+  // Label "lihat dekat": di atas region writable (bukan di atas bbox —
+  // region bisa lebih rendah dari papan penuh).
+  const labelY = board
+    ? Math.min(board.region.maxY + 0.25, 3.15)
+    : 3.15;
+  const labelX = proxyX;
 
   return (
     <group>
@@ -465,29 +618,31 @@ export default function Chalkboard() {
           <BoardModel onFitted={setBoard} />
         </Suspense>
 
-        {/* Kertas quest — 2×2 di permukaan nyata papan (raycast per
-            slot; x/y di-clamp ke dimensi ter-fit) */}
+        {/* Kertas quest — acak-ter-seed di region writable, z dari
+            raycast di spot final masing-masing */}
         {board &&
-          BOARD_PROJECTS.map((_, i) => (
+          board.papers.map((paper, i) => (
             <QuestPaper
               key={i}
               index={i}
-              x={slots[i].x}
-              y={slots[i].y}
-              z={slots[i].z}
+              x={paper.x}
+              y={paper.y}
+              z={paper.z}
+              rotZ={paper.rotZ}
+              tiltX={paper.tiltX}
             />
           ))}
 
-        {/* Resolver klik — bidang transparan di depan kertas terjauh */}
+        {/* Resolver klik — bidang transparan mengikuti region */}
         {board && (
-          <BoardClickProxy z={proxyZ} w={proxyW} h={2.6} />
+          <BoardClickProxy z={proxyZ} w={proxyW} h={proxyH} x={proxyX} y={proxyY} />
         )}
 
-        {/* Affordance "lihat dekat" — label layar kecil di atas papan,
-            hanya saat papan menghadap kita & belum inspeksi. Non-transform
-            (screen-space), pointer-events-none — murni petunjuk. */}
+        {/* Affordance "lihat dekat" — label layar kecil di atas region
+            writable papan, hanya saat papan menghadap kita & belum
+            inspeksi. Non-transform (screen-space), pointer-events-none. */}
         {showAffordance && (
-          <Html position={[0, 3.15, 0]} center zIndexRange={[10, 0]}>
+          <Html position={[labelX, labelY, 0]} center zIndexRange={[10, 0]}>
             <div
               aria-hidden
               className="pointer-events-none select-none whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.28em] text-white/60"
