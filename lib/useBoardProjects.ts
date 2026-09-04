@@ -32,6 +32,9 @@ export interface BoardProject {
   /** MDX terkompilasi (build time) — siap di-spread ke MDXRemote.
       Ada hanya bila file .mdx punya body; body kini OPSIONAL. */
   compiled?: ComponentProps<typeof MDXRemote>;
+  /** Opsional — "left"/"right": kertas dipatok di sisi kiri/kanan
+      papan (half-region sampling); kosong = acak full-region */
+  position?: string;
 }
 
 /** Batas kertas di papan — sisanya diabaikan (urut filename). */

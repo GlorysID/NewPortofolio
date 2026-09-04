@@ -39,6 +39,7 @@ Buka file-nya dengan text editor apa pun (Notepad juga bisa):
 | `summary` | Deskripsi 2-3 kalimat | Lihat template |
 | `link` | Link project (Vercel/demo) | `"https://..."` |
 | `link-github` | Link repo (opsional) | `"https://github.com/..."` |
+| `position` | Sisi kertas (opsional): `"left"` atau `"right"` — kosong = acak | `"right"` |
 
 ### Langkah 3 — Foto cover (opsional)
 
@@ -46,7 +47,18 @@ Buka file-nya dengan text editor apa pun (Notepad juga bisa):
 2. Tulis nama filenya di `cover:` (persis sama, termasuk .png/.jpg)
 3. Foto besar? Tidak masalah — otomatis dikompres saat build
 
-### Langkah 4 — Video (opsional, pilih salah satu)
+### Langkah 4 — Posisi kertas (opsional)
+
+Mau kertasnya selalu di sisi tertentu papan?
+
+```
+position: "left"    # sisi kiri
+position: "right"   # sisi kanan
+```
+
+Kosongkan/hapus barisnya = kertas dipasang acak di seluruh area papan.
+
+### Langkah 5 — Video (opsional, pilih salah satu)
 
 **Cara A — YouTube (paling ringan):**
 ```
@@ -58,7 +70,7 @@ video: "https://youtu.be/xxxxxxx"
 2. Tulis nama filenya di `video:`
 3. Idealnya ≤ 8 MB — kalau lebih besar, pakai YouTube saja
 
-### Langkah 5 — Push
+### Langkah 6 — Push
 
 ```
 git add .

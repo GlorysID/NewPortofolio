@@ -132,9 +132,14 @@ function cancelIdle(handle: number): void {
 function BoardModel({
   onFitted,
   paperCount,
+  paperSides,
 }: {
   onFitted?: (board: FittedBoard) => void;
   paperCount: number;
+  /** Petunjuk sisi per kertas ("left"/"right"/undefined) — paralel
+      dengan urutan kertas; dipakai rejection sampling & fallback grid
+      untuk membatasi rentang x ke setengah region. */
+  paperSides: Array<string | undefined>;
 }) {
   const { scene } = useGLTF(BOARD_URL);
   const group = useRef<THREE.Group>(null);
@@ -338,6 +343,11 @@ function BoardModel({
       const fbRows = Math.ceil(paperCount / fbCols);
 
       for (let i = 0; i < paperCount; i++) {
+        // Petunjuk sisi: "left"/"right" → rentang x kertas dibatasi ke
+        // setengah region (midX = tengah). Rentang y tetap penuh.
+        const side = paperSides[i];
+        const sLoX = side === "left" ? loX : side === "right" ? (loX + hiX) / 2 : loX;
+        const sHiX = side === "left" ? (loX + hiX) / 2 : hiX;
         // Posisi: rejection sampling (jarak ≥ minDist), fallback
         // even-grid — sama seperti sebelumnya.
         let px = 0;
@@ -345,7 +355,7 @@ function BoardModel({
         let placed = false;
         if (wideEnough && tallEnough) {
           for (let attempt = 0; attempt < 40; attempt++) {
-            const cx = loX + rng() * (hiX - loX);
+            const cx = sLoX + rng() * (sHiX - sLoX);
             const cy = loY + rng() * (hiY - loY);
             if (
               papers.every(
@@ -362,8 +372,12 @@ function BoardModel({
         if (!placed) {
           const col = i % fbCols;
           const row = Math.floor(i / fbCols);
+          // Fallback juga dihormati sisi: x disebar di rentang sisi,
+          // y tetap sebaran penuh (pola fallback).
+          const fLo = side === "right" ? (loX + hiX) / 2 : loX;
+          const fHi = side === "left" ? (loX + hiX) / 2 : hiX;
           px = wideEnough
-            ? loX + col * ((hiX - loX) / Math.max(1, fbCols - 1))
+            ? fLo + col * ((fHi - fLo) / Math.max(1, fbCols - 1))
             : (region.minX + region.maxX) / 2;
           py = tallEnough
             ? loY + row * ((hiY - loY) / Math.max(1, fbRows - 1))
@@ -374,11 +388,12 @@ function BoardModel({
         const tiltX = rng() * 0.1 - 0.05; // ±0.05 rad
         // Corner-ray attach + re-try: permukaan menonjol > 12cm di atas
         // median → spot terlalu "bergelombang" untuk kertas datar —
-        // geser dengan PRNG (maks 3 re-try), lalu terima apa adanya.
+        // geser dengan PRNG (maks 3 re-try) DI DALAM rentang sisi,
+        // lalu terima apa adanya.
         let pz = frontZ(px, py, rotZ);
         let nudges = 0;
         while (pz - region.z > 0.12 && nudges < 3 && wideEnough && tallEnough) {
-          const cx = loX + rng() * (hiX - loX);
+          const cx = sLoX + rng() * (sHiX - sLoX);
           const cy = loY + rng() * (hiY - loY);
           if (
             papers.every(
@@ -475,9 +490,10 @@ function BoardModel({
       cancelIdle(handle);
       window.removeEventListener("gate:dismissed", onGateDismissed);
     };
-    // paperCount dalam deps: fetch projects menaikkan count → effect
-    // re-run → scanDoneRef short-circuit → placement ulang cepat.
-  }, [onFitted, scene, paperCount]);
+    // paperCount + paperSides dalam deps: fetch projects datang belakangan
+    // → effect re-run → scanDoneRef short-circuit → placement ulang cepat
+    // (tanpa ray ulang grid penuh) dengan petunjuk sisi terbaru.
+  }, [onFitted, scene, paperCount, paperSides]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
   // Sambil memberi tahu StaticShadows bahwa papan sudah ADA di scene —
@@ -825,6 +841,11 @@ export default function Chalkboard() {
   // Belum termuat / kosong → 0 kertas (papan polos, tanpa crash).
   const { projects } = useBoardProjects();
   const paperCount = Math.min(projects.length, MAX_PAPERS);
+  // Petunjuk sisi per kertas ("left"/"right"/undefined) — paralel
+  // dengan urutan kertas (= urut filename), di-clamp ke paperCount.
+  const paperSides = projects
+    .slice(0, paperCount)
+    .map((p) => p.position);
 
   // Bbox papan ter-fit — null selama model belum termuat/ter-fit.
   const [board, setBoard] = useState<FittedBoard | null>(null);
@@ -867,7 +888,11 @@ export default function Chalkboard() {
           papan di spoke kanan yang dimundurkan ke z=0. */}
       <group position={[12.8, 0, 0.2]} rotation={[0, -1.1, 0]}>
         <Suspense fallback={null}>
-          <BoardModel onFitted={setBoard} paperCount={paperCount} />
+          <BoardModel
+            onFitted={setBoard}
+            paperCount={paperCount}
+            paperSides={paperSides}
+          />
         </Suspense>
 
         {/* Kertas quest — acak-ter-seed di region writable, z dari

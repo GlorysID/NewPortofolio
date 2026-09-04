@@ -53,6 +53,9 @@ export interface RawBoardProject {
   cover?: string;
   /** URL YouTube ATAU URL file video lokal */
   video?: string;
+  /** Opsional — "left"/"right": kertas dipatok di sisi kiri/kanan
+      papan (half-region sampling); kosong = acak full-region */
+  position?: string;
 }
 
 /** Indeks media: basename → URL publik — dipindah ke lib/media-index.ts
@@ -108,6 +111,14 @@ export function getBoardProjects(): RawBoardProject[] {
         typeof data["link-github"] === "string" && data["link-github"].length > 0
           ? (data["link-github"] as string)
           : undefined;
+      // OPSIONAL: posisi kertas di papan — "left"/"right" (case-
+      // insensitive); nilai lain → undefined (perilaku full-region).
+      const positionRaw =
+        typeof data.position === "string" ? data.position.toLowerCase() : "";
+      const position =
+        positionRaw === "left" || positionRaw === "right"
+          ? positionRaw
+          : undefined;
 
       const missing = REQUIRED_FIELDS.filter((field) => {
         const value = { title, year, tags, summary }[field];
@@ -131,6 +142,7 @@ export function getBoardProjects(): RawBoardProject[] {
         body: content.trim(),
         cover: resolveProjectMedia(cover),
         video: resolveProjectMedia(video),
+        position,
       });
     } catch (err) {
       console.warn(`[projects] Gagal parse ${file}:`, err);
