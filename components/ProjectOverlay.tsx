@@ -125,7 +125,7 @@ export default function ProjectOverlay() {
           Quest Board — {project.year}
         </p>
         <div className="mt-2.5 h-[7px] w-[120px] bg-[#e8a33d]" />
-        <h3 className="mt-4 font-display text-[23px] leading-tight text-[#20201f]">
+        <h3 className="mt-4 font-alt text-[21px] font-medium leading-tight tracking-[-0.01em] text-[#20201f]">
           {project.title}
         </h3>
         <p className="mt-2 font-body text-[13px] leading-[1.6] text-[#4c4c49]">
