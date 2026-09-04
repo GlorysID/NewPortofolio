@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { useEffect, useRef } from "react";
 import Avatar from "./Avatar";
@@ -145,17 +145,13 @@ function StudioFloor() {
  * StaticShadows — scene ini STATIS (tanpa animasi): bayangan tidak
  * berubah sepanjang sesi. Pass bayangan (me-render ulang SEMUA model
  * tiap frame — papan sendiri ±1 juta render-vertex) dimatikan dan
- * hanya di-bake sekali-sekali:
- * - mount + +1500ms + +3000ms (spaced, saat loading)
- * - `chalkboard:fitted` — papan glb masuk scene; kalau papan datang
- *   SETELAH +1500ms, bake pertama yang MENGHIITUNG papan harus jalan
- *   di sini (di dalam jendela gate), BUKAN tepat di klik.
+ * hanya di-bake sekali-sekali, SEMUA di dalam jendela loading:
+ * - mount + +1500ms + +3000ms (spaced, jendela gate masih hitam)
+ * - `chalkboard:fitted` — papan glb masuk scene (bake pertama yang
+ *   menghitung papan, tetap di dalam jendela gate, BUKAN di klik)
  * - `chalkboard:papers` (+400ms) — kertas masuk scene.
- * - `gate:dismissed` (+800ms, SETELAH fade 750ms selesai) — re-bake
- *   jaminan. Dulu bake ini sinkron di klik: kalau papan datang telat,
-   varian shader depth-nya + pass 1M-vertex menghantam persis saat
- *   iris-out → klik tersendat. Sekarang semua bake terjadi DI DALAM
- *   jendela loading (scene sudah hangat), klik = komposit murni.
+ * Bake pasca-klik DIHAPUS: SceneWarmup yang membake ulang di frame
+ * ke-2 setelah aset masuk (sceneReady), dan klik kini murni komposit.
  */
 function StaticShadows() {
   const gl = useThree((s) => s.gl);
@@ -171,15 +167,12 @@ function StaticShadows() {
     bakeIn(3000);
     const onFitted = () => bake(); // papan masuk scene (jendela gate)
     const onPapers = () => bakeIn(400); // kertas masuk scene
-    const onDismiss = () => bakeIn(800); // SETELAH fade 750ms tuntas
     window.addEventListener("chalkboard:fitted", onFitted);
     window.addEventListener("chalkboard:papers", onPapers);
-    window.addEventListener("gate:dismissed", onDismiss);
     return () => {
       timers.forEach((t) => window.clearTimeout(t));
       window.removeEventListener("chalkboard:fitted", onFitted);
       window.removeEventListener("chalkboard:papers", onPapers);
-      window.removeEventListener("gate:dismissed", onDismiss);
     };
   }, [gl]);
   return null;
@@ -199,6 +192,46 @@ function StaticShadows() {
  *   diganti "demand".
  * - alpha true: background gradient CSS di belakang canvas.
  */
+/**
+ * SceneWarmup — jembatan assetsLoaded → sceneReady DI DALAM Canvas.
+ * Setelah semua aset termuat: frame 1 memaksa kompilasi SEMUA shader
+ * (gl.compile) + bake bayangan sekali; butuh ≥8 frame ter-render dan
+ * ≥400ms agar GPU benar-benar stabil — baru sceneReady (gerbang
+ * "Klik untuk mulai" muncul). Inilah sumber kebenaran gerbang: klik
+ * tidak mungkin lagi mendarat di jendela warm-up, karena warm-up
+ * SELESAI sebelum tombolnya ada. Safety timeout 8s (anti stuck).
+ */
+function SceneWarmup() {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const assetsLoaded = useScrollStore((s) => s.assetsLoaded);
+  const frames = useRef(0);
+  const startedAt = useRef(0);
+
+  useFrame(() => {
+    if (!assetsLoaded) return;
+    const { sceneReady } = useScrollStore.getState();
+    if (sceneReady) return;
+
+    frames.current += 1;
+    if (frames.current === 1) {
+      startedAt.current = performance.now();
+      // Kompilasi seluruh shader + bake bayangan SEKALI — pekerjaan
+      // berat yang dulu terjadi SAAT KLIK (di balik gerbang sekarang).
+      gl.compile(scene, camera);
+      gl.shadowMap.needsUpdate = true;
+    }
+    if (
+      frames.current >= 8 &&
+      performance.now() - startedAt.current >= 400
+    ) {
+      useScrollStore.getState().setSceneReady(true);
+    }
+  });
+  return null;
+}
+
 export default function Experience() {
   // Papan terbuka (hero) → canvas harus menerima pointer agar klik
   // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
@@ -235,6 +268,7 @@ export default function Experience() {
         <DynamicQuality />
         <AdaptiveDpr pixelated={false} />
         <StaticShadows />
+        <SceneWarmup />
 
         {/* Background void: hitam pekat solid, tanpa gradasi */}
         <color attach="background" args={["#000000"]} />

@@ -7,56 +7,59 @@ import { primeCameraAudio } from "@/hooks/useAudioUnlock";
 import { useScrollStore } from "@/store/useScrollStore";
 
 /**
- * LoadingScreen — gerbang masuk dua fase di atas hitam polos.
+ * LoadingScreen — gerbang masuk dengan progres yang JUJUR, tiga fase:
  *
- * Transisi keluar DIGERAKKAN GSAP (bukan transisi CSS Tailwind):
- * deterministik, inline style, tak terpengaruh kondisi generate class.
- * Klik → GSAP men-fade + scale overlay (iris-out 0.75s) → onComplete
- * baru overlay dibongkar dari DOM. Event `gate:dismissed` (animasi
- * masuk Hero) DITUNDA ±60ms setelah tween mulai — frame pertama fade
- * murni komposit. Dispatch `camera-flash:begin` dari gerbang dihapus
- * (tanpa listener — FlashRegress/ReflectorGate sudah tidak ada).
+ * 1. LOADING  — "Memuat pengalaman… X%" (drei useProgress: unduhan
+ *    + decode aset). Selesai → tandai assetsLoaded di store.
+ * 2. WARMING  — "Menyiapkan panggung…" (kompilasi shader pertama,
+ *    bake bayangan, 8 frame warm-up di dalam Canvas). Selama fase ini
+ *    pekerjaan berat GPU berlangsung DI BALIK gerbang — bukan lagi
+ *    saat klik. Selesai → sceneReady.
+ * 3. ENTER    — "Klik untuk mulai" muncul HANYA setelah sceneReady:
+ *    klik = murni komposit + GSAP iris-out, tanpa pekerjaan berat.
+ *
+ * Transisi keluar digerakkan GSAP (bukan CSS): klik → iris-out 0.75s
+ * → onComplete unmount. `gate:dismissed` disinkronkan ±60ms untuk
+ * animasi masuk Hero.
  */
 
-type GatePhase = "loading" | "enter" | "leaving" | "gone";
+type GatePhase = "loading" | "warming" | "enter" | "leaving" | "gone";
 
 export default function LoadingScreen() {
   const { active, progress } = useProgress();
-  const [phase, setPhase] = useState<GatePhase>(
-    progress >= 100 ? "enter" : "loading",
-  );
+  const sceneReady = useScrollStore((s) => s.sceneReady);
+  const [phase, setPhase] = useState<GatePhase>("loading");
   const gateRef = useRef<HTMLDivElement>(null);
 
-  // LOADING → ENTER begitu useProgress selesai (semua asset termuat).
+  // 1. Aset selesai → tandai + masuk fase warming.
   useEffect(() => {
     if (phase === "loading" && !active && progress >= 100) {
-      setPhase("enter");
+      useScrollStore.getState().setAssetsLoaded(true);
+      setPhase("warming");
     }
   }, [active, progress, phase]);
 
-  /** Masuk: unlock audio DI DALAM gesture, GSAP iris-out DULU di frame
-      yang sama, dispatch non-kritis menyusul setelahnya. */
+  // 2. Scene hangat (shader + bayangan + frame warm-up selesai) → enter.
+  useEffect(() => {
+    if (phase === "warming" && sceneReady) setPhase("enter");
+  }, [sceneReady, phase]);
+
+  /** Masuk: unlock audio DI DALAM gesture, GSAP iris-out overlay. */
   const enterExperience = useCallback(() => {
     setPhase((p) => {
       if (p !== "enter") return p;
       return "leaving";
     });
     primeCameraAudio();
-    // Rendering scene dilanjutkan PERSIS saat fade mulai (gerbang masih
-    // menutupi 100% layar sebelum titik ini → GPU tidak buang-buang
-    // frame di balik overlay hitam).
-    useScrollStore.getState().setGateUp(false);
-    // `camera-flash:begin` dari gerbang DIHAPUS: FlashRegress &
-    // ReflectorGate sudah tidak ada — tidak ada listener tersisa,
-    // murni dispatch mati (leftover). Flash section-change tetap
-    // men-dispatch event-nya sendiri dari CameraFlash.
+    // Sinkron animasi masuk Hero ±60ms setelah tween mulai — frame
+    // pertama fade murni komposit (tidak ada pekerjaan berat lain).
+    window.setTimeout(
+      () => window.dispatchEvent(new Event("gate:dismissed")),
+      60,
+    );
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-    // GSAP menggerakkan fade — mulai di frame berikutnya. Sinkronisasi
-    // Hero entrance DITUNDA ±60ms agar frame pertama tween sepenuhnya
-    // milik komposit (semua consumer gate:dismissed kini murah — bake
-    // bayangan sudah didefer +800ms di StaticShadows).
     const el = gateRef.current;
     if (el) {
       gsap.set(el, { pointerEvents: "none" });
@@ -71,13 +74,9 @@ export default function LoadingScreen() {
     } else {
       setPhase("gone");
     }
-    window.setTimeout(
-      () => window.dispatchEvent(new Event("gate:dismissed")),
-      60,
-    );
   }, []);
 
-  // Scroll lock selama gerbang tampil (loading/enter/leaving).
+  // Scroll lock selama gerbang tampil.
   useEffect(() => {
     if (phase === "gone") return;
     const prev = document.body.style.overflow;
@@ -85,12 +84,6 @@ export default function LoadingScreen() {
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [phase]);
-
-  // Gerbang menutupi layar → tandai scene agar berhenti render
-  // (frameloop "never" di Experience) sampai fade dimulai.
-  useEffect(() => {
-    useScrollStore.getState().setGateUp(phase !== "gone");
   }, [phase]);
 
   // Keyboard: Enter/Space memicu masuk.
@@ -105,7 +98,6 @@ export default function LoadingScreen() {
   if (phase === "gone") return null;
 
   const isEnter = phase === "enter";
-  // Teks "Klik untuk mulai" tetap tampil selama leaving (fade keluar).
   const enterVisible = phase === "enter" || phase === "leaving";
 
   return (
@@ -123,16 +115,27 @@ export default function LoadingScreen() {
         isEnter ? "cursor-pointer select-none" : ""
       }`}
     >
-      {/* Dua lapis teks crossfade (CSS kecil, bukan jalur kritis). */}
+      {/* Tiga lapis teks crossfade per fase (CSS kecil, bukan jalur
+          kritis — transisi kritis ada di GSAP). */}
       <div className="pointer-events-none relative">
         <p
-          aria-hidden={enterVisible}
+          aria-hidden={phase !== "loading"}
           className={`font-body text-sm tabular-nums text-white/85 transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
-            enterVisible ? "-translate-y-1 opacity-0" : "translate-y-0 opacity-100"
+            phase === "loading" ? "opacity-100" : "-translate-y-1 opacity-0"
           }`}
         >
           Memuat pengalaman… {Math.round(progress)}%
         </p>
+        <div
+          aria-hidden={phase !== "warming"}
+          className={`absolute inset-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+            phase === "warming" ? "opacity-100" : "translate-y-1 opacity-0"
+          }`}
+        >
+          <p className="whitespace-nowrap font-body text-base text-white/85">
+            Menyiapkan panggung…
+          </p>
+        </div>
         <div
           aria-hidden={!enterVisible}
           className={`absolute inset-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${

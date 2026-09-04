@@ -14,14 +14,19 @@ interface ScrollState {
   boardInspect: boolean;
   /** Proyek aktif di jendela quest overlay (2D) — null = tertutup */
   activeProjectId: string | null;
-  /** Gerbang loading menutupi layar penuh → scene 3D tak perlu render */
-  gateUp: boolean;
+  /** Semua aset (glb/tekstur) selesai dimuat & di-decode */
+  assetsLoaded: boolean;
+  /** Scene benar-benar hangat: shader terkompilasi, bayangan di-bake,
+      ≥8 frame sudah dirender setelah aset masuk — gerbang hanya BOLEH
+      dibuka setelah flag ini true. Inilah sumber kebenaran gerbang. */
+  sceneReady: boolean;
   setProgress: (progress: number) => void;
   setActiveSection: (section: SectionId) => void;
   setBoardOpen: (open: boolean) => void;
   setBoardInspect: (inspect: boolean) => void;
   setActiveProjectId: (id: string | null) => void;
-  setGateUp: (up: boolean) => void;
+  setAssetsLoaded: (loaded: boolean) => void;
+  setSceneReady: (ready: boolean) => void;
 }
 
 export const useScrollStore = create<ScrollState>((set) => ({
@@ -30,7 +35,8 @@ export const useScrollStore = create<ScrollState>((set) => ({
   boardOpen: false,
   boardInspect: false,
   activeProjectId: null,
-  gateUp: true,
+  assetsLoaded: false,
+  sceneReady: false,
   setProgress: (progress) => set({ progress }),
   setActiveSection: (section) => set({ activeSection: section }),
   // Menutup board me-reset semua turunannya — inspeksi & quest window
@@ -42,5 +48,6 @@ export const useScrollStore = create<ScrollState>((set) => ({
     }),
   setBoardInspect: (inspect) => set({ boardInspect: inspect }),
   setActiveProjectId: (id) => set({ activeProjectId: id }),
-  setGateUp: (up) => set({ gateUp: up }),
+  setAssetsLoaded: (loaded) => set({ assetsLoaded: loaded }),
+  setSceneReady: (ready) => set({ sceneReady: ready }),
 }));
