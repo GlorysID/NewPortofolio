@@ -399,9 +399,9 @@ export function SkillsCard() {
 
 export function ProjectsCard() {
   const education = [
-    { period: "2007 — 2013", name: "SDN Limusnunggal 01", detail: "Sekolah dasar — fondasi literasi & numerasi." },
-    { period: "2013 — 2016", name: "SMP Negeri 03 Cileungsi", detail: "Sekolah menengah pertama — awal rasa penasaran pada komputer." },
-    { period: "2016 — 2019", name: "SMK Bina Mandiri Multimedia", detail: "Sekolah menengah kejuruan — multimedia & fondasi dunia digital." },
+    { period: "2015 — 2021", name: "SDN Limusnunggal 01", detail: "Sekolah dasar — fondasi literasi & numerasi." },
+    { period: "2021 — 2024", name: "SMP Negeri 03 Cileungsi", detail: "Sekolah menengah pertama — awal rasa penasaran pada komputer." },
+    { period: "2024 — 2027", name: "SMK Bina Mandiri Multimedia", detail: "Sekolah menengah kejuruan — multimedia & fondasi dunia digital." },
   ];
 
   return (
@@ -438,7 +438,7 @@ export function ProjectsCard() {
               <span className="font-mono text-[8px] uppercase tracking-[0.22em] text-[#a4a49f]">
                 {String(index + 1).padStart(2, "0")} · {e.period}
               </span>
-              <p className="mt-0.5 font-display text-[15px] font-semibold text-[#20201f]">
+              <p className="mt-0.5 font-body text-[14px] text-[#20201f]">
                 {e.name}
               </p>
               <p className="mt-0.5 font-body text-[11px] leading-[1.45] text-[#5a5a56]">
