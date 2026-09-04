@@ -4,10 +4,11 @@
 # Cukup isi bagian dalam tanda kutip — tidak ada coding sama sekali.
 #
 # CARA PAKAI:
-# 1. Copy file ini, ganti namanya jadi 06-nama-project.mdx
+# 1. Copy file ini, ganti namanya jadi 03-nama-project.mdx
 #    (angka di depan menentukan urutan kertas di papan)
-# 2. Isi semua kolom di bawah
-# 3. Kalau ada foto/video, lihat petunjuk bagian MEDIA di bawah
+# 2. Isi kolom WAJIB (title, year, tags, summary)
+# 3. Kolom OPSIONAL boleh dikosongkan — barisnya dihapus atau tetap
+#    dibiarkan
 # 4. Push ke GitHub → kertas baru otomatis muncul di papan
 # ==============================================================
 
@@ -16,22 +17,31 @@ title: "Nama Project"
 year: "2025"
 tags: ["Web", "AI"]
 summary: "Ceritakan project-mu di sini, 2 sampai 3 kalimat. Kalimat ini yang muncul di jendela quest saat kertas diklik."
+
+# ===== OPSIONAL 1: LINK PROJECT =====
+# Project belum punya live site? Kosongkan/hapus saja — kertas tetap
+# muncul, tombol "Buka Proyek" otomatis tersembunyi.
 link: "https://link-project.com"
 
-# ===== OPSIONAL 1: LINK GITHUB =====
-# Hapus baris ini kalau tidak ada repo GitHub.
+# ===== OPSIONAL 2: LINK GITHUB =====
+# Kalau diisi, tombol "GitHub ↗" muncul di bawah "Buka Proyek".
 link-github: "https://github.com/GlorysID/nama-project"
 
-# ===== OPSIONAL 2: FOTO COVER =====
+# ===== OPSIONAL 3: FOTO COVER =====
+# PENTING: HAPUS tanda # di depan "cover:" agar AKTIF —
+# foto tidak akan muncul kalau barisnya masih berkomentar!
+#
+# Caranya:
 # 1. Taruh fotonya di folder: content/projects/media/
-# 2. Tulis nama filenya persis di bawah ini.
-#    Foto besar otomatis dikompres saat build — tidak perlu resize manual.
-# cover: "nama-foto.png"
+# 2. Hapus # dan tulis nama filenya PERSIS (termasuk besar-kecil huruf):
+cover: "nama-foto.png"
+# Foto besar (5-10 MB)? Biarkan — otomatis dikompres saat build.
 
-# ===== OPSIONAL 3: VIDEO =====
-# Pilih SALAH SATU:
-# a) Link YouTube: tulis link-nya langsung
+# ===== OPSIONAL 4: VIDEO =====
+# Pilih SALAH SATU (hapus # di depannya agar aktif):
+# a) YouTube (paling ringan):
 # video: "https://youtu.be/xxxxxxx"
-# b) File video: taruh di content/projects/media/ lalu tulis namanya
+# b) File sendiri (taruh di content/projects/media/, idealnya <= 8 MB;
+#    poster otomatis pakai cover kalau ada):
 # video: "demo.mp4"
 ---
