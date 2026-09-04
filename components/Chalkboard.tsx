@@ -49,11 +49,16 @@ const BOARD_URL = "/models/chalkboard.glb";
 /** Kertas quest — ukuran dalam ruang ter-fit. Posisi/rotasi BUKAN
     konstanta: area papan dianalisis dulu (scan ray per sampel), lalu
     4 kertas ditempatkan acak-ter-seed DI DALAM region writable, dengan
-    z masing-masing diraycast ke permukaan nyata (lihat BoardModel). */
+    z masing-masing dari RAYCUST SUDUT kertas (lihat BoardModel). */
 const PAPER_W = 0.42;
 const PAPER_H = 0.56;
 /** Jarak minimum antar-pusat kertas (rejection sampling) */
 const MIN_PAPER_DIST = 0.5;
+/** Scan: step grid 0.18 (≈280 ray — resolusi region masih longgar)
+    & chunk 60 ray per idle callback — scan berjalan di BACKGROUND
+    (requestIdleCallback) tanpa memblokir gate/first render. */
+const SCAN_STEP = 0.18;
+const SCAN_CHUNK = 60;
 
 /** Hasil analisis papan ter-fit — dilaporkan BoardModel sekali di
     mount (ruang group luar: x/z ter-center, bottom y=0, tinggi 2.8).
@@ -97,6 +102,22 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+/** requestIdleCallback dengan fallback timeout — scan jalan di luar
+    jalur kritis mount (tidak menunda gate ENTER maupun frame pertama). */
+function scheduleIdle(cb: () => void): number {
+  if (typeof window.requestIdleCallback === "function") {
+    return window.requestIdleCallback(cb, { timeout: 200 });
+  }
+  return window.setTimeout(cb, 50);
+}
+function cancelIdle(handle: number): void {
+  if (typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(handle);
+  } else {
+    window.clearTimeout(handle);
+  }
+}
+
 function BoardModel({
   onFitted,
 }: {
@@ -104,6 +125,8 @@ function BoardModel({
 }) {
   const { scene } = useGLTF(BOARD_URL);
   const group = useRef<THREE.Group>(null);
+  // Hasil fit (faceZ/width) — diisi layout effect, dibaca scan async
+  const fitRef = useRef<{ faceZ: number; width: number } | null>(null);
 
   // Auto-fit (pola Avatar) — dengan satu koreksi penting: Box3.
   // setFromObject mengukur dalam RUANG DUNIA, dan parent group ini
@@ -152,21 +175,63 @@ function BoardModel({
     const cz = ((localMin.z + localMax.z) / 2) * scale;
     g.position.set(-cx, -localMin.y * scale, -cz);
 
-    // faceZ (fallback kasar) = max z ter-fit = D/2 setelah centering
+    // faceZ (fallback kasar) & lebar ter-fit — disimpan untuk scan
     const faceZ = (localMax.z - (localMin.z + localMax.z) / 2) * scale;
     const fittedWidth = (localMax.x - localMin.x) * scale;
+    fitRef.current = { faceZ, width: fittedWidth };
+    // Scan + placement JALAN TERPISAH di idle chunk (useEffect di bawah)
+  }, [scene]);
 
-    // -----------------------------------------------------------------
-    // SURFACE SCAN — peta area papan yang BENAR-BENAR bisa memuat
-    // kertas. Grid sampel ray (step 0.12): x melintasi lebar ter-fit,
-    // y 0.25–2.7. Sampel WRITABLE bila: ada hit, normal wajah menghadap
-    // penonton (z > 0.5 di ruang parent), dan bukan geometri dalam
-    // (hit.z > faceZ − 0.4). Bug "nembus kebawah" berasal dari slot
-    // TETAP yang mengenai kaki/badan/bingkai bawah — scan mengukur
-    // area writable-nya secara langsung, bukan menebak.
-    // -----------------------------------------------------------------
-    g.updateWorldMatrix(true, true); // matriks g + parent + anak: current
+  // -------------------------------------------------------------------
+  // SCAN + PLACEMENT — chunked via requestIdleCallback (fallback
+  // setTimeout 50ms): ±280 ray @60/chunk, bebas stall di jalur mount.
+  // Gate (useProgress) dismiss saat asset termuat seperti biasa — scan
+  // menyusul di background (±100–300ms), kertas pop-in saat siap.
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    const fit = fitRef.current;
+    const g = group.current;
+    if (!fit || !g) return;
     const parent = g.parent;
+    if (!parent) return;
+    const { faceZ, width: fittedWidth } = fit;
+    // Matriks pasti current: dipanggil sekali di sini (scene statik)
+    g.updateWorldMatrix(true, true);
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.far = 40;
+    const rayOrigin = new THREE.Vector3();
+    const rayEnd = new THREE.Vector3();
+    const rayDir = new THREE.Vector3();
+    const hitLocal = new THREE.Vector3();
+    const nrmWorld = new THREE.Vector3();
+    const nrmParent = new THREE.Vector3();
+    const invParent = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+    const meshNormal = new THREE.Matrix3();
+
+    /** Ray di titik (x, y) parent-space → { z permukaan, menghadap
+        penonton? } atau null. Alokasi nol per panggilan (buffer reuse). */
+    const castAt = (
+      x: number,
+      y: number,
+    ): { z: number; facing: boolean } | null => {
+      rayOrigin.set(x, y, 10);
+      parent.localToWorld(rayOrigin);
+      rayEnd.set(x, y, 0);
+      parent.localToWorld(rayEnd);
+      rayDir.subVectors(rayEnd, rayOrigin).normalize();
+      raycaster.set(rayOrigin, rayDir);
+      const hit = raycaster.intersectObject(scene, true)[0];
+      if (!hit || !hit.face) return null;
+      hitLocal.copy(hit.point);
+      parent.worldToLocal(hitLocal);
+      meshNormal.getNormalMatrix(hit.object.matrixWorld);
+      nrmWorld.copy(hit.face.normal).applyMatrix3(meshNormal).normalize();
+      nrmParent.copy(nrmWorld).transformDirection(invParent);
+      return { z: hitLocal.z, facing: nrmParent.z > 0.5 };
+    };
+
+    // Region fallback — dipakai bila scan gagal total (region netral)
     let region: WritableRegion = {
       minX: -fittedWidth / 2 + 0.3,
       maxX: fittedWidth / 2 - 0.3,
@@ -175,102 +240,72 @@ function BoardModel({
       z: faceZ,
     };
     let medianZ = faceZ;
-    if (parent) {
-      const raycaster = new THREE.Raycaster();
-      raycaster.far = 40;
-      const rayOrigin = new THREE.Vector3();
-      const rayEnd = new THREE.Vector3();
-      const rayDir = new THREE.Vector3();
-      const hitLocal = new THREE.Vector3();
-      const nrmWorld = new THREE.Vector3();
-      const nrmParent = new THREE.Vector3();
-      const invParent = new THREE.Matrix4()
-        .copy(parent.matrixWorld)
-        .invert();
-      const meshNormal = new THREE.Matrix3();
+    const samples: Array<{ x: number; y: number; z: number }> = [];
 
-      const samples: Array<{ x: number; y: number; z: number }> = [];
-      const step = 0.12;
-      for (let sx = -fittedWidth / 2; sx <= fittedWidth / 2; sx += step) {
-        for (let sy = 0.25; sy <= 2.7; sy += step) {
-          rayOrigin.set(sx, sy, 10);
-          parent.localToWorld(rayOrigin);
-          rayEnd.set(sx, sy, 0);
-          parent.localToWorld(rayEnd);
-          rayDir.subVectors(rayEnd, rayOrigin).normalize();
-          raycaster.set(rayOrigin, rayDir);
-          const hit = raycaster.intersectObject(scene, true)[0];
-          if (!hit || !hit.face) continue;
-          // Normal wajah hit: lokal mesh → dunia (normal matrix mesh),
-          // lalu dunia → ruang parent (transformDirection invers parent)
-          // — ruang tempat kertas diparent-kan; wajah tulis menghadap
-          // +z parent (arah penonton).
-          meshNormal.getNormalMatrix(hit.object.matrixWorld);
-          nrmWorld.copy(hit.face.normal).applyMatrix3(meshNormal).normalize();
-          nrmParent.copy(nrmWorld).transformDirection(invParent);
-          hitLocal.copy(hit.point);
-          parent.worldToLocal(hitLocal);
-          if (nrmParent.z > 0.5 && hitLocal.z > faceZ - 0.4) {
-            samples.push({ x: sx, y: sy, z: hitLocal.z });
-          }
-        }
-      }
+    // Grid sampel — precomputasi sekali (bukan per chunk)
+    const xs: number[] = [];
+    for (let sx = -fittedWidth / 2; sx <= fittedWidth / 2; sx += SCAN_STEP) {
+      xs.push(sx);
+    }
+    const ys: number[] = [];
+    for (let sy = 0.25; sy <= 2.7; sy += SCAN_STEP) {
+      ys.push(sy);
+    }
+    const cols = xs.length;
+    const total = cols * ys.length;
 
+    const finish = () => {
+      // Region writable — bounds + median z dari sampel yang lolos
       if (samples.length > 0) {
-        const xs = samples.map((s) => s.x);
-        const ys = samples.map((s) => s.y);
+        const xs2 = samples.map((s) => s.x);
+        const ys2 = samples.map((s) => s.y);
         const zs = samples.map((s) => s.z).sort((a, b) => a - b);
         medianZ = zs[Math.floor(zs.length / 2)];
         region = {
-          minX: Math.min(...xs),
-          maxX: Math.max(...xs),
-          minY: Math.min(...ys),
-          maxY: Math.max(...ys),
+          minX: Math.min(...xs2),
+          maxX: Math.max(...xs2),
+          minY: Math.min(...ys2),
+          maxY: Math.max(...ys2),
           z: medianZ,
         };
       }
-    }
 
-    // -----------------------------------------------------------------
-    // PLACEMENT — 4 kertas acak-ter-seed DI DALAM region writable.
-    // Rejection sampling: jarak antar-pusat ≥ MIN_PAPER_DIST; ≤40 coba;
-    // gagal → fallback even-grid 2×2 di dalam region. z final kertas:
-    // raycast TEPAT di titik terpilih + 1cm (fallback region.z / median).
-    // Seed tetap 1337 → deterministik lintas load/HMR/re-render; tekstur
-    // kertas (memoized per index) tetap stabil menghadap pasangan-nya.
-    // -----------------------------------------------------------------
-    const papers: PaperPlacement[] = [];
-    {
+      // PLACEMENT — seeded-random dalam region; z per kertas = RAYCUST
+      // 5 TITIK (4 sudut footprint ± rotasi + pusat) → ambil permukaan
+      // TERDEPAN dari penonton (z parent terbesar). Bidang datar pada
+      // titik terdepan tak mungkin menembus permukaan yang hanya
+      // "turun" menjauhi kamera; tilt x ±0.05 rad menggeser bidang
+      // ±0.014 — tercakup epsilon 1.5cm.
+      const papers: PaperPlacement[] = [];
       const rng = mulberry32(1337);
       const loX = region.minX + PAPER_W / 2 + 0.05;
       const hiX = region.maxX - PAPER_W / 2 - 0.05;
       const loY = region.minY + PAPER_H / 2 + 0.04;
       const hiY = region.maxY - PAPER_H / 2 - 0.04;
-      const raycaster = new THREE.Raycaster();
-      raycaster.far = 40;
-      const rayOrigin = new THREE.Vector3();
-      const rayEnd = new THREE.Vector3();
-      const rayDir = new THREE.Vector3();
-      const hitLocal = new THREE.Vector3();
-      const castZ = (x: number, y: number): number => {
-        if (!parent) return medianZ;
-        rayOrigin.set(x, y, 10);
-        parent.localToWorld(rayOrigin);
-        rayEnd.set(x, y, 0);
-        parent.localToWorld(rayEnd);
-        rayDir.subVectors(rayEnd, rayOrigin).normalize();
-        raycaster.set(rayOrigin, rayDir);
-        const hit = raycaster.intersectObject(scene, true)[0];
-        if (hit) {
-          hitLocal.copy(hit.point);
-          parent.worldToLocal(hitLocal);
-          return hitLocal.z + 0.01; // epsilon anti z-fight
-        }
-        return medianZ;
-      };
       const wideEnough = hiX - loX > 0.1;
       const tallEnough = hiY - loY > 0.1;
+      const corners: Array<[number, number]> = [
+        [PAPER_W / 2, PAPER_H / 2],
+        [-PAPER_W / 2, PAPER_H / 2],
+        [PAPER_W / 2, -PAPER_H / 2],
+        [-PAPER_W / 2, -PAPER_H / 2],
+        [0, 0], // pusat — konfirmasi murah
+      ];
+      /** z permukaan TERDEPAN (maks z parent) pada footprint kertas. */
+      const frontZ = (cx: number, cy: number, rotZ: number): number => {
+        const c = Math.cos(rotZ);
+        const s = Math.sin(rotZ);
+        let front = -Infinity;
+        for (const [lx, ly] of corners) {
+          const h = castAt(cx + lx * c - ly * s, cy + lx * s + ly * c);
+          if (h && h.z > front) front = h.z;
+        }
+        return front === -Infinity ? medianZ : front;
+      };
+
       for (let i = 0; i < 4; i++) {
+        // Posisi: rejection sampling (jarak ≥ MIN_PAPER_DIST), fallback
+        // even-grid — sama seperti sebelumnya.
         let px = 0;
         let py = 0;
         let placed = false;
@@ -291,7 +326,6 @@ function BoardModel({
           }
         }
         if (!placed) {
-          // Fallback even-grid 2×2 di dalam region (deterministik)
           const col = i % 2;
           const row = Math.floor(i / 2);
           px = wideEnough
@@ -301,36 +335,81 @@ function BoardModel({
             ? loY + row * (hiY - loY)
             : (region.minY + region.maxY) / 2;
         }
-        papers.push({
-          x: px,
-          y: py,
-          z: castZ(px, py),
-          rotZ: (rng() * 12 - 6) * (Math.PI / 180), // ±6°
-          tiltX: rng() * 0.1 - 0.05, // ±0.05 rad
-        });
+        // Rotasi & kemiringan — dari PRNG, satu tarikan per kertas
+        const rotZ = (rng() * 12 - 6) * (Math.PI / 180); // ±6°
+        const tiltX = rng() * 0.1 - 0.05; // ±0.05 rad
+        // Corner-ray attach + re-try: permukaan menonjol > 12cm di atas
+        // median → spot terlalu "bergelombang" untuk kertas datar —
+        // geser dengan PRNG (maks 3 re-try), lalu terima apa adanya.
+        let pz = frontZ(px, py, rotZ);
+        let nudges = 0;
+        while (pz - region.z > 0.12 && nudges < 3 && wideEnough && tallEnough) {
+          const cx = loX + rng() * (hiX - loX);
+          const cy = loY + rng() * (hiY - loY);
+          if (
+            papers.every(
+              (p) => Math.hypot(cx - p.x, cy - p.y) >= MIN_PAPER_DIST * 0.8,
+            )
+          ) {
+            px = cx;
+            py = cy;
+          }
+          pz = frontZ(px, py, rotZ);
+          nudges += 1;
+        }
+        papers.push({ x: px, y: py, z: pz + 0.015, rotZ, tiltX });
       }
-    }
 
-    onFitted?.({ region, width: fittedWidth, papers });
-    // Diagnostik ukur (dev saja): bukti region writable ≠ bbox/area
-    // penuh — bila minY region jauh di atas 0.25, area kaki/bawah
-    // memang tereliminasi dari kandidat kertas.
-    if (process.env.NODE_ENV !== "production") {
-      console.debug(
-        "[Chalkboard] region =",
-        `x[${region.minX.toFixed(2)}, ${region.maxX.toFixed(2)}]`,
-        `y[${region.minY.toFixed(2)}, ${region.maxY.toFixed(2)}]`,
-        "z(median) =", region.z.toFixed(3),
-        "| faceZ(bbox) =", faceZ.toFixed(3),
-        "| width =", fittedWidth.toFixed(3),
-        "| papers =",
-        papers.map(
-          (p) => `(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, z ${p.z.toFixed(2)})`,
-        ).join(" "),
-      );
-    }
-    // scene termasuk deps: glb baru (identitas scene beda) harus
-    // di-refit + di-raycast ulang, bukan sekali selamanya.
+      onFitted?.({ region, width: fittedWidth, papers });
+      // Diagnostik ukur (dev saja)
+      if (process.env.NODE_ENV !== "production") {
+        console.debug(
+          "[Chalkboard] region =",
+          `x[${region.minX.toFixed(2)}, ${region.maxX.toFixed(2)}]`,
+          `y[${region.minY.toFixed(2)}, ${region.maxY.toFixed(2)}]`,
+          "z(median) =", region.z.toFixed(3),
+          "| faceZ(bbox) =", faceZ.toFixed(3),
+          "| width =", fittedWidth.toFixed(3),
+          "| papers =",
+          papers
+            .map(
+              (p) =>
+                `(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, z ${p.z.toFixed(2)})`,
+            )
+            .join(" "),
+        );
+      }
+    };
+
+    // Chunk loop — maks 60 ray per idle callback, lalu jadwalkan lagi.
+    // Seluruh sisa pekerjaan di luar jalur mount; tiap callback ≤ ~2ms.
+    let idx = 0;
+    let handle = 0;
+    let cancelled = false;
+    const step = () => {
+      if (cancelled) return;
+      const end = Math.min(idx + SCAN_CHUNK, total);
+      while (idx < end) {
+        const x = xs[idx % cols];
+        const y = ys[Math.floor(idx / cols)];
+        const hit = castAt(x, y);
+        if (hit && hit.facing && hit.z > faceZ - 0.4) {
+          samples.push({ x, y, z: hit.z });
+        }
+        idx += 1;
+      }
+      if (idx < total) {
+        handle = scheduleIdle(step);
+      } else {
+        finish(); // scan tuntas → placement + onFitted
+      }
+    };
+    handle = scheduleIdle(step);
+
+    return () => {
+      cancelled = true;
+      cancelIdle(handle);
+    };
   }, [onFitted, scene]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
