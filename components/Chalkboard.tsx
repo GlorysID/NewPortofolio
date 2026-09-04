@@ -644,7 +644,7 @@ function QuestPaper({
       onPointerOut={onOut}
     >
       <planeGeometry args={[PAPER_W, PAPER_H]} />
-      <meshStandardMaterial map={texture} roughness={0.92} metalness={0} />
+      <meshStandardMaterial map={texture} roughness={0.96} metalness={0} />
     </mesh>
   );
 }
@@ -814,7 +814,7 @@ export default function Chalkboard() {
           (castShadow false — hard rule: tanpa shadow caster tambahan) */}
       <pointLight
         position={[11.7, 2, 0.1]}
-        intensity={12}
+        intensity={6}
         decay={2}
         distance={9}
         color="#ffd9a6"

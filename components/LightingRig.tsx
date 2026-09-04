@@ -70,7 +70,7 @@ const LIGHTING = {
   boardBeam: {
     position: [10.25, 6.6, 1.4] as [number, number, number],
     aim: [12.8, 0, 0.2] as [number, number, number],
-    intensity: 14,
+    intensity: 8,
     color: "#ffd9a6",
     angle: 0.42,
     penumbra: 0.6,
