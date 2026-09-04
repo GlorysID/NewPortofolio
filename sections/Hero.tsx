@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { useScrollStore } from "@/store/useScrollStore";
 
 /**
- * Hero — copy-heavy poster stack.
+ * Hero · copy-heavy poster stack.
  *
  * - Animasi masuk DIGERAKKAN GSAP (bukan transisi CSS Tailwind):
  *   mendengarkan `gate:dismissed` → label/judul/deskripsi naik masuk
@@ -90,7 +90,7 @@ export default function Hero() {
         }`}
       >
         {/* Crossfade nama ↔ "My Project": dua lapis di kotak yang sama,
-            opacity ditukar — tanpa layout shift. */}
+            opacity ditukar · tanpa layout shift. */}
         <span
           aria-hidden={boardOpen}
           className={`block transition-opacity duration-500 ${
@@ -117,7 +117,7 @@ export default function Hero() {
           boardOpen ? "opacity-0" : "opacity-100"
         }`}
       >
-        Membangun sistem yang cerdas, otomatis, dan mandiri — mengeksplorasi
+        Membangun sistem yang cerdas, otomatis, dan mandiri, mengeksplorasi
         bagaimana AI dan otomasi bergabung menyelesaikan masalah nyata.
       </p>
     </section>

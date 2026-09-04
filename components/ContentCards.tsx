@@ -1,27 +1,27 @@
 "use client";
 
 /**
- * Konten kartu — satu "photoshoot kit": empat artefak cetak berbeda,
+ * Konten kartu · satu "photoshoot kit": empat artefak cetak berbeda,
  * satu keluarga palet (kertas warm-white #fffefa, tinta #20201f,
  * hairline /10–12) dan satu perlakuan tipografi label (mono 8–9px,
  * uppercase, tracking lebar).
  *
  * - About    → "print": bingkai foto klasik (chrome di ContentCard)
- * - Skills   → "sheet": contact sheet — grid frame film bernomor
+ * - Skills   → "sheet": contact sheet · grid frame film bernomor
  * - Projects → "strip": shot list dengan strip sprocket hairline
  * - Contact  → "card": kartu nama studio (chrome "card" di ContentCard)
  *
- * Sisi belakang cetakan (CARD BACKS): kertas belakang foto cetak —
+ * Sisi belakang cetakan (CARD BACKS): kertas belakang foto cetak · 
  * hampir kosong (ker tuaan kertas justru realistis), satu-dua stempel
  * tinta emas hangat (blok bingkai-ganda / cincin, rotasi tetap per
- * kartu — deterministik, SSR-safe), satu catatan "tangan" (italic body
+ * kartu · deterministik, SSR-safe), satu catatan "tangan" (italic body
  * sedikit miring, tanpa font baru) + tanggal coret, dan micro-label
  * kaki senada ArtifactFoot. Back face terlihat selama luncuran
- * (back-facing) sebelum kartu berbalik ke depan — flip di ContentCard.
+ * (back-facing) sebelum kartu berbalik ke depan · flip di ContentCard.
  *
  * Budget vertikal: semua kartu dirancang ≤ ~530px tinggi (fotos 4/3,
  * sel ringkas, spacing rapat) supaya muat penuh di viewport pendek
- * (640–768px) — kartu fixed tidak bisa di-scroll, jadi konten
+ * (640–768px) · kartu fixed tidak bisa di-scroll, jadi konten
  * dikomposisi agar tidak pernah meluap.
  *
  * CameraFlash + suara shutter tetap dipasang di sini; animasi luncur
@@ -33,7 +33,7 @@ import ContentCard, { type CardTitle } from "./ContentCard";
 import CameraFlash from "./CameraFlash";
 
 /* ------------------------------------------------------------------ */
-/* Judul display per kartu — hand-tuned, deterministic (SSR-safe)      */
+/* Judul display per kartu · hand-tuned, deterministic (SSR-safe)      */
 /* ------------------------------------------------------------------ */
 
 /** Empat sudut berbeda + overhang vertikal bervariasi; x menggeser
@@ -72,7 +72,7 @@ const CARD_TITLES: Record<
 };
 
 /* ------------------------------------------------------------------ */
-/* Perlakuan tipografi bersama — satu kit, satu suara                  */
+/* Perlakuan tipografi bersama · satu kit, satu suara                  */
 /* ------------------------------------------------------------------ */
 
 /** Header kecil bergaya cetak: kode + nomor artefak */
@@ -107,12 +107,12 @@ function ArtifactFoot({
 }
 
 /* ------------------------------------------------------------------ */
-/* Sisi belakang cetakan — kertas kosong + stempel + catatan tangan    */
+/* Sisi belakang cetakan · kertas kosong + stempel + catatan tangan    */
 /* Satu keluarga tinta: emas hangat #e8a33d / coklat #6f5a39, opacity  */
-/* rendah — stempel lama di kertas, bukan dekorasi mencolok.           */
+/* rendah · stempel lama di kertas, bukan dekorasi mencolok.           */
 /* ------------------------------------------------------------------ */
 
-/** Stempel blok — bingkai ganda hairline, tinta coklat-emas redup.
+/** Stempel blok · bingkai ganda hairline, tinta coklat-emas redup.
     Rotasi tetap per kartu (deterministik, SSR-safe). */
 function BackStamp({
   text,
@@ -137,7 +137,7 @@ function BackStamp({
   );
 }
 
-/** Stempel cincin — lingkaran ganda hairline, tinta emas redup. */
+/** Stempel cincin · lingkaran ganda hairline, tinta emas redup. */
 function BackRingStamp({
   center,
   sub,
@@ -170,7 +170,7 @@ function BackRingStamp({
   );
 }
 
-/** Catatan "tangan" — italic body sedikit miring (tanpa font baru) +
+/** Catatan "tangan" · italic body sedikit miring (tanpa font baru) +
     tanggal coret kecil di bawahnya. */
 function HandNote({
   children,
@@ -191,13 +191,13 @@ function HandNote({
         className="mt-1.5 font-body text-[10px] italic text-[#6f5a39]/55"
         style={{ transform: "rotate(-2.5deg)" }}
       >
-        — 02.09
+        · 02.09
       </p>
     </div>
   );
 }
 
-/** Micro-label kaki sisi belakang — senada ArtifactFoot. */
+/** Micro-label kaki sisi belakang · senada ArtifactFoot. */
 function BackFoot({ text }: { text: string }) {
   return (
     <p className="absolute bottom-3.5 left-0 right-0 text-center font-mono text-[8px] uppercase tracking-[0.18em] text-[#777773]">
@@ -206,7 +206,7 @@ function BackFoot({ text }: { text: string }) {
   );
 }
 
-/* Back per kartu — posisi & rotasi bervariasi agar tidak seragam;
+/* Back per kartu · posisi & rotasi bervariasi agar tidak seragam;
    80% kertas dibiarkan kosong. */
 
 function AboutCardBack() {
@@ -225,9 +225,9 @@ function AboutCardBack() {
         className="right-6 top-6"
       />
       <HandNote className="bottom-16 left-6">
-        frame favorit roll ini — cahaya jatuh pas hari itu
+        frame favorit roll ini · cahaya jatuh pas hari itu
       </HandNote>
-      <BackFoot text="BACK OF PRINT — 01/04" />
+      <BackFoot text="BACK OF PRINT · 01/04" />
     </div>
   );
 }
@@ -250,7 +250,7 @@ function SkillsCardBack() {
       <HandNote className="bottom-20 left-6">
         sepuluh frame, sepuluh senjata
       </HandNote>
-      <BackFoot text="BACK OF PRINT — 02/04" />
+      <BackFoot text="BACK OF PRINT · 02/04" />
     </div>
   );
 }
@@ -271,9 +271,9 @@ function ProjectsCardBack() {
         className="right-6 top-6"
       />
       <HandNote className="bottom-16 left-6">
-        tiga shot, tiga cerita — eksekusi nyata menyusul
+        tiga shot, tiga cerita · eksekusi nyata menyusul
       </HandNote>
-      <BackFoot text="BACK OF PRINT — 03/04" />
+      <BackFoot text="BACK OF PRINT · 03/04" />
     </div>
   );
 }
@@ -295,13 +295,13 @@ function ContactCardBack() {
       <HandNote className="bottom-20 left-6">
         pintu studio selalu terbuka
       </HandNote>
-      <BackFoot text="BACK OF PRINT — 04/04" />
+      <BackFoot text="BACK OF PRINT · 04/04" />
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* ABOUT — cetakan foto klasik (satu-satunya dengan foto)              */
+/* ABOUT · cetakan foto klasik (satu-satunya dengan foto)              */
 /* ------------------------------------------------------------------ */
 
 export function AboutCard() {
@@ -309,9 +309,9 @@ export function AboutCard() {
     <div>
       <PaperHead code="About" no="01" />
 
-      {/* Foto di dalam area bingkai — rasio 6/5: window crop menampilkan
+      {/* Foto di dalam area bingkai · rasio 6/5: window crop menampilkan
           ~5.6%–68% tinggi foto asli (object 15%) → kepala utuh SAMPAI
-          dagu terlihat (frame 3/2 lama hanya memuat atas 50% foto —
+          dagu terlihat (frame 3/2 lama hanya memuat atas 50% foto · 
           dagu selalu terpotong). mt-6 menjaga kartu dalam budget
           viewport pendek. Bingkai putih + strip bawah = chrome "print". */}
       <div className="mt-6 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)]">
@@ -332,20 +332,20 @@ export function AboutCard() {
       <p className="mt-2 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
         Developer yang berpikir pada <strong>AI agents, automation systems,
         dan web development</strong>. Membangun perangkat lunak yang melampaui
-        aplikasi tradisional — mengeksplorasi bagaimana AI dan otomasi bisa
+        aplikasi tradisional · mengeksplorasi bagaimana AI dan otomasi bisa
         digabung menjadi sistem yang lebih cerdas, efisien, dan mandiri.
         Terus belajar dan bereksperimen, mengubah ide menjadi produk nyata.
       </p>
       <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#6f5a39]">
         AI × Automation × Software
       </p>
-      <ArtifactFoot text="Kodak Portra 400 — Frame 01" className="mt-4" />
+      <ArtifactFoot text="Kodak Portra 400 · Frame 01" className="mt-4" />
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* SKILLS — contact sheet: grid frame film bernomor (kosong/geometris) */
+/* SKILLS · contact sheet: grid frame film bernomor (kosong/geometris) */
 /* ------------------------------------------------------------------ */
 
 export function SkillsCard() {
@@ -369,7 +369,7 @@ export function SkillsCard() {
         Keahlian
       </h3>
 
-      {/* Contact sheet — frame kosong geometris: hairline cell, nomor
+      {/* Contact sheet · frame kosong geometris: hairline cell, nomor
           frame kecil di sudut, nama skill di tengah. Sel dipendekkan
           (h-11, 2×5) agar seluruh sheet muat di viewport pendek. */}
       <div className="mt-3 grid grid-cols-2 gap-1.5">
@@ -388,20 +388,20 @@ export function SkillsCard() {
         ))}
       </div>
 
-      <ArtifactFoot text="Roll 01 — Contact Sheet" className="mt-4" />
+      <ArtifactFoot text="Roll 01 · Contact Sheet" className="mt-4" />
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* PROJECTS — shot list / negative strip: baris SHOT dengan sprocket   */
+/* PROJECTS · shot list / negative strip: baris SHOT dengan sprocket   */
 /* ------------------------------------------------------------------ */
 
 export function ProjectsCard() {
   const education = [
-    { period: "2015 — 2021", name: "SDN Limusnunggal 01", detail: "Sekolah dasar — fondasi literasi & numerasi." },
-    { period: "2021 — 2024", name: "SMP Negeri 03 Cileungsi", detail: "Sekolah menengah pertama — awal rasa penasaran pada komputer." },
-    { period: "2024 — 2027", name: "SMK Bina Mandiri Multimedia", detail: "Sekolah menengah kejuruan — multimedia & fondasi dunia digital." },
+    { period: "2015 · 2021", name: "SDN Limusnunggal 01", detail: "Sekolah dasar: fondasi literasi & numerasi." },
+    { period: "2021 · 2024", name: "SMP Negeri 03 Cileungsi", detail: "Sekolah menengah pertama: awal rasa penasaran pada komputer." },
+    { period: "2024 · 2027", name: "SMK Bina Mandiri Multimedia", detail: "Sekolah menengah kejuruan: multimedia & fondasi dunia digital." },
   ];
 
   return (
@@ -411,10 +411,10 @@ export function ProjectsCard() {
         Perjalanan Sekolah
       </h3>
       <p className="mt-4 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773]">
-        School Records — SD ke SMK
+        School Records · SD ke SMK
       </p>
 
-      {/* Timeline pendidikan — tiap jenjang = satu entri rekaman: periode
+      {/* Timeline pendidikan · tiap jenjang = satu entri rekaman: periode
           mono, nama sekolah, satu baris catatan. Sprocket dipertahankan:
           bahasa film "rekaman" tetap, isinya kini sekolah. */}
       <div className="mt-3 flex gap-3.5">
@@ -449,13 +449,13 @@ export function ProjectsCard() {
         </ul>
       </div>
 
-      <ArtifactFoot text="Roll 02 — School Records" className="mt-4" />
+      <ArtifactFoot text="Roll 02 · School Records" className="mt-4" />
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* CONTACT — kartu nama studio: nama, peran, item kontak + dividers    */
+/* CONTACT · kartu nama studio: nama, peran, item kontak + dividers    */
 /* ------------------------------------------------------------------ */
 
 export function ContactCard() {
@@ -470,7 +470,7 @@ export function ContactCard() {
             Mari Terhubung
           </h3>
           <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773]">
-            Studio Anjal — AI · Automation · Software
+            Studio Anjal · AI · Automation · Software
           </p>
         </div>
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#20201f]/20 font-display text-[12px] text-[#20201f]">
@@ -483,7 +483,7 @@ export function ContactCard() {
         agents, otomasi, dan pengembangan web.
       </p>
 
-      {/* Item kontak — daftar kertas dengan divider hairline */}
+      {/* Item kontak · daftar kertas dengan divider hairline */}
       <div className="mt-3 divide-y divide-[#20201f]/10 border-t border-[#20201f]/10">
         <a
           href="mailto:anjalisaputra@gmail.com"
@@ -539,7 +539,7 @@ export function ContactCard() {
         </a>
       </div>
 
-      <ArtifactFoot text="Studio Card — Cetak 2026" className="mt-4" />
+      <ArtifactFoot text="Studio Card · Cetak 2026" className="mt-4" />
     </div>
   );
 }
@@ -550,7 +550,7 @@ export default function ContentCards() {
       {/* Kilatan kamera + suara shutter saat section berkartu aktif */}
       <CameraFlash />
 
-      {/* Kemiringan photo paper — beda tiap kartu; judul display
+      {/* Kemiringan photo paper · beda tiap kartu; judul display
           menumpang tepi atas dengan rotasi bebas per kartu. Sisi
           belakang: stempel + catatan, terlihat selama luncuran
           sebelum flip ke depan. */}

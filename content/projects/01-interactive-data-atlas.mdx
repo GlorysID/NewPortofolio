@@ -1,0 +1,18 @@
+---
+title: "Interactive Data Atlas"
+year: "2025"
+tags: ["WebGL", "Deck.gl", "React"]
+link: "#"
+summary: "Visualisasi data geospasial real-time berbasis WebGL: ribuan titik data dirender mulus di browser tanpa server khusus."
+---
+
+## Ringkas
+
+Ribuan titik data dirender langsung di GPU: peta interaktif yang tetap
+mulus meski dataset-nya jutaan baris.
+
+## Sorotan teknis
+
+- Instanced rendering via WebGL: satu draw call per lapisan
+- Pemilihan titik dihitung di GPU (picking tanpa re-render)
+- Dataset streaming: potong demi potong dimuat sesuai viewport

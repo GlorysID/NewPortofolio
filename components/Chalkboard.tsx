@@ -5,9 +5,13 @@ import { useGLTF, Html } from "@react-three/drei";
 import gsap from "gsap";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
-import { BOARD_PROJECTS } from "@/data/projects";
 import { useScrollStore } from "@/store/useScrollStore";
 import { boardDrag } from "@/lib/boardDrag";
+import {
+  useBoardProjects,
+  MAX_PAPERS,
+  type BoardProject,
+} from "@/lib/useBoardProjects";
 
 /**
  * Chalkboard — papan proyek 3D bergaya QUEST BOARD MMORPG.
@@ -22,7 +26,9 @@ import { boardDrag } from "@/lib/boardDrag";
  * - Cahaya: beam studio + kerucut + kolam di LightingRig.tsx.
  *
  * LAPISAN QUEST BOARD (baru):
- * - 4 kertas proyek (BOARD_PROJECTS) di grid 2×2 pada wajah papan —
+ * - Kertas proyek dari content/projects/*.mdx (via useBoardProjects —
+ *   JSON statis /projects-data, dikompilasi saat build) — jumlah
+ *   mengikuti data (maks 12), penempatan seeded-random di region.
  *   tekstur kertas digambar via <canvas> sekali di useMemo (judul
  *   tinta gelap, garis aksen, tahun; font generic canvas 2D — tanpa
  *   asset font baru), di-dispose saat unmount (pola ContactGlow).
@@ -120,13 +126,19 @@ function cancelIdle(handle: number): void {
 
 function BoardModel({
   onFitted,
+  paperCount,
 }: {
   onFitted?: (board: FittedBoard) => void;
+  paperCount: number;
 }) {
   const { scene } = useGLTF(BOARD_URL);
   const group = useRef<THREE.Group>(null);
   // Hasil fit (faceZ/width) — diisi layout effect, dibaca scan async
   const fitRef = useRef<{ faceZ: number; width: number } | null>(null);
+  // Hasil scan (dipakai ulang saat paperCount berubah — scan CUMA SEKALI)
+  const regionRef = useRef<WritableRegion | null>(null);
+  const medianZRef = useRef(0);
+  const scanDoneRef = useRef(false);
 
   // Auto-fit (pola Avatar) — dengan satu koreksi penting: Box3.
   // setFromObject mengukur dalam RUANG DUNIA, dan parent group ini
@@ -231,15 +243,19 @@ function BoardModel({
       return { z: hitLocal.z, facing: nrmParent.z > 0.5 };
     };
 
-    // Region fallback — dipakai bila scan gagal total (region netral)
-    let region: WritableRegion = {
-      minX: -fittedWidth / 2 + 0.3,
-      maxX: fittedWidth / 2 - 0.3,
-      minY: 1.0,
-      maxY: 2.5,
-      z: faceZ,
-    };
-    let medianZ = faceZ;
+    // Region fallback — dipakai bila scan gagal total (region netral).
+    // Saat scan SUDAH selesai (paperCount berubah → effect re-run),
+    // pakai hasil scan dari ref — scan CUMA SEKALI.
+    let region: WritableRegion = scanDoneRef.current
+      ? regionRef.current!
+      : {
+          minX: -fittedWidth / 2 + 0.3,
+          maxX: fittedWidth / 2 - 0.3,
+          minY: 1.0,
+          maxY: 2.5,
+          z: faceZ,
+        };
+    let medianZ = scanDoneRef.current ? medianZRef.current : faceZ;
     const samples: Array<{ x: number; y: number; z: number }> = [];
 
     // Grid sampel — precomputasi sekali (bukan per chunk)
@@ -268,6 +284,11 @@ function BoardModel({
           maxY: Math.max(...ys2),
           z: medianZ,
         };
+        // Simpan utk re-run placement (paperCount berubah → tanpa
+        // ray ulang grid penuh)
+        regionRef.current = region;
+        medianZRef.current = medianZ;
+        scanDoneRef.current = true;
       }
 
       // PLACEMENT — seeded-random dalam region; z per kertas = RAYCUST
@@ -303,8 +324,16 @@ function BoardModel({
         return front === -Infinity ? medianZ : front;
       };
 
-      for (let i = 0; i < 4; i++) {
-        // Posisi: rejection sampling (jarak ≥ MIN_PAPER_DIST), fallback
+      const minDist =
+        paperCount <= 4
+          ? MIN_PAPER_DIST
+          : Math.max(0.34, MIN_PAPER_DIST * Math.sqrt(4 / paperCount));
+      // Fallback grid mengikuti jumlah kertas (2×2 / 3×2 / 3×3 / 4×3 …)
+      const fbCols = paperCount <= 4 ? 2 : Math.ceil(Math.sqrt(paperCount));
+      const fbRows = Math.ceil(paperCount / fbCols);
+
+      for (let i = 0; i < paperCount; i++) {
+        // Posisi: rejection sampling (jarak ≥ minDist), fallback
         // even-grid — sama seperti sebelumnya.
         let px = 0;
         let py = 0;
@@ -315,7 +344,7 @@ function BoardModel({
             const cy = loY + rng() * (hiY - loY);
             if (
               papers.every(
-                (p) => Math.hypot(cx - p.x, cy - p.y) >= MIN_PAPER_DIST,
+                (p) => Math.hypot(cx - p.x, cy - p.y) >= minDist,
               )
             ) {
               px = cx;
@@ -326,13 +355,13 @@ function BoardModel({
           }
         }
         if (!placed) {
-          const col = i % 2;
-          const row = Math.floor(i / 2);
+          const col = i % fbCols;
+          const row = Math.floor(i / fbCols);
           px = wideEnough
-            ? loX + col * (hiX - loX)
+            ? loX + col * ((hiX - loX) / Math.max(1, fbCols - 1))
             : (region.minX + region.maxX) / 2;
           py = tallEnough
-            ? loY + row * (hiY - loY)
+            ? loY + row * ((hiY - loY) / Math.max(1, fbRows - 1))
             : (region.minY + region.maxY) / 2;
         }
         // Rotasi & kemiringan — dari PRNG, satu tarikan per kertas
@@ -384,6 +413,14 @@ function BoardModel({
       }
     };
 
+    // Scan CUMA SEKALI: re-run karena paperCount berubah (fetch data
+    // datang) → langsung placement dari region tersimpan, tanpa ray
+    // ulang grid penuh.
+    if (scanDoneRef.current) {
+      finish();
+      return () => {};
+    }
+
     // Chunk loop — maks 60 ray per idle callback, lalu jadwalkan lagi.
     // Seluruh sisa pekerjaan di luar jalur mount; tiap callback ≤ ~2ms.
     let idx = 0;
@@ -433,7 +470,9 @@ function BoardModel({
       cancelIdle(handle);
       window.removeEventListener("gate:dismissed", onGateDismissed);
     };
-  }, [onFitted, scene]);
+    // paperCount dalam deps: fetch projects menaikkan count → effect
+    // re-run → scanDoneRef short-circuit → placement ulang cepat.
+  }, [onFitted, scene, paperCount]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
   // Sambil memberi tahu StaticShadows bahwa papan sudah ADA di scene —
@@ -518,25 +557,25 @@ function drawPaperTexture(title: string, year: string): HTMLCanvasElement {
 
 /** Satu kertas proyek — mesh + tekstur canvas + hover. Posisi, rotasi,
     dan z permukaan sudah ditentukan analisis papan (region + seeded
-    placement + raycast). KLIK tidak di sini: resolver di depannya
-    (BoardClickProxy) yang memutuskan via e.intersections — kertas
-    hanya perlu userData.projectId. */
+    placement + raycast); data proyek dari hook (MDX content/projects).
+    KLIK tidak di sini: resolver di depannya (BoardClickProxy) yang
+    memutuskan via e.intersections — kertas hanya perlu
+    userData.projectId. */
 function QuestPaper({
-  index,
+  project,
   x,
   y,
   z,
   rotZ,
   tiltX,
 }: {
-  index: number;
+  project: Pick<BoardProject, "id" | "title" | "year">;
   x: number;
   y: number;
   z: number;
   rotZ: number;
   tiltX: number;
 }) {
-  const project = BOARD_PROJECTS[index];
   const meshRef = useRef<THREE.Mesh>(null);
 
   // Tekstur dibuat SEKALI per kertas; di-dispose saat unmount
@@ -683,14 +722,22 @@ export default function Chalkboard() {
   const activeProjectId = useScrollStore((s) => s.activeProjectId);
   const showAffordance = boardOpen && !boardInspect && !activeProjectId;
 
+  // Proyek dari content/projects/*.mdx (JSON statis /projects-data).
+  // Belum termuat / kosong → 0 kertas (papan polos, tanpa crash).
+  const { projects } = useBoardProjects();
+  const paperCount = Math.min(projects.length, MAX_PAPERS);
+
   // Bbox papan ter-fit — null selama model belum termuat/ter-fit.
   const [board, setBoard] = useState<FittedBoard | null>(null);
 
   // Resolver: tepat di depan kertas terjauh (max z + 8cm), memeluk
   // region writable — pusat & ukuran mengikuti region (clamped ke
-  // lebar papan × 0.9 dan tinggi 2.6).
+  // lebar papan × 0.9 dan tinggi 2.6). Guard: 0 kertas (data belum
+  // termuat) → Math.max(...[]) = -Infinity; pakai median region.
   const proxyZ = board
-    ? Math.max(...board.papers.map((p) => p.z)) + 0.08
+    ? (board.papers.length > 0
+        ? Math.max(...board.papers.map((p) => p.z))
+        : board.region.z) + 0.08
     : 0;
   const proxyW = board
     ? Math.min(
@@ -721,23 +768,28 @@ export default function Chalkboard() {
           papan di spoke kanan yang dimundurkan ke z=0. */}
       <group position={[12.8, 0, 0.2]} rotation={[0, -1.1, 0]}>
         <Suspense fallback={null}>
-          <BoardModel onFitted={setBoard} />
+          <BoardModel onFitted={setBoard} paperCount={paperCount} />
         </Suspense>
 
         {/* Kertas quest — acak-ter-seed di region writable, z dari
-            raycast di spot final masing-masing */}
+            raycast di spot final masing-masing; datanya dari
+            content/projects/*.mdx (maks MAX_PAPERS) */}
         {board &&
-          board.papers.map((paper, i) => (
-            <QuestPaper
-              key={i}
-              index={i}
-              x={paper.x}
-              y={paper.y}
-              z={paper.z}
-              rotZ={paper.rotZ}
-              tiltX={paper.tiltX}
-            />
-          ))}
+          projects.slice(0, paperCount).map((project, i) => {
+            const paper = board.papers[i];
+            if (!paper) return null;
+            return (
+              <QuestPaper
+                key={project.id}
+                project={project}
+                x={paper.x}
+                y={paper.y}
+                z={paper.z}
+                rotZ={paper.rotZ}
+                tiltX={paper.tiltX}
+              />
+            );
+          })}
 
         {/* Resolver klik — bidang transparan mengikuti region */}
         {board && (
