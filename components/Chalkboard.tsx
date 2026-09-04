@@ -52,6 +52,11 @@ import {
 const BOARD_HEIGHT = 2.8;
 const BOARD_URL = "/models/chalkboard.glb";
 
+/** Area foto pada canvas tekstur kertas — dipakai drawPaperTexture
+    (placeholder saat hasCover) DAN pass gambar async di QuestPaper.
+    Satu sumber kebenaran rect. */
+const PAPER_COVER = { x: 48, y: 250, w: 416, h: 300 } as const;
+
 /** Kertas quest — ukuran dalam ruang ter-fit. Posisi/rotasi BUKAN
     konstanta: area papan dianalisis dulu (scan ray per sampel), lalu
     4 kertas ditempatkan acak-ter-seed DI DALAM region writable, dengan
@@ -501,12 +506,15 @@ function BoardModel({
     dari frontmatter (title/year/tags) — summary/body TIDAK PERNAH
     masuk tekstur, jadi summary panjang tak bisa meluap kertas.
     Font generic ("serif"/"monospace") — tanpa asset baru.
-    Dipanggil sekali per kertas (useMemo) → CanvasTexture. */
+    Dipanggil sekali per kertas (useMemo) → CanvasTexture.
+    `hasCover`: area foto DIREVERSI (placeholder tone) meski gambar
+    belum termuat — layout kertas tidak pernah bergeser. */
 function drawPaperTexture(
   title: string,
   year: string,
   firstTag: string,
   extraTags: number,
+  hasCover: boolean,
 ): HTMLCanvasElement {
   const W = 512;
   const H = 676; // rasio ≈ 0.62 : 0.82
@@ -529,9 +537,10 @@ function drawPaperTexture(
   ctx.fillStyle = "rgba(32, 32, 31, 0.28)";
   ctx.fill();
 
-  // Judul — serif tebal, word-wrap maksimal 4 baris
+  // Judul — serif tebal, word-wrap. Cap 2 baris saat ada cover
+  // (area foto reserved di bawahnya), 4 baris tanpa cover.
   ctx.fillStyle = "#20201f";
-  ctx.font = "bold 54px serif";
+  ctx.font = hasCover ? "bold 44px serif" : "bold 54px serif";
   ctx.textBaseline = "top";
   const words = title.split(" ");
   const lines: string[] = [];
@@ -546,13 +555,31 @@ function drawPaperTexture(
     }
   }
   if (line) lines.push(line);
-  const shown = lines.slice(0, 4);
-  shown.forEach((l, i) => ctx.fillText(l, 48, 118 + i * 66));
+  const maxLines = hasCover ? 2 : 4;
+  const lineHeight = hasCover ? 54 : 66;
+  const shown = lines
+    .slice(0, maxLines)
+    .map((l, i) =>
+      i === maxLines - 1 && lines.length > maxLines ? `${l}…` : l,
+    );
+  shown.forEach((l, i) => ctx.fillText(l, 48, 118 + i * lineHeight));
 
-  // Garis aksen hangat di bawah judul
-  const titleBottom = 118 + shown.length * 66 + 18;
-  ctx.fillStyle = "#e8a33d";
-  ctx.fillRect(48, titleBottom, 150, 8);
+  // Area foto RESERVED (placeholder tone) — gambar asli digambar async
+  // setelah cover termuat (texture.needsUpdate) — layout kertas tak
+  // pernah bergeser. Rect = PAPER_COVER (konstanta bersama async pass).
+  if (hasCover) {
+    ctx.fillStyle = "#e7e0d2";
+    ctx.fillRect(PAPER_COVER.x, PAPER_COVER.y, PAPER_COVER.w, PAPER_COVER.h);
+    ctx.strokeStyle = "rgba(32, 32, 31, 0.18)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(PAPER_COVER.x, PAPER_COVER.y, PAPER_COVER.w, PAPER_COVER.h);
+    ctx.fillStyle = "#e8a33d";
+    ctx.fillRect(48, PAPER_COVER.y + PAPER_COVER.h + 16, 150, 8);
+  } else {
+    const titleBottom = 118 + shown.length * lineHeight + 18;
+    ctx.fillStyle = "#e8a33d";
+    ctx.fillRect(48, titleBottom, 150, 8);
+  }
 
   // Label "QUEST" kecil + tag pertama (+N) + tahun di kaki kertas
   ctx.font = "28px monospace";
@@ -584,7 +611,7 @@ function QuestPaper({
   rotZ,
   tiltX,
 }: {
-  project: Pick<BoardProject, "id" | "title" | "year" | "tags">;
+  project: Pick<BoardProject, "id" | "title" | "year" | "tags" | "cover">;
   x: number;
   y: number;
   z: number;
@@ -602,15 +629,66 @@ function QuestPaper({
         project.year,
         project.tags[0] ?? "",
         Math.max(0, project.tags.length - 1),
+        !!project.cover,
       ),
     );
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;
     return tex;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.title, project.year]);
+  }, [project.title, project.year, project.cover]);
 
   useEffect(() => () => texture.dispose(), [texture]);
+
+  // Cover preview DI kertas — gambar dimuat async lalu digambar ke
+  // area reserved pada canvas yang sama (needsUpdate = re-upload GPU)
+  // → kertas "mengembangkan" fotonya; nol mesh/tekstur tambahan.
+  // Cover-crop: scale-to-fill + center-crop (source aspect bebas).
+  useEffect(() => {
+    if (!project.cover) return;
+    let cancelled = false;
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => {
+      if (cancelled) return;
+      const canvas = texture.image as HTMLCanvasElement;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const scale = Math.max(
+        PAPER_COVER.w / img.naturalWidth,
+        PAPER_COVER.h / img.naturalHeight,
+      );
+      const sw = PAPER_COVER.w / scale;
+      const sh = PAPER_COVER.h / scale;
+      const sx = (img.naturalWidth - sw) / 2;
+      const sy = (img.naturalHeight - sh) / 2;
+      ctx.drawImage(
+        img,
+        sx,
+        sy,
+        sw,
+        sh,
+        PAPER_COVER.x,
+        PAPER_COVER.y,
+        PAPER_COVER.w,
+        PAPER_COVER.h,
+      );
+      // bingkai tipis di atas foto
+      ctx.strokeStyle = "rgba(32, 32, 31, 0.22)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(
+        PAPER_COVER.x + 1.5,
+        PAPER_COVER.y + 1.5,
+        PAPER_COVER.w - 3,
+        PAPER_COVER.h - 3,
+      );
+      texture.needsUpdate = true;
+    };
+    img.src = project.cover;
+    return () => {
+      cancelled = true;
+    };
+  }, [project.cover, texture]);
 
   const onOver = () => {
     const { boardInspect } = useScrollStore.getState();

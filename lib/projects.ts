@@ -53,33 +53,35 @@ export interface RawBoardProject {
   video?: string;
 }
 
-/** Indeks media: basename file di content/projects/media/** → URL
-    publik /projects-media/<folder>/<file>. Deterministik (folder &
-    file di-sort). */
+/** Indeks media: basename → URL publik. Dua sumber, DIURUTKAN:
+    1) public/projects-media/** — output prebuild (mengandung varian
+       .webp hasil kompresi; fresh saat next build karena prebuild
+       jalan lebih dulu),
+    2) content/projects/media/** — sumber (fallback saat dev sebelum
+       prebuild pertama / file yang tak ter-copy).
+    First match wins → varian .webp otomatis menang atas original. */
 function buildMediaIndex(): Map<string, string> {
   const index = new Map<string, string>();
-  const mediaRoot = path.join(process.cwd(), "content", "projects", "media");
-  if (!fs.existsSync(mediaRoot)) return index;
-  for (const entry of fs.readdirSync(mediaRoot, { withFileTypes: true })) {
-    // File LANGSUNG di media/ (tanpa subfolder) juga diindeks →
-    // URL /projects-media/<file>. User tidak wajib bikin subfolder.
-    if (entry.isFile() && !index.has(entry.name)) {
-      index.set(entry.name, `/projects-media/${entry.name}`);
-      continue;
-    }
-    if (!entry.isDirectory()) continue;
-    const folderDir = path.join(mediaRoot, entry.name);
-    for (const file of fs.readdirSync(folderDir, { withFileTypes: true })) {
-      if (!file.isFile()) continue;
-      // First match wins (folder & file di-sort) — nama duplikat antar
-      // folder tidak dianjurkan (lihat README).
-      if (!index.has(file.name)) {
-        index.set(
-          file.name,
-          `/projects-media/${entry.name}/${file.name}`,
-        );
+  const roots: Array<[string, string]> = [
+    [path.join(process.cwd(), "public", "projects-media"), "projects-media"],
+    [
+      path.join(process.cwd(), "content", "projects", "media"),
+      "projects-media",
+    ],
+  ];
+  for (const [root, urlBase] of roots) {
+    if (!fs.existsSync(root)) continue;
+    const walk = (dir: string, rel: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          walk(path.join(dir, entry.name), relPath);
+        } else if (!index.has(entry.name)) {
+          index.set(entry.name, `/${urlBase}/${relPath}`);
+        }
       }
-    }
+    };
+    walk(root, "");
   }
   return index;
 }
@@ -99,10 +101,21 @@ export function getBoardProjects(): RawBoardProject[] {
     .sort();
 
   const mediaIndex = buildMediaIndex();
-  /** Filename/URL mentah → URL publik final (rules di doc header). */
+  const IMAGE_RE = /\.(png|jpe?g|webp)$/i;
+  /** Filename/URL mentah → URL publik final (rules di doc header).
+      Preferensi WEBP: bila file cover/video bernama <name>.<ext> punya
+      varian <name>.webp di indeks (dibuat scripts/copy-media.mjs saat
+      prebuild), URL webp yang dipakai — original tetap tersedia di
+      public untuk keperluan lain. */
   const resolveMedia = (raw: string | undefined): string | undefined => {
     if (!raw) return undefined;
     if (isAbsoluteUrl(raw)) return raw;
+    if (IMAGE_RE.test(raw)) {
+      const webpName = raw.replace(IMAGE_RE, ".webp");
+      if (webpName !== raw && mediaIndex.has(webpName)) {
+        return mediaIndex.get(webpName);
+      }
+    }
     const resolved = mediaIndex.get(raw);
     if (!resolved) {
       console.warn(
