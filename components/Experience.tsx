@@ -141,50 +141,18 @@ function FlashRegress() {
 }
 
 /**
- * ReflectorGate — reflektor lantai adalah pass GPU terberat (scene
- * dirender kedua + blur dua arah TIAP frame). Saat shutter kamera
- * berbunyi (flash + launch kartu + pan = momen paling ramai), dia
- * disembunyikan ±450ms: layar sedang dominan putih sehingga hilangnya
- * tak terlihat, lalu kembali — GPU mendapat jeda napas di puncak beban.
- * (visibility dulu — `visible=false` menghentikan pass refleksi; jauh
- * lebih murah daripada unmount yang memicu shader recompile.)
+ * ReflectorFloor — lantai reflektif, SELALU dirender (tanpa toggle
+ * visible: hilang-muncul di tiap flash = glitch). Resolusi 512 +
+ * blur ringan: pass GPU terberat tetap terpangkas setengah secara
+ * permanen — FlashRegress (dpr turun) yang menangani jendela flash.
  */
-function ReflectorGate({ isSmall }: { isSmall: boolean }) {
-  const [paused, setPaused] = useState(false);
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const onFlashBegin = () => {
-      setPaused(true);
-      if (t) clearTimeout(t);
-      t = setTimeout(() => setPaused(false), 450);
-    };
-    window.addEventListener("camera-flash:begin", onFlashBegin);
-    return () => {
-      window.removeEventListener("camera-flash:begin", onFlashBegin);
-      if (t) clearTimeout(t);
-    };
-  }, []);
-
+function ReflectorFloor({ isSmall }: { isSmall: boolean }) {
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -0.001, 0]}
-      receiveShadow
-      /* visible (BUKAN unmount): unmount MeshReflectorMaterial =
-         shader recompile + FBO recreation = STALL ratusan ms di
-         tengah transisi — inilah biang "freeze" saat klik gerbang &
-         beratnya shutter. visible=false hanya melewatkan mesh dari
-         render list: pass refleksi terlewat, nol stall, nol recompile. */
-      visible={!paused}
-    >
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
       <planeGeometry args={[60, 60]} />
       <MeshReflectorMaterial
-        /* Reflektor = pass GPU terberat (scene dirender kedua + blur
-           dua arah tiap frame). Resolusi 768 (dari 1024) di desktop
-           memangkas fill-rate ±44% — lantai gelap membuat beda visual
-           nyaris tak terlihat. */
-        resolution={isSmall ? 512 : 768}
-        blur={isSmall ? [150, 50] : [250, 70]}
+        resolution={512}
+        blur={isSmall ? [120, 40] : [160, 55]}
         mixBlur={1}
         mixStrength={12}
         depthScale={1.1}
@@ -276,9 +244,9 @@ export default function Experience() {
             avatar tampak berpijak di titik cahaya */}
         <ContactGlow />
 
-        {/* Lantai reflektif gelap — di-pause ±450ms saat shutter flash
-            (pass GPU terberat dilewati di momen paling ramai). */}
-        <ReflectorGate isSmall={isSmall} />
+        {/* Lantai reflektif — selalu dirender, resolusi 512 permanen
+            (tanpa toggle: hilang-muncul = glitch). */}
+        <ReflectorFloor isSmall={isSmall} />
 
         {/* Kamera sinematik berbasis scroll (reduced-motion aware) */}
         <CameraRig />

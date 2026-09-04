@@ -183,11 +183,11 @@ export default function CameraRig() {
       dragLastX.current = e.clientX;
       dragLastY.current = e.clientY;
       dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
-      if (dragMovedDist.current > 8) boardDrag.moved = true;
-      // Grab-style halus: drag kanan → pandangan bergeser ke kanan
-      panX.current = Math.max(
-        -1.2,
-        Math.min(1.2, panX.current - dx * 0.0016),
+      if (dragMovedDist.current > 24) boardDrag.moved = true;
+      // Grab-style: drag BAWAH → pandangan turun mengikuti (sign fix)
+      panY.current = Math.max(
+        -0.6,
+        Math.min(0.6, panY.current - dy * 0.0016),
       );
       panY.current = Math.max(
         -0.6,
@@ -393,13 +393,15 @@ export default function CameraRig() {
         }
         // Pan drag user — pos & target bergeser BERSAMAAN (translate
         // view, bukan orbit): user bebas menjelajahi wajah papan.
+        // Drag aktif → lambda tinggi (responsif, tanpa rasa lag);
+        // setelah lepas → damping normal yang menghaluskan.
         _sampledPos[0] += BOARD_TX * panX.current;
         _sampledPos[2] += BOARD_TZ * panX.current;
         _sampledPos[1] += panY.current;
         _sampledTgt[0] += BOARD_TX * panX.current;
         _sampledTgt[2] += BOARD_TZ * panX.current;
         _sampledTgt[1] += panY.current;
-        lambda = Math.min(lambda, 3);
+        lambda = dragActive.current ? 12 : Math.min(lambda, 3);
       }
       // Fase "closed": goal = pose shot hasil sampling (perilaku normal).
     }
