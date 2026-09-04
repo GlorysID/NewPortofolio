@@ -185,8 +185,6 @@ export default function Experience() {
   // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
   // (default) supaya teks section & kartu tetap klikabel.
   const boardOpen = useScrollStore((s) => s.boardOpen);
-  // Gerbang menutupi layar → scene tak perlu render sama sekali.
-  const gateUp = useScrollStore((s) => s.gateUp);
 
   return (
     <div
@@ -202,9 +200,11 @@ export default function Experience() {
           alpha: true,
           powerPreference: "high-performance",
         }}
-        /* Gerbang menutupi layar → nol frame dirender (hemat GPU saat
-           loading); resume otomatis saat fade mulai. */
-        frameloop={gateUp ? "never" : "always"}
+        /* frameloop TETAP "always": toggle pause/resume via prop
+           terbukti merusak respons swipe setelah gerbang (R3F resume
+           loop tidak selalu sinkron dengan ticker gesture) — biaya
+           render di balik gerbang hitam kecil, jangan dioptimasi. */
+        frameloop="always"
         shadows="percentage"
         /* Background void di-set via <color attach="background"> */
         style={{ background: "#000000" }}
