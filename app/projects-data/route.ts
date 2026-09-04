@@ -7,9 +7,9 @@ import { getBoardProjects } from "@/lib/projects";
  *
  * `force-static` → route handler di-emit sebagai file statis saat
  * `next build` (client fetch membaca file statis — situs tetap SSG
- * murni, tanpa server runtime). Body MDX DIKOMPILASI di sini (build
- * time, `serialize` next-mdx-remote) → client tinggal hydrate, tanpa
- * kompilasi runtime.
+ * murni, tanpa server runtime). Body MDX (kini OPSIONAL — template
+ * form-only) DIKOMPILASI di sini bila ada; file frontmatter-only
+ * diemit tanpa field `compiled`.
  */
 export const dynamic = "force-static";
 
@@ -17,7 +17,7 @@ export async function GET() {
   const projects = await Promise.all(
     getBoardProjects().map(async ({ body, ...rest }) => ({
       ...rest,
-      compiled: await serialize(body),
+      compiled: body ? await serialize(body) : undefined,
     })),
   );
   return NextResponse.json(projects);

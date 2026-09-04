@@ -41,3 +41,6 @@ models-src/
 # build/test artifacts
 build*.log
 smoke.log
+
+# generated media copy (source of truth: content/projects/media/)
+/public/projects-media/

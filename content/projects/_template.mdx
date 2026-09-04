@@ -1,23 +1,33 @@
 ---
-# ⚡ SALIN file ini (jangan edit langsung) untuk menambah proyek baru.
-#    Nama file: urutan-nama-slug.mdx (mis. 05-nama-proyek.mdx) · 
-#    urutan nama file menentukan urutan kertas di papan.
+# ============================================================
+# TEMPLATE PROYEK QUEST BOARD (form-only — tanpa tulis MDX)
 #
-# WAJIB (string, tanpa ini file dilewati otomatis):
-title: "Nama Proyek"
-year: "2026"
-tags: ["Tag1", "Tag2", "Tag3"]
+# Cara pakai:
+# 1. Salin file ini → 05-nama-proyek.mdx (nomor = urutan kertas)
+# 2. Isi 5 field WAJIB di bawah
+# 3. (Opsional) isi cover/video — lihat panduan media di bawah
+# 4. Push → build otomatis → kertas baru muncul di papan (maks 12)
+#
+# Field opsional: hapus barisnya kalau tidak dipakai.
+# Body MDX di bawah "---" TIDAK wajib; kalau ditulis, tampil di
+# jendela quest di bawah summary.
+# ============================================================
+
+# ── WAJIB ──────────────────────────────────────────────────
+title: "Nama Project"
+year: "2025"
+tags: ["Web", "AI"]
+summary: "Deskripsi 2-3 kalimat yang tampil di jendela quest."
 link: "https://..."
-summary: "Dua-tiga kalimat ringkas untuk jendela quest."
+
+# ── OPSIONAL: MEDIA ────────────────────────────────────────
+# 1) Taruh file di content/projects/media/<folder-bebas>/
+#    (sarankan: samakan nama folder dengan nama file .mdx ini)
+# 2) Tulis NAMA FILE-nya di sini — URL publik diurus otomatis.
+#    cover  : gambar (png/jpg/webm/svg)
+#    video  : file lokal (mp4/webm/mov) ATAU link YouTube
+#
+# cover: "cover.png"
+# video: "demo.mp4"
+# video: "https://youtu.be/xxxxxxxxxxx"
 ---
-
-# Isi bebas MDX di bawah garis ini
-
-Tulis detail proyek di sini · paragraf, **tebal**, daftar:
-
-- Poin pertama
-- Poin kedua
-
-## Sub-judul juga bisa
-
-Semua markdown/MDX standar didukung dan tampil di jendela quest.

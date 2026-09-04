@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/copy-media.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

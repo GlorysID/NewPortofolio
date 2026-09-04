@@ -497,9 +497,17 @@ function BoardModel({
 }
 
 /** Gambar satu kertas quest ke canvas 2D — judul tinta, garis aksen,
-    tahun. Font generic ("serif"/"monospace") — tanpa asset baru.
+    tahun + tag pertama/jumlah tag. INPUT MINIMAL: hanya field pendek
+    dari frontmatter (title/year/tags) — summary/body TIDAK PERNAH
+    masuk tekstur, jadi summary panjang tak bisa meluap kertas.
+    Font generic ("serif"/"monospace") — tanpa asset baru.
     Dipanggil sekali per kertas (useMemo) → CanvasTexture. */
-function drawPaperTexture(title: string, year: string): HTMLCanvasElement {
+function drawPaperTexture(
+  title: string,
+  year: string,
+  firstTag: string,
+  extraTags: number,
+): HTMLCanvasElement {
   const W = 512;
   const H = 676; // rasio ≈ 0.62 : 0.82
   const canvas = document.createElement("canvas");
@@ -546,10 +554,17 @@ function drawPaperTexture(title: string, year: string): HTMLCanvasElement {
   ctx.fillStyle = "#e8a33d";
   ctx.fillRect(48, titleBottom, 150, 8);
 
-  // Label "QUEST" kecil + tahun di kaki kertas
+  // Label "QUEST" kecil + tag pertama (+N) + tahun di kaki kertas
   ctx.font = "28px monospace";
   ctx.fillStyle = "rgba(111, 90, 57, 0.85)";
   ctx.fillText("QUEST", 48, H - 92);
+  if (firstTag) {
+    ctx.fillStyle = "rgba(111, 90, 57, 0.6)";
+    ctx.fillText(firstTag.toUpperCase(), 200, H - 92);
+    if (extraTags > 0) {
+      ctx.fillText(`+${extraTags}`, 400, H - 92);
+    }
+  }
   ctx.fillText(year, 48, H - 54);
 
   return canvas;
@@ -569,7 +584,7 @@ function QuestPaper({
   rotZ,
   tiltX,
 }: {
-  project: Pick<BoardProject, "id" | "title" | "year">;
+  project: Pick<BoardProject, "id" | "title" | "year" | "tags">;
   x: number;
   y: number;
   z: number;
@@ -582,7 +597,12 @@ function QuestPaper({
   // (pola ContactGlow — tidak ada kebocoran memori GPU).
   const texture = useMemo(() => {
     const tex = new THREE.CanvasTexture(
-      drawPaperTexture(project.title, project.year),
+      drawPaperTexture(
+        project.title,
+        project.year,
+        project.tags[0] ?? "",
+        Math.max(0, project.tags.length - 1),
+      ),
     );
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 4;

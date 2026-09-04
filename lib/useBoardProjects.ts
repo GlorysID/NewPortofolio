@@ -10,8 +10,8 @@ import { MDXRemote } from "next-mdx-remote";
  *
  * Data dibangun statis saat build dari content/projects/*.mdx (lihat
  * app/projects-data/route.ts + lib/projects.ts) — runtime murni SSG,
- * tanpa server. Body MDX sudah dikompilasi saat build (`compiled`) —
- * client cukup <MDXRemote {...compiled} />, nol kompilasi runtime.
+ * tanpa server. Body MDX (opsional) sudah dikompilasi saat build
+ * (`compiled`) — client cukup <MDXRemote {...compiled} />.
  */
 
 /** Kontrak data — diproduksi lib/projects.ts + route.ts (build time). */
@@ -22,7 +22,12 @@ export interface BoardProject {
   tags: string[];
   link: string;
   summary: string;
-  /** MDX terkompilasi (build time) — siap di-spread ke MDXRemote */
+  /** Opsional — filename cover (URL publik: /projects-media/<folder>/) */
+  cover?: string;
+  /** Opsional — URL YouTube ATAU filename video lokal (.mp4/.webm/.mov) */
+  video?: string;
+  /** MDX terkompilasi (build time) — siap di-spread ke MDXRemote.
+      Ada hanya bila file .mdx punya body; body kini OPSIONAL. */
   compiled?: ComponentProps<typeof MDXRemote>;
 }
 
