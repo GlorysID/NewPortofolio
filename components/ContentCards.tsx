@@ -486,7 +486,7 @@ export function ContactCard() {
       {/* Item kontak — daftar kertas dengan divider hairline */}
       <div className="mt-3 divide-y divide-[#20201f]/10 border-t border-[#20201f]/10">
         <a
-          href="mailto:email@you.dev"
+          href="mailto:anjalisaputra@gmail.com"
           className="flex items-center justify-between py-2 font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/25 underline-offset-4 transition-colors hover:text-[#6f5a39]"
         >
           <span>anjalisaputra@gmail.com</span>
