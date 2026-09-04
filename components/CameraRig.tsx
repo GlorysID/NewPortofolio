@@ -197,19 +197,16 @@ export default function CameraRig() {
       if (dragMovedDist.current > 24) boardDrag.moved = true;
       // Pan hanya bermakna saat inspeksi (termasuk hasil promosi di atas)
       if (!useScrollStore.getState().boardInspect) return;
-      // Pandangan mengikuti arah drag (grab/pan). BUG DIPERBAIKI: versi
-      // lama menulis panY DUA kali (−dy lalu +dy) yang saling menghapus —
-      // drag vertikal netral total; panX tidak pernah ditulis sama sekali
-      // (selalu 0). Sekarang SATU tulisan per sumbu:
-      //   drag kanan (dx>0) → pandangan geser kanan (sepanjang tangent)
-      //   drag bawah (dy>0) → pandangan turun
+      // Pandangan BERLAWANAN arah drag (push-style — dibalik sesuai
+      // permintaan user): drag kanan → kamera bergeser kanan melihat
+      // bagian kiri papan; drag bawah → kamera turun melihat bagian atas.
       panX.current = Math.max(
         -0.6,
-        Math.min(0.6, panX.current - dx * 0.0016),
+        Math.min(0.6, panX.current + dx * 0.0016),
       );
       panY.current = Math.max(
         -0.6,
-        Math.min(0.6, panY.current - dy * 0.0016),
+        Math.min(0.6, panY.current + dy * 0.0016),
       );
     };
     const onUp = () => {
