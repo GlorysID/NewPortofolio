@@ -573,8 +573,9 @@ function drawPaperTexture(
     ctx.strokeStyle = "rgba(32, 32, 31, 0.18)";
     ctx.lineWidth = 3;
     ctx.strokeRect(PAPER_COVER.x, PAPER_COVER.y, PAPER_COVER.w, PAPER_COVER.h);
+    // Aksen kuning DI ATAS area foto — pemisah judul ↔ foto preview
     ctx.fillStyle = "#e8a33d";
-    ctx.fillRect(48, PAPER_COVER.y + PAPER_COVER.h + 16, 150, 8);
+    ctx.fillRect(48, PAPER_COVER.y - 24, 150, 8);
   } else {
     const titleBottom = 118 + shown.length * lineHeight + 18;
     ctx.fillStyle = "#e8a33d";
