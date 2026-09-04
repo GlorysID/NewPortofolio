@@ -60,17 +60,23 @@ function buildMediaIndex(): Map<string, string> {
   const index = new Map<string, string>();
   const mediaRoot = path.join(process.cwd(), "content", "projects", "media");
   if (!fs.existsSync(mediaRoot)) return index;
-  for (const folder of fs.readdirSync(mediaRoot, { withFileTypes: true })) {
-    if (!folder.isDirectory()) continue;
-    const folderDir = path.join(mediaRoot, folder.name);
-    for (const entry of fs.readdirSync(folderDir, { withFileTypes: true })) {
-      if (!entry.isFile()) continue;
-      // First match wins (folder di-sort) — nama duplikat antar folder
-      // tidak dianjurkan (lihat README).
-      if (!index.has(entry.name)) {
+  for (const entry of fs.readdirSync(mediaRoot, { withFileTypes: true })) {
+    // File LANGSUNG di media/ (tanpa subfolder) juga diindeks →
+    // URL /projects-media/<file>. User tidak wajib bikin subfolder.
+    if (entry.isFile() && !index.has(entry.name)) {
+      index.set(entry.name, `/projects-media/${entry.name}`);
+      continue;
+    }
+    if (!entry.isDirectory()) continue;
+    const folderDir = path.join(mediaRoot, entry.name);
+    for (const file of fs.readdirSync(folderDir, { withFileTypes: true })) {
+      if (!file.isFile()) continue;
+      // First match wins (folder & file di-sort) — nama duplikat antar
+      // folder tidak dianjurkan (lihat README).
+      if (!index.has(file.name)) {
         index.set(
-          entry.name,
-          `/projects-media/${folder.name}/${entry.name}`,
+          file.name,
+          `/projects-media/${entry.name}/${file.name}`,
         );
       }
     }
