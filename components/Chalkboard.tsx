@@ -47,13 +47,16 @@ const BOARD_HEIGHT = 2.8;
 const BOARD_URL = "/models/chalkboard.glb";
 
 /** Grid kertas 2×2 — koordinat board-local TER-FIT (papan menghadap
-    +z lokal). Kertas 0.62×0.82; kolom ±0.52; baris 2.18/1.26 (align
-    vertikal terhadap wajah, terverifikasi); z dihitung dari bbox
-    ter-fit (faceZ + float kecil) — bukan konstanta. */
-const PAPER_W = 0.62;
-const PAPER_H = 0.82;
-const COLS = [-0.52, 0.52];
-const ROWS = [2.18, 1.26];
+    +z lokal). Kertas 0.42×0.56 (diperkecil ~35% dari 0.62×0.82 —
+    ukuran lama terbaca sebagai kartu raksasa lepas, bukan catatan
+    tersemat); kolom ±0.42, baris 1.85/1.15 — grid terpusat di area
+    tulis dengan margin dari bingkai; clamp defensif terhadap lebar/
+    tinggi ter-fit di runtime. z per slot = hasil RAYCAST ke permukaan
+    nyata (bukan bbox) + epsilon 0.01 → menempel di permukaan apa adanya. */
+const PAPER_W = 0.42;
+const PAPER_H = 0.56;
+const COLS = [-0.42, 0.42];
+const ROWS = [1.85, 1.15];
 /** Rotasi z (°) & jitter posisi per kertas — tetap per index (SSR-safe). */
 const PAPER_ROT_Z = [-3.5, 2.5, -2, 4];
 const PAPER_JITTER: Array<[number, number]> = [
@@ -65,15 +68,18 @@ const PAPER_JITTER: Array<[number, number]> = [
 /** Kemiringan rotation.x per kertas (rad) — menangkap cahaya beda. */
 const PAPER_TILT_X = [-0.05, 0.06, 0.045, -0.06];
 
-/** Bounding box papan ter-fit — dilaporkan BoardModel setelah auto-fit
-    (dalam ruang group luar: x/z ter-center, bottom y=0, tinggi 2.8).
-    Dipakai untuk menempelkan kertas & proxy ke WAJAH papan sesungguhnya
-    — bug lama: kertas di z hardcode 0.06 padahal wajah ter-fit ada di
-    z ≈ +0.97 (D/2) → kertas terkubur di dalam mesh papan, tak terlihat. */
+/** Ukuran papan ter-fit + z permukaan per slot — dilaporkan BoardModel
+    setelah auto-fit (ruang group luar: x/z ter-center, bottom y=0,
+    tinggi 2.8). slotZ diukur via RAYCAST ke mesh model: permukaan
+    terdepan pada titik slot itu (wajah tulis/bingkai), BUKAN bbox —
+    bug sebelumnya: faceZ dari bbox maxZ mencakup bingkai/kaki yang
+    menonjol → kertas melayang di udara depan papan. */
 interface FittedBoard {
-  /** Wajah depan papan = max z ter-fit (kertas melayang di depannya) */
+  /** Fallback: max z ter-fit (bbox) — dipakai bila ray slot meleset */
   faceZ: number;
-  /** Lebar papan ter-fit (informasi — grid tetap ±0.52) */
+  /** z permukaan nyata per slot kertas (urutan BOARD_PROJECTS) */
+  slotZ: [number, number, number, number];
+  /** Lebar papan ter-fit (untuk clamp grid & lebar resolver) */
   width: number;
 }
 
@@ -132,15 +138,63 @@ function BoardModel({
     const cz = ((localMin.z + localMax.z) / 2) * scale;
     g.position.set(-cx, -localMin.y * scale, -cz);
 
-    // Lapor bbox ter-fit — wajah depan papan = max z (setelah centering
-    // = setengah kedalaman ter-fit). Kertas & proxy dihitung dari angka
-    // ini (bukan z hardcode) → selalu tepat di depan wajah, apapun
-    // proporsi glb. Dipanggil sekali per mount (setBoard stabil).
-    onFitted?.({
-      faceZ: (localMax.z - (localMin.z + localMax.z) / 2) * scale,
-      width: (localMax.x - localMin.x) * scale,
-    });
-  }, [onFitted]);
+    // faceZ (fallback) = max z ter-fit = D/2 setelah centering
+    const faceZ = (localMax.z - (localMin.z + localMax.z) / 2) * scale;
+    const fittedWidth = (localMax.x - localMin.x) * scale;
+
+    // -----------------------------------------------------------------
+    // RAYCAST-TO-SURFACE — z permukaan NYATA per slot kertas. Bbox maxZ
+    // mencakup bagian yang paling menonjol (bingkai/kaki); wajah tulis
+    // biasanya RESES di dalamnya → kertas di faceZ melayang. Solusi:
+    // lempar ray dari depan (z +10) ke arah −z tepat di titik slot,
+    // ambil hit terdekat = permukaan pada spot itu, z kertas = hit + 1cm.
+    // Sekali saat mount, deterministik, bebas biaya runtime.
+    // -----------------------------------------------------------------
+    g.updateWorldMatrix(true, true); // matriks g + parent + anak: current
+    const parent = g.parent;
+    const raycaster = new THREE.Raycaster();
+    raycaster.far = 40;
+    const rayOrigin = new THREE.Vector3();
+    const rayEnd = new THREE.Vector3();
+    const rayDir = new THREE.Vector3();
+    const hitLocal = new THREE.Vector3();
+    const slotZ: [number, number, number, number] = [faceZ, faceZ, faceZ, faceZ];
+    for (let i = 0; i < 4; i++) {
+      const col = COLS[i % 2];
+      const row = ROWS[Math.floor(i / 2)];
+      if (!parent) break;
+      // Origin & arah ray di ruang DUNIA, dari koordinat slot di ruang
+      // group luar (parent g = tempat kertas diparent-kan).
+      rayOrigin.set(col, row, 10);
+      parent.localToWorld(rayOrigin);
+      rayEnd.set(col, row, 0);
+      parent.localToWorld(rayEnd);
+      rayDir.subVectors(rayEnd, rayOrigin).normalize();
+      raycaster.set(rayOrigin, rayDir);
+      const hits = raycaster.intersectObject(scene, true);
+      if (hits.length > 0) {
+        // Hit terdekat = permukaan terdepan pada titik slot; konversi
+        // balik ke ruang group luar → z untuk penempatan kertas.
+        hitLocal.copy(hits[0].point);
+        parent.worldToLocal(hitLocal);
+        slotZ[i] = hitLocal.z + 0.01; // epsilon anti z-fight
+      }
+      // Meleset → fallback faceZ (sudah terisi di awal)
+    }
+
+    onFitted?.({ faceZ, slotZ, width: fittedWidth });
+    // Diagnostik ukur (dev saja): bukti permukaan slot ≠ bbox maxZ —
+    // bila semua slotZ < faceZ, wajah tulis memang reses di dalam bbox.
+    if (process.env.NODE_ENV !== "production") {
+      console.debug(
+        "[Chalkboard] faceZ(bbox) =", faceZ.toFixed(3),
+        "| slotZ(ray) =", slotZ.map((z) => z.toFixed(3)).join(", "),
+        "| width =", fittedWidth.toFixed(3),
+      );
+    }
+    // scene termasuk deps: glb baru (identitas scene beda) harus
+    // di-refit + di-raycast ulang, bukan sekali selamanya.
+  }, [onFitted, scene]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
   useEffect(() => {
@@ -219,10 +273,22 @@ function drawPaperTexture(title: string, year: string): HTMLCanvasElement {
   return canvas;
 }
 
-/** Satu kertas proyek — mesh + tekstur canvas + hover. KLIK tidak di
-    sini: resolver di depannya (BoardClickProxy) yang memutuskan via
-    e.intersections — kertas hanya perlu userData.projectId. */
-function QuestPaper({ index, z }: { index: number; z: number }) {
+/** Satu kertas proyek — mesh + tekstur canvas + hover. Posisi x/y/z
+    sudah dihitung & di-clamp di Chalkboard (grid + raycast slot z).
+    KLIK tidak di sini: resolver di depannya (BoardClickProxy) yang
+    memutuskan via e.intersections — kertas hanya perlu
+    userData.projectId. */
+function QuestPaper({
+  index,
+  x,
+  y,
+  z,
+}: {
+  index: number;
+  x: number;
+  y: number;
+  z: number;
+}) {
   const project = BOARD_PROJECTS[index];
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -240,8 +306,6 @@ function QuestPaper({ index, z }: { index: number; z: number }) {
 
   useEffect(() => () => texture.dispose(), [texture]);
 
-  const col = COLS[index % 2];
-  const row = ROWS[Math.floor(index / 2)];
   const [jx, jy] = PAPER_JITTER[index];
 
   const onOver = () => {
@@ -287,7 +351,7 @@ function QuestPaper({ index, z }: { index: number; z: number }) {
   return (
     <mesh
       ref={meshRef}
-      position={[col + jx, row + jy, z]}
+      position={[x + jx, y + jy, z]}
       rotation={[PAPER_TILT_X[index], 0, (PAPER_ROT_Z[index] * Math.PI) / 180]}
       castShadow={false}
       receiveShadow
@@ -301,18 +365,27 @@ function QuestPaper({ index, z }: { index: number; z: number }) {
   );
 }
 
-/** Resolver klik papan — bidang transparan DI DEPAN segalanya (z aman
-    di luar kedalaman wajah glb mana pun). Semua klik papan lewat sini:
+/** Resolver klik papan — bidang transparan di depan kertas terjauh
+    (max slotZ + 0.08), ukurannya memeluk papan (di-clamp ke lebar
+    ter-fit). Semua klik papan lewat sini:
     - belum inspeksi → masuk inspeksi (dolly-in kamera)
     - saat inspeksi → baca e.intersections: kertas di belakang proxy
       yang tertabrak (userData.projectId) membuka quest window-nya;
       klik area papan kosong → keluar inspeksi (kembali ke pan normal).
     Alur lengkap: open → inspeksi → quest (klik kertas) → inspeksi
     (Tutup/ESC) → pan normal (klik area kosong papan). */
-function BoardClickProxy({ z }: { z: number }) {
+function BoardClickProxy({
+  z,
+  w,
+  h,
+}: {
+  z: number;
+  w: number;
+  h: number;
+}) {
   return (
     <mesh
-      position={[0, 1.72, z]}
+      position={[0, 1.5, z]}
       rotation={[0, 0, 0]}
       onPointerOver={() => {
         const { boardInspect } = useScrollStore.getState();
@@ -349,7 +422,7 @@ function BoardClickProxy({ z }: { z: number }) {
         }
       }}
     >
-      <planeGeometry args={[2.7, 3.1]} />
+      <planeGeometry args={[w, h]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
   );
@@ -363,11 +436,24 @@ export default function Chalkboard() {
 
   // Bbox papan ter-fit — null selama model belum termuat/ter-fit.
   const [board, setBoard] = useState<FittedBoard | null>(null);
-  // Kertas melayang 3cm di depan wajah ter-fit; proxy 14cm di depan
-  // wajah (di depan kertas juga — resolver membaca intersections di
-  // belakangnya). Semua relatif ke wajah ter-fit, bukan z hardcode.
-  const paperZ = board ? board.faceZ + 0.03 : 0;
-  const proxyZ = board ? board.faceZ + 0.14 : 0;
+
+  // Grid slot final — x/y di-clamp defensif terhadap dimensi ter-fit
+  // (grid wajib tetap di papan), z dari RAYCAST permukaan per slot.
+  const halfW = board ? board.width / 2 : 0;
+  const maxCol = Math.max(0.2, halfW - PAPER_W / 2 - 0.08);
+  const minRow = PAPER_H / 2 + 0.2;
+  const maxRow = BOARD_HEIGHT - PAPER_H / 2 - 0.2;
+  const clamp = (v: number, lo: number, hi: number) =>
+    Math.max(lo, Math.min(hi, v));
+  const slots = BOARD_PROJECTS.map((_, i) => ({
+    x: clamp(COLS[i % 2], -maxCol, maxCol),
+    y: clamp(ROWS[Math.floor(i / 2)], minRow, maxRow),
+    z: board ? board.slotZ[i] : 0,
+  }));
+  // Resolver: di depan kertas terjauh + 8cm, memeluk papan (lebar
+  // di-clamp ke 90% lebar ter-fit, tinggi 2.6 dari total 2.8).
+  const proxyZ = board ? Math.max(...board.slotZ) + 0.08 : 0;
+  const proxyW = board ? Math.min(2.2, Math.max(1.2, board.width * 0.9)) : 2.2;
 
   return (
     <group>
@@ -379,14 +465,23 @@ export default function Chalkboard() {
           <BoardModel onFitted={setBoard} />
         </Suspense>
 
-        {/* Kertas quest — grid 2×2 tepat di wajah papan ter-fit */}
+        {/* Kertas quest — 2×2 di permukaan nyata papan (raycast per
+            slot; x/y di-clamp ke dimensi ter-fit) */}
         {board &&
           BOARD_PROJECTS.map((_, i) => (
-            <QuestPaper key={i} index={i} z={paperZ} />
+            <QuestPaper
+              key={i}
+              index={i}
+              x={slots[i].x}
+              y={slots[i].y}
+              z={slots[i].z}
+            />
           ))}
 
-        {/* Resolver klik — bidang transparan di depan wajah ter-fit */}
-        {board && <BoardClickProxy z={proxyZ} />}
+        {/* Resolver klik — bidang transparan di depan kertas terjauh */}
+        {board && (
+          <BoardClickProxy z={proxyZ} w={proxyW} h={2.6} />
+        )}
 
         {/* Affordance "lihat dekat" — label layar kecil di atas papan,
             hanya saat papan menghadap kita & belum inspeksi. Non-transform
