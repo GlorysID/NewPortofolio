@@ -42,6 +42,8 @@ export interface RawBoardProject {
   year: string;
   tags: string[];
   link: string;
+  /** Opsional — link repo GitHub, CTA kedua di quest window */
+  linkGithub?: string;
   summary: string;
   /** Body MDX mentah — "" bila file hanya frontmatter */
   body: string;
@@ -128,6 +130,10 @@ export function getBoardProjects(): RawBoardProject[] {
         typeof data.video === "string" && data.video.length > 0
           ? data.video
           : undefined;
+      const linkGithub =
+        typeof data["link-github"] === "string" && data["link-github"].length > 0
+          ? (data["link-github"] as string)
+          : undefined;
 
       const missing = REQUIRED_FIELDS.filter((field) => {
         const value = { title, year, tags, link, summary }[field];
@@ -146,6 +152,7 @@ export function getBoardProjects(): RawBoardProject[] {
         year,
         tags,
         link,
+        linkGithub,
         summary,
         body: content.trim(),
         cover: resolveMedia(cover),

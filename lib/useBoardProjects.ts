@@ -21,6 +21,8 @@ export interface BoardProject {
   year: string;
   tags: string[];
   link: string;
+  /** Opsional — link repo GitHub, CTA kedua di quest window */
+  linkGithub?: string;
   summary: string;
   /** Opsional — filename cover (URL publik: /projects-media/<folder>/) */
   cover?: string;

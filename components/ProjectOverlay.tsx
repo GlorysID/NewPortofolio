@@ -177,12 +177,24 @@ export default function ProjectOverlay() {
         </div>
 
         <div className="mt-5 flex items-center justify-between border-t border-[#20201f]/15 pt-4">
-          <a
-            href={project.link}
-            className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39]"
-          >
-            Buka Proyek ↗
-          </a>
+          <div className="flex flex-col gap-1.5">
+            <a
+              href={project.link}
+              className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+            >
+              Buka Proyek ↗
+            </a>
+            {project.linkGithub && (
+              <a
+                href={project.linkGithub}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#20201f]/60 underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+              >
+                GitHub ↗
+              </a>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => setActiveProjectId(null)}
