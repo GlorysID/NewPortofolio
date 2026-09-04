@@ -116,6 +116,15 @@ export function getBoardProjects(): RawBoardProject[] {
       if (webpName !== raw && mediaIndex.has(webpName)) {
         return mediaIndex.get(webpName);
       }
+      // Varian ber-hash (copy-media cache-busting): <base>.<hash8>.webp
+      const base = raw.replace(IMAGE_RE, "");
+      let hashVariant: string | undefined;
+      mediaIndex.forEach((url, name) => {
+        if (!hashVariant && name.startsWith(`${base}.`) && name.endsWith(".webp")) {
+          hashVariant = url;
+        }
+      });
+      if (hashVariant) return hashVariant;
     }
     const resolved = mediaIndex.get(raw);
     if (!resolved) {

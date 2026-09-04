@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import sharp from "sharp";
 
 const SRC = path.join(process.cwd(), "content", "projects", "media");
@@ -42,15 +43,23 @@ for (const rel of files.filter((f) => IMAGE_RE.test(f))) {
     skipped += 1;
     continue;
   }
-  const webpPath = rel.replace(IMAGE_RE, ".webp");
   const out = await sharp(buf)
     .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true })
     .webp({ quality: 82 })
     .toBuffer();
+  // CACHE-BUSTING: hash konten → nama output unik per gambar. Ganti
+  // gambar dengan nama sama? URL webp baru ≠ lama → browser tidak
+  // pernah menyajikan versi basi (penyebab "masih gambar lama").
+  const hash8 = crypto
+    .createHash("sha1")
+    .update(out)
+    .digest("hex")
+    .slice(0, 8);
+  const webpPath = rel.replace(IMAGE_RE, `.${hash8}.webp`);
   fs.writeFileSync(path.join(DEST, webpPath), out);
   made += 1;
   console.log(
-    `[copy-media] webp ${rel} → ${Math.round(buf.length / 1024)}KB → ${Math.round(out.length / 1024)}KB`,
+    `[copy-media] webp ${rel} → ${webpPath.replace(/\\/g, "/")} (${Math.round(buf.length / 1024)}KB → ${Math.round(out.length / 1024)}KB)`,
   );
 }
 console.log(`[copy-media] ${made} webp dibuat, ${skipped} dilewati (sudah kecil).`);
