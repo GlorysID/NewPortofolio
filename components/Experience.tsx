@@ -119,31 +119,18 @@ function DynamicQuality() {
 }
 
 /**
- * FlashRegress — jembatan murah flash→scene: saat `camera-flash:begin`
- * (dispatch dari CameraFlash), panggil `performance.regress()` → dpr
- * turun sementara via AdaptiveDpr (auto-recover setelah debounce 200ms).
- * Layar nyaris putih di puncak kilatan, jadi penurunan resolusi tidak
- * terlihat — biaya render 3D turun tepat di jendela paling ramai.
+ * Catatan perf: dulu ada FlashRegress (dpr turun via regress() di
+ * jendela flash/gate). DIHAPUS — setDpr memicu canvas resize: frame
+ * hitam (glitch) + jank main-thread tepat saat transisi, yang meng-
+ * habiskan jendela animasi. Biaya render utama sudah dipangkas di
+ * akarnya (tanpa reflektor real-time, model terkompresi, damping
+ * ringan), jadi jendela flash tidak butuh trik resolusi lagi.
  */
-function FlashRegress() {
-  const regress = useThree((s) => s.performance.regress);
-  useEffect(() => {
-    const onFlashBegin = () => regress();
-    window.addEventListener("camera-flash:begin", onFlashBegin);
-    return () =>
-      window.removeEventListener("camera-flash:begin", onFlashBegin);
-  }, [regress]);
-  return null;
-}
 
 /**
- * StudioFloor — lantai studio GELAP STATIS. Keputusan final: tanpa
- * real-time reflection sama sekali. MeshReflectorMaterial (scene
- * dirender KEDUA + blur tiap frame + FBO resize saat dpr berubah)
- * adalah akar lag di semua interaksi, glitch kilatan hitam, dan
- * frame-drop — biayanya jauh melampaui nilai kilau mirror di lantai
- * near-black. Mood studio tetap utuh via: kolam emas, ContactGlow,
- * beam + kerucut, dan bayangan avatar/papan yang jatuh ke lantai ini.
+ * StudioFloor — lantai studio GELAP STATIS (tanpa real-time
+ * reflection). Mood studio tetap utuh via kolam emas, ContactGlow,
+ * beam + kerucut, dan bayangan yang jatuh ke lantai ini.
  */
 function StudioFloor() {
   return (
@@ -166,11 +153,7 @@ function StudioFloor() {
  * - powerPreference "high-performance": minta GPU diskrit bila tersedia.
  * - frameloop default "always" — CameraRig damping tiap frame, jangan
  *   diganti "demand".
- * - Shadow ringan di layar kecil (ukuran map 512 + area lebih ketat)
- *   — perceptual difference minimal, hemat fill-rate GPU mobile.
  * - alpha true: background gradient CSS di belakang canvas.
- * - FlashRegress: jendela kilatan kamera me-regress performa sementara
- *   (layar dominan putih saat itu, jadi tak terlihat).
  */
 export default function Experience() {
   // Papan terbuka (hero) → canvas harus menerima pointer agar klik
@@ -202,9 +185,6 @@ export default function Experience() {
             berbasis fps rata-rata, bukan noise. */}
         <DynamicQuality />
         <AdaptiveDpr pixelated={false} />
-        {/* Jendela kilatan kamera → performance.regress() sementara.
-            Tidak terlihat: layar dominan putih saat flash puncak. */}
-        <FlashRegress />
 
         {/* Background void: hitam pekat solid, tanpa gradasi */}
         <color attach="background" args={["#000000"]} />
