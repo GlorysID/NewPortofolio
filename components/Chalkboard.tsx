@@ -361,6 +361,9 @@ function BoardModel({
       }
 
       onFitted?.({ region, width: fittedWidth, papers });
+      // Kertas masuk scene → StaticShadows bake ulang (+400ms). Ini
+      // juga terjadi di dalam jendela gate (gate menunggu semua asset).
+      window.dispatchEvent(new Event("chalkboard:papers"));
       // Diagnostik ukur (dev saja)
       if (process.env.NODE_ENV !== "production") {
         console.debug(
@@ -386,8 +389,26 @@ function BoardModel({
     let idx = 0;
     let handle = 0;
     let cancelled = false;
+    // Saat gerbang dibuka (fade GSAP 750ms mulai), scan DITAHAN 400ms —
+    // requestIdleCallback bisa saja menyisipkan chunk di tengah tween
+    // (idle callback tetap menyala saat main thread "sibuk" animasi).
+    // Jendela 0–750ms pasca-klik = bebas kerja berat.
+    let paused = false;
+    const onGateDismissed = () => {
+      paused = true;
+      cancelIdle(handle);
+      window.setTimeout(() => {
+        paused = false;
+        if (!cancelled && idx < total) handle = scheduleIdle(step);
+      }, 400);
+    };
+    window.addEventListener("gate:dismissed", onGateDismissed);
     const step = () => {
       if (cancelled) return;
+      if (paused) {
+        handle = scheduleIdle(step); // diam sampai pause lewat
+        return;
+      }
       const end = Math.min(idx + SCAN_CHUNK, total);
       while (idx < end) {
         const x = xs[idx % cols];
@@ -402,6 +423,7 @@ function BoardModel({
         handle = scheduleIdle(step);
       } else {
         finish(); // scan tuntas → placement + onFitted
+        window.removeEventListener("gate:dismissed", onGateDismissed);
       }
     };
     handle = scheduleIdle(step);
@@ -409,10 +431,14 @@ function BoardModel({
     return () => {
       cancelled = true;
       cancelIdle(handle);
+      window.removeEventListener("gate:dismissed", onGateDismissed);
     };
   }, [onFitted, scene]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
+  // Sambil memberi tahu StaticShadows bahwa papan sudah ADA di scene —
+  // bake bayangan pertama yang MENGHITUNG papan jalan di jendela gate
+  // (bukan tepat di klik gerbang).
   useEffect(() => {
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -421,6 +447,7 @@ function BoardModel({
         mesh.receiveShadow = false;
       }
     });
+    window.dispatchEvent(new Event("chalkboard:fitted"));
   }, [scene]);
 
   return (

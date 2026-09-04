@@ -12,8 +12,10 @@ import { useScrollStore } from "@/store/useScrollStore";
  * Transisi keluar DIGERAKKAN GSAP (bukan transisi CSS Tailwind):
  * deterministik, inline style, tak terpengaruh kondisi generate class.
  * Klik → GSAP men-fade + scale overlay (iris-out 0.75s) → onComplete
- * baru overlay dibongkar dari DOM. Event `gate:dismissed` disinkronkan
- * untuk animasi masuk Hero; `camera-flash:begin` untuk jendela GPU.
+ * baru overlay dibongkar dari DOM. Event `gate:dismissed` (animasi
+ * masuk Hero) DITUNDA ±60ms setelah tween mulai — frame pertama fade
+ * murni komposit. Dispatch `camera-flash:begin` dari gerbang dihapus
+ * (tanpa listener — FlashRegress/ReflectorGate sudah tidak ada).
  */
 
 type GatePhase = "loading" | "enter" | "leaving" | "gone";
@@ -32,7 +34,8 @@ export default function LoadingScreen() {
     }
   }, [active, progress, phase]);
 
-  /** Masuk: unlock audio DI DALAM gesture, lalu GSAP iris-out overlay. */
+  /** Masuk: unlock audio DI DALAM gesture, GSAP iris-out DULU di frame
+      yang sama, dispatch non-kritis menyusul setelahnya. */
   const enterExperience = useCallback(() => {
     setPhase((p) => {
       if (p !== "enter") return p;
@@ -43,14 +46,17 @@ export default function LoadingScreen() {
     // menutupi 100% layar sebelum titik ini → GPU tidak buang-buang
     // frame di balik overlay hitam).
     useScrollStore.getState().setGateUp(false);
-    // Sinkron animasi masuk Hero + jendela GPU murah (reflektor pause,
-    // dpr turun — sama seperti momen shutter).
-    window.dispatchEvent(new Event("gate:dismissed"));
-    window.dispatchEvent(new Event("camera-flash:begin"));
+    // `camera-flash:begin` dari gerbang DIHAPUS: FlashRegress &
+    // ReflectorGate sudah tidak ada — tidak ada listener tersisa,
+    // murni dispatch mati (leftover). Flash section-change tetap
+    // men-dispatch event-nya sendiri dari CameraFlash.
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-    // GSAP menggerakkan fade — onComplete baru unmount dari DOM.
+    // GSAP menggerakkan fade — mulai di frame berikutnya. Sinkronisasi
+    // Hero entrance DITUNDA ±60ms agar frame pertama tween sepenuhnya
+    // milik komposit (semua consumer gate:dismissed kini murah — bake
+    // bayangan sudah didefer +800ms di StaticShadows).
     const el = gateRef.current;
     if (el) {
       gsap.set(el, { pointerEvents: "none" });
@@ -65,6 +71,10 @@ export default function LoadingScreen() {
     } else {
       setPhase("gone");
     }
+    window.setTimeout(
+      () => window.dispatchEvent(new Event("gate:dismissed")),
+      60,
+    );
   }, []);
 
   // Scroll lock selama gerbang tampil (loading/enter/leaving).

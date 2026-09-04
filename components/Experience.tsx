@@ -145,8 +145,17 @@ function StudioFloor() {
  * StaticShadows — scene ini STATIS (tanpa animasi): bayangan tidak
  * berubah sepanjang sesi. Pass bayangan (me-render ulang SEMUA model
  * tiap frame — papan sendiri ±1 juta render-vertex) dimatikan dan
- * hanya di-bake sekali setelah semua aset masuk scene + saat gate
- * dibuka. Hemat ~50% beban vertex per frame secara permanen.
+ * hanya di-bake sekali-sekali:
+ * - mount + +1500ms + +3000ms (spaced, saat loading)
+ * - `chalkboard:fitted` — papan glb masuk scene; kalau papan datang
+ *   SETELAH +1500ms, bake pertama yang MENGHIITUNG papan harus jalan
+ *   di sini (di dalam jendela gate), BUKAN tepat di klik.
+ * - `chalkboard:papers` (+400ms) — kertas masuk scene.
+ * - `gate:dismissed` (+800ms, SETELAH fade 750ms selesai) — re-bake
+ *   jaminan. Dulu bake ini sinkron di klik: kalau papan datang telat,
+   varian shader depth-nya + pass 1M-vertex menghantam persis saat
+ *   iris-out → klik tersendat. Sekarang semua bake terjadi DI DALAM
+ *   jendela loading (scene sudah hangat), klik = komposit murni.
  */
 function StaticShadows() {
   const gl = useThree((s) => s.gl);
@@ -155,12 +164,22 @@ function StaticShadows() {
     const bake = () => {
       gl.shadowMap.needsUpdate = true;
     };
-    bake();
-    const t = setTimeout(bake, 1500); // model sudah masuk scene
-    window.addEventListener("gate:dismissed", bake);
+    const timers: number[] = [];
+    const bakeIn = (ms: number) => timers.push(window.setTimeout(bake, ms));
+    bake(); // mount — scene kosong/parsial, murah
+    bakeIn(1500);
+    bakeIn(3000);
+    const onFitted = () => bake(); // papan masuk scene (jendela gate)
+    const onPapers = () => bakeIn(400); // kertas masuk scene
+    const onDismiss = () => bakeIn(800); // SETELAH fade 750ms tuntas
+    window.addEventListener("chalkboard:fitted", onFitted);
+    window.addEventListener("chalkboard:papers", onPapers);
+    window.addEventListener("gate:dismissed", onDismiss);
     return () => {
-      clearTimeout(t);
-      window.removeEventListener("gate:dismissed", bake);
+      timers.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener("chalkboard:fitted", onFitted);
+      window.removeEventListener("chalkboard:papers", onPapers);
+      window.removeEventListener("gate:dismissed", onDismiss);
     };
   }, [gl]);
   return null;
