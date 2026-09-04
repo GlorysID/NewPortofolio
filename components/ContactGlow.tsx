@@ -42,7 +42,7 @@ export default function ContactGlow() {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0.004, 0]}
+      position={[0, 0.035, 0]}
       renderOrder={1}
     >
       <circleGeometry args={[1.25, 48]} />

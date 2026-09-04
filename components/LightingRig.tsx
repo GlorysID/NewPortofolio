@@ -342,7 +342,7 @@ export default function LightingRig() {
         aim={[0, 0, 0]}
         radius={LIGHTING.beamVisual.radius}
       />
-      <BeamFloorPool position={[0, 0.002, 0]} />
+      <BeamFloorPool position={[0, 0.02, 0]} />
 
       {/* SOROT CHALKBOARD — lampu + kerucut + kolam, bahasa visual
           identik dengan sorot karakter, dipasang di kaki papan
@@ -364,7 +364,7 @@ export default function LightingRig() {
         radius={LIGHTING.beamVisual.radiusBoard}
       />
       <BeamFloorPool
-        position={[LIGHTING.boardBeam.aim[0], 0.002, LIGHTING.boardBeam.aim[2]]}
+        position={[LIGHTING.boardBeam.aim[0], 0.02, LIGHTING.boardBeam.aim[2]]}
       />
 
       {/* UPLIGHT KAKI PAPAN — offset identik dengan uplight karakter;

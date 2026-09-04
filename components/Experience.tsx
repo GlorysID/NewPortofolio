@@ -11,76 +11,48 @@ import ContactGlow from "./ContactGlow";
 import { useScrollStore } from "@/store/useScrollStore";
 
 /**
- * DynamicQuality — pengendali kualitas adaptif (perf round 2).
+ * DynamicQuality — pengendali kualitas adaptif.
  *
  * PerformanceMonitor (drei) hanya memicu event setelah pembacaan fps
  * SUSTAINED — bukan sekali spike: rata-rata fps di-sampling tiap 250ms,
  * event baru dijalankan bila >=75% sampel (min. 8 dari 10 iterasi,
  * ~2.5 detik) berada di luar bounds. Artinya: turun kualitas hanya
- * saat GPU benar-benar kewalahan, dan naik lagi (snap back ke dpr awal)
- * saat headroom kembali. Tidak ada pengorbanan kualitas permanen selama
- * GPU sanggup.
+ * saat GPU benar-benar kewalahan, dan naik lagi saat headroom kembali.
  *
  * Bounds (fps): layar <=100Hz → [45, 58]; >100Hz → [55, 70].
  * flipflops 4: belokan arah ke-5 (naik-turun yang tak menentu) memicu
- * fallback → dpr menetap di lantai regressed sampai reload. Ini mencegah
- * osilasi kualitas yang kelihatan (kompromi yang disengaja untuk GPU
- * marginal), bukan pengurangan kualitas bagi mayoritas perangkat.
+ * fallback → dpr menetap di lantai regressed sampai reload.
  *
  * Tangga dpr = multiplier terhadap dpr awal (hasil clamp [1, 1.75]):
- *   rung 2 (default): 1.00 → hidpi 1.75, layar 1x tetap 1.0
+ *   rung 2 (default): 1.00 → hidpi 1.75
  *   rung 1          : 0.85 → hidpi ~1.49
- *   rung 0          : 0.72 → hidpi ~1.26 (di dalam jendela 1.0–1.25)
+ *   rung 0          : 0.72 → hidpi ~1.26
  *
- * Perubahan dpr dianimasikan halus (~350ms, easing smoothstep) via rAF,
- * BUKAN melompat sekaligus — transisi resolusi tidak terlihat.
- * Jika tab di-hidden, rAF berhenti otomatis (browser behavior), jadi
- * tidak ada rAF yang bocor.
+ * PENTING (fix glitch hitam): perubahan dpr = SET SEKALI via setDpr.
+ * Dulu dianimasikan via rAF (~20× setDpr per transisi) — tiap setDpr
+ * memicu canvas resize → kilatan hitam berulang persis di momen berat.
+ * Lompatan resolusi antar rung praktis tak terlihat; kilatannya yang
+ * terlihat.
  */
 const QUALITY_LADDER = [0.72, 0.85, 1] as const;
-const DPR_CHANGE_MS = 350;
 
 function DynamicQuality() {
-  const gl = useThree((s) => s.gl);
   const setDpr = useThree((s) => s.setDpr);
-  const active = useThree((s) => s.internal.active);
   const initialDpr = useThree((s) => s.viewport.initialDpr);
 
   const rung = useRef(QUALITY_LADDER.length - 1);
-  const from = useRef(initialDpr);
-  const startedAt = useRef(0);
-  const raf = useRef(0);
-
-  // Nilai terkini untuk cleanup-once (tanpa re-run effect tiap perubahan)
-  const latest = useRef({ active, initialDpr, setDpr });
-  latest.current = { active, initialDpr, setDpr };
+  const latest = useRef({ initialDpr, setDpr });
+  latest.current = { initialDpr, setDpr };
 
   const animateTo = (target: number) => {
-    from.current = gl.getPixelRatio();
-    startedAt.current = performance.now();
-    if (raf.current === 0) {
-      const tick = () => {
-        raf.current = 0;
-        const { setDpr: set } = latest.current;
-        const a = Math.min(
-          1,
-          (performance.now() - startedAt.current) / DPR_CHANGE_MS
-        );
-        const e = a * a * (3 - 2 * a); // smoothstep
-        set(from.current + (target - from.current) * e);
-        if (a < 1) raf.current = requestAnimationFrame(tick);
-      };
-      raf.current = requestAnimationFrame(tick);
-    }
+    latest.current.setDpr(target);
   };
 
   // Kembalikan dpr awal saat unmount — kontrak yang sama dengan AdaptiveDpr
   useEffect(
     () => () => {
-      if (raf.current !== 0) cancelAnimationFrame(raf.current);
-      raf.current = 0;
-      const { active: isActive, initialDpr: init, setDpr: set } = latest.current;
-      if (isActive) set(init);
+      const { initialDpr: init, setDpr: set } = latest.current;
+      set(init);
     },
     []
   );
