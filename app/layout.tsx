@@ -31,40 +31,40 @@ const body = IBM_Plex_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://yourname.dev"),
   title: {
-    default: "Your Name — Interactive 3D Portfolio",
-    template: "%s — Your Name",
+    default: "Anjali Saputra — Portfolio",
+    template: "%s — Anjali Saputra",
   },
   description:
-    "Portofolio interaktif 3D — kamera sinematik menyoroti detail karakter: intro, tentang, keahlian, proyek, dan kontak.",
+    "Portofolio interaktif 3D Anjali Saputra — AI agents, automation systems, dan web development. Kamera sinematik menyoroti tiap sisi: tentang, keahlian, perjalanan sekolah, dan papan proyek.",
   keywords: [
-    "3D portfolio",
-    "creative developer",
+    "Anjali Saputra",
+    "portfolio",
+    "AI agents",
+    "automation",
+    "web development",
     "three.js",
     "react three fiber",
-    "webgl",
-    "interactive experience",
   ],
   openGraph: {
     type: "website",
     url: "/",
-    title: "Your Name — Interactive 3D Portfolio",
+    title: "Anjali Saputra — Portfolio",
     description:
-      "Kamera sinematik menyoroti detail demi detail — pengalaman portofolio 3D interaktif.",
-    siteName: "Your Name — Portfolio",
+      "AI × Automation × Software — pengalaman portofolio 3D interaktif.",
+    siteName: "Anjali Saputra — Portfolio",
     images: [
       {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Your Name — Interactive 3D Portfolio",
+        alt: "Anjali Saputra — Portfolio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Your Name — Interactive 3D Portfolio",
-    description:
-      "Kamera sinematik menyoroti detail demi detail — pengalaman portofolio 3D interaktif.",
+    title: "Anjali Saputra — Portfolio",
+    description: "AI × Automation × Software — portofolio 3D interaktif.",
     images: ["/opengraph-image.png"],
   },
 };

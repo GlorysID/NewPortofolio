@@ -81,7 +81,7 @@ export default function Hero() {
           boardOpen ? "opacity-0" : "opacity-100"
         }`}
       >
-        Software Engineer
+        AI · Automation · Software
       </p>
       <h1
         ref={titleRef}
@@ -117,7 +117,8 @@ export default function Hero() {
           boardOpen ? "opacity-0" : "opacity-100"
         }`}
       >
-        Membangun program perangkat lunak dengan seni dan membantu banyak orang
+        Membangun sistem yang cerdas, otomatis, dan mandiri — mengeksplorasi
+        bagaimana AI dan otomasi bergabung menyelesaikan masalah nyata.
       </p>
     </section>
   );

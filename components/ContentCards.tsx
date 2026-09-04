@@ -330,9 +330,14 @@ export function AboutCard() {
         Tentang Saya
       </h3>
       <p className="mt-2 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
-        Creative developer dengan fokus pada pengalaman web interaktif.
-        Menggabungkan desain, teknologi, dan storytelling untuk produk digital
-        yang hidup — saat ini mengeksplorasi web 3D dan motion.
+        Developer yang berpikir pada <strong>AI agents, automation systems,
+        dan web development</strong>. Membangun perangkat lunak yang melampaui
+        aplikasi tradisional — mengeksplorasi bagaimana AI dan otomasi bisa
+        digabung menjadi sistem yang lebih cerdas, efisien, dan mandiri.
+        Terus belajar dan bereksperimen, mengubah ide menjadi produk nyata.
+      </p>
+      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#6f5a39]">
+        AI × Automation × Software
       </p>
       <ArtifactFoot text="Kodak Portra 400 — Frame 01" className="mt-4" />
     </div>
@@ -345,16 +350,16 @@ export function AboutCard() {
 
 export function SkillsCard() {
   const skills = [
+    "OpenCode",
+    "Hermes Agent",
+    "OpenClaw",
+    "JavaScript",
+    "Next.js",
+    "Python",
+    "Tailwind",
     "TypeScript",
     "React",
-    "Next.js",
-    "Three.js",
-    "R3F",
-    "GSAP",
-    "Tailwind",
     "Node.js",
-    "GLSL",
-    "Blender",
   ];
 
   return (
@@ -394,9 +399,9 @@ export function SkillsCard() {
 
 export function ProjectsCard() {
   const education = [
-    { period: "2013 — 2016", name: "SD Negeri", detail: "Sekolah dasar — fondasi literasi & numerasi." },
-    { period: "2016 — 2019", name: "SMP Negeri", detail: "Sekolah menengah pertama — awal rasa penasaran pada komputer." },
-    { period: "2019 — 2022", name: "SMK Negeri", detail: "Sekolah menengah kejuruan — jurusan rekayasa perangkat lunak." },
+    { period: "2007 — 2013", name: "SDN Limusnunggal 01", detail: "Sekolah dasar — fondasi literasi & numerasi." },
+    { period: "2013 — 2016", name: "SMP Negeri 03 Cileungsi", detail: "Sekolah menengah pertama — awal rasa penasaran pada komputer." },
+    { period: "2016 — 2019", name: "SMK Bina Mandiri Multimedia", detail: "Sekolah menengah kejuruan — multimedia & fondasi dunia digital." },
   ];
 
   return (
@@ -465,7 +470,7 @@ export function ContactCard() {
             Mari Terhubung
           </h3>
           <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773]">
-            Studio Anjal — Creative Developer
+            Studio Anjal — AI · Automation · Software
           </p>
         </div>
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#20201f]/20 font-display text-[12px] text-[#20201f]">
@@ -474,8 +479,8 @@ export function ContactCard() {
       </div>
 
       <p className="mt-3 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
-        Terbuka untuk kolaborasi, freelance, atau sekadar diskusi soal web 3D
-        dan creative coding.
+        Terbuka untuk kolaborasi, freelance, atau sekadar diskusi soal AI
+        agents, otomasi, dan pengembangan web.
       </p>
 
       {/* Item kontak — daftar kertas dengan divider hairline */}
@@ -484,7 +489,7 @@ export function ContactCard() {
           href="mailto:email@you.dev"
           className="flex items-center justify-between py-2 font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/25 underline-offset-4 transition-colors hover:text-[#6f5a39]"
         >
-          <span>email@you.dev</span>
+          <span>anjalisaputra@gmail.com</span>
           <span
             aria-hidden
             className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#a4a49f]"
@@ -493,7 +498,7 @@ export function ContactCard() {
           </span>
         </a>
         <a
-          href="https://github.com/yourname"
+          href="https://github.com/GlorysID"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
@@ -507,7 +512,7 @@ export function ContactCard() {
           </span>
         </a>
         <a
-          href="#"
+          href="/cv/CV-Anjali-Saputra.pdf"
           className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
         >
           <span>Unduh CV →</span>
@@ -516,6 +521,20 @@ export function ContactCard() {
             className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#a4a49f]"
           >
             PDF
+          </span>
+        </a>
+        <a
+          href="https://instagram.com/jalipryyy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+        >
+          <span>Instagram ↗</span>
+          <span
+            aria-hidden
+            className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#a4a49f]"
+          >
+            Social
           </span>
         </a>
       </div>
