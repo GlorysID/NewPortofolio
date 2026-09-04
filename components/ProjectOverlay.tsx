@@ -178,12 +178,14 @@ export default function ProjectOverlay() {
 
         <div className="mt-5 flex items-center justify-between border-t border-[#20201f]/15 pt-4">
           <div className="flex flex-col gap-1.5">
-            <a
-              href={project.link}
-              className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39]"
-            >
-              Buka Proyek ↗
-            </a>
+            {project.link && (
+              <a
+                href={project.link}
+                className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+              >
+                Buka Proyek ↗
+              </a>
+            )}
             {project.linkGithub && (
               <a
                 href={project.linkGithub}

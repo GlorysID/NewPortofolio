@@ -20,7 +20,8 @@ export interface BoardProject {
   title: string;
   year: string;
   tags: string[];
-  link: string;
+  /** Opsional — project tanpa live site (WIP/sekolah) sah tanpa link */
+  link?: string;
   /** Opsional — link repo GitHub, CTA kedua di quest window */
   linkGithub?: string;
   summary: string;

@@ -24,12 +24,12 @@ import matter from "gray-matter";
  * PERNAH menjatuhkan build. Diurutkan by filename.
  */
 
-/** Field frontmatter wajib — file tanpa ini di-skip dengan warning. */
+/** Field frontmatter wajib — file tanpa ini di-skip dengan warning.
+    `link` OPSIONAL: project tanpa live site (WIP/sekolah) tetap sah. */
 export const REQUIRED_FIELDS = [
   "title",
   "year",
   "tags",
-  "link",
   "summary",
 ] as const;
 
@@ -41,7 +41,8 @@ export interface RawBoardProject {
   title: string;
   year: string;
   tags: string[];
-  link: string;
+  /** Opsional — project tanpa live site (WIP/sekolah) sah tanpa link */
+  link?: string;
   /** Opsional — link repo GitHub, CTA kedua di quest window */
   linkGithub?: string;
   summary: string;
@@ -155,7 +156,7 @@ export function getBoardProjects(): RawBoardProject[] {
           : undefined;
 
       const missing = REQUIRED_FIELDS.filter((field) => {
-        const value = { title, year, tags, link, summary }[field];
+        const value = { title, year, tags, summary }[field];
         return Array.isArray(value) ? value.length === 0 : !value;
       });
       if (missing.length > 0) {
