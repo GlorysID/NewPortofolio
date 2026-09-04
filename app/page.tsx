@@ -10,6 +10,7 @@ import ContentCards from "@/components/ContentCards";
 import FilmGrain from "@/components/FilmGrain";
 import SectionRail from "@/components/SectionRail";
 import ProjectOverlay from "@/components/ProjectOverlay";
+import CertOverlay from "@/components/CertOverlay";
 import SwipeHint from "@/components/SwipeHint";
 
 /**
@@ -46,9 +47,10 @@ export default function Home() {
           di bawah enter gate & kilatan kamera) */}
       <SectionRail />
 
-      {/* Jendela quest MMORPG untuk proyek papan 3D (z-[36]) + petunjuk
-          geser tipis bottom-center (z-30) */}
+      {/* Jendela quest MMORPG untuk proyek papan 3D (z-[36]) +
+          jendela sertifikat untuk dinding kiri + petunjuk geser tipis */}
       <ProjectOverlay />
+      <CertOverlay />
       <SwipeHint />
 
       {/* Konten scroll di depan — pointer-events-none: section-section

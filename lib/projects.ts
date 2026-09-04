@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { buildMediaIndex, resolveMedia } from "./media-index";
 
 /**
  * getBoardProjects — loader konten proyek papan quest (SERVER-ONLY).
@@ -54,43 +55,8 @@ export interface RawBoardProject {
   video?: string;
 }
 
-/** Indeks media: basename → URL publik. Dua sumber, DIURUTKAN:
-    1) public/projects-media/** — output prebuild (mengandung varian
-       .webp hasil kompresi; fresh saat next build karena prebuild
-       jalan lebih dulu),
-    2) content/projects/media/** — sumber (fallback saat dev sebelum
-       prebuild pertama / file yang tak ter-copy).
-    First match wins → varian .webp otomatis menang atas original. */
-function buildMediaIndex(): Map<string, string> {
-  const index = new Map<string, string>();
-  const roots: Array<[string, string]> = [
-    [path.join(process.cwd(), "public", "projects-media"), "projects-media"],
-    [
-      path.join(process.cwd(), "content", "projects", "media"),
-      "projects-media",
-    ],
-  ];
-  for (const [root, urlBase] of roots) {
-    if (!fs.existsSync(root)) continue;
-    const walk = (dir: string, rel: string) => {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const relPath = rel ? `${rel}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) {
-          walk(path.join(dir, entry.name), relPath);
-        } else if (!index.has(entry.name)) {
-          index.set(entry.name, `/${urlBase}/${relPath}`);
-        }
-      }
-    };
-    walk(root, "");
-  }
-  return index;
-}
-
-/** URL sudah absolut? (YouTube, CDN, dsb. — dilewatkan apa adanya) */
-function isAbsoluteUrl(value: string): boolean {
-  return value.startsWith("http://") || value.startsWith("https://");
-}
+/** Indeks media: basename → URL publik — dipindah ke lib/media-index.ts
+    (bersama dengan certificates). */
 
 export function getBoardProjects(): RawBoardProject[] {
   const dir = path.join(process.cwd(), "content", "projects");
@@ -101,40 +67,19 @@ export function getBoardProjects(): RawBoardProject[] {
     .filter((f) => f.endsWith(".mdx") && !f.startsWith("_"))
     .sort();
 
-  const mediaIndex = buildMediaIndex();
-  const IMAGE_RE = /\.(png|jpe?g|webp)$/i;
-  /** Filename/URL mentah → URL publik final (rules di doc header).
-      Preferensi WEBP: bila file cover/video bernama <name>.<ext> punya
-      varian <name>.webp di indeks (dibuat scripts/copy-media.mjs saat
-      prebuild), URL webp yang dipakai — original tetap tersedia di
-      public untuk keperluan lain. */
-  const resolveMedia = (raw: string | undefined): string | undefined => {
-    if (!raw) return undefined;
-    if (isAbsoluteUrl(raw)) return raw;
-    if (IMAGE_RE.test(raw)) {
-      const webpName = raw.replace(IMAGE_RE, ".webp");
-      if (webpName !== raw && mediaIndex.has(webpName)) {
-        return mediaIndex.get(webpName);
-      }
-      // Varian ber-hash (copy-media cache-busting): <base>.<hash8>.webp
-      const base = raw.replace(IMAGE_RE, "");
-      let hashVariant: string | undefined;
-      mediaIndex.forEach((url, name) => {
-        if (!hashVariant && name.startsWith(`${base}.`) && name.endsWith(".webp")) {
-          hashVariant = url;
-        }
-      });
-      if (hashVariant) return hashVariant;
-    }
-    const resolved = mediaIndex.get(raw);
-    if (!resolved) {
-      console.warn(
-        `[projects] Media "${raw}" tidak ditemukan di content/projects/media/** — field dikosongkan.`,
-      );
-      return undefined;
-    }
-    return resolved;
-  };
+  const mediaIndex = buildMediaIndex([
+    [path.join(process.cwd(), "public", "projects-media"), "projects-media"],
+    [
+      path.join(process.cwd(), "content", "projects", "media"),
+      "projects-media",
+    ],
+  ]);
+  /** Filename/URL mentah → URL publik final. Preferensi WEBP (plain
+      <name>.webp atau varian ber-hash <base>.<hash8>.webp dari
+      copy-media cache-busting) — media-index menangani semuanya;
+      absolute URL pass-through; miss → warn + undefined. */
+  const resolveProjectMedia = (raw: string | undefined): string | undefined =>
+    resolveMedia(mediaIndex, raw, "projects");
 
   const projects: RawBoardProject[] = [];
   for (const file of files) {
@@ -184,8 +129,8 @@ export function getBoardProjects(): RawBoardProject[] {
         linkGithub,
         summary,
         body: content.trim(),
-        cover: resolveMedia(cover),
-        video: resolveMedia(video),
+        cover: resolveProjectMedia(cover),
+        video: resolveProjectMedia(video),
       });
     } catch (err) {
       console.warn(`[projects] Gagal parse ${file}:`, err);

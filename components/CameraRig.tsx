@@ -7,6 +7,7 @@ import { SHOTS, SHOT_BY_ID } from "@/data/shots";
 import type { SectionId } from "@/store/useScrollStore";
 import { useScrollStore } from "@/store/useScrollStore";
 import { boardDrag } from "@/lib/boardDrag";
+import { certDrag } from "@/lib/certDrag";
 
 /**
  * CameraRig — kamera sinematik berbasis scroll (final, fase 6).
@@ -63,6 +64,35 @@ const BOARD_INSPECT_TGT_M: [number, number, number] = [12.8, 1.4, 0.2];
 // leg ini tetap ke arah avatar.
 const BOARD_FRONT_POS: [number, number, number] = [-0.6, 1.65, 5.4];
 const BOARD_FRONT_TGT: [number, number, number] = [0, 1.35, 0];
+
+// ---------------------------------------------------------------------
+// CERTIFICATE WALL (KIRI) — mirror eksak papan: pos (−12.8, 0, 0.2)
+// rot +1.1. Semua pose = mirror-x dari pose papan (x → −x). Wajah
+// dinding menghadap +x arah kamera: normal wajah = (+0.891, 0, 0.454)
+// (mirror dari normal papan (−0.891, 0, 0.454) — rotasi +1.1 rad vs
+// −1.1 rad di sekitar Y; sin & cos tanda berbalik pada komponen x/z).
+// ---------------------------------------------------------------------
+const CERT_OPEN_POS: [number, number, number] = [-3.2, 1.9, 4.6];
+const CERT_OPEN_TGT: [number, number, number] = [-12.8, 1.45, 0.2];
+
+// Inspeksi frontal murni: kamera berdiri di sepanjang NORMAL wajah
+// dinding dari pusat wajah (−12.8, 1.45, 0.2): center + 3.2·n =
+// (−12.8 + 3.2·0.891, 1.45, 0.2 + 3.2·0.454) = (−9.95, 1.7, 1.65) —
+// garis pandang ⟂ wajah → tanpa distorsi perspektif (pola papan).
+const CERT_INSPECT_POS: [number, number, number] = [-9.95, 1.7, 1.65];
+const CERT_INSPECT_TGT: [number, number, number] = [-12.8, 1.45, 0.2];
+
+// Tangent wajah dinding — kanan-layar bagi penonton yang menghadap
+// dinding: cross(forward, up) dengan forward = −normal =
+// (−0.891, 0, −0.454) → tangent = (0.454, 0, −0.891) (mirror eksak
+// tangent papan di sumbu x=z? — cukup: sisi kanan layar kamera kiri).
+// Dipakai pan drag saat inspeksi dinding.
+const CERT_TX = 0.454;
+const CERT_TZ = -0.891;
+
+// Inspeksi mobile — mirror BOARD_INSPECT_POS_M.
+const CERT_INSPECT_POS_M: [number, number, number] = [-10.2, 1.8, 1.45];
+const CERT_INSPECT_TGT_M: [number, number, number] = [-12.8, 1.4, 0.2];
 
 // Clamp delta damping: frame yang lambat (jank/GC) tidak boleh membuat
 // kamera melompat lebih jauh dari setara frame 30fps (≈33ms). Efeknya:
@@ -152,7 +182,6 @@ export default function CameraRig() {
   // fase inspect; amplitudo kecil supaya framing tetap terjaga.
   const parallaxX = useRef(0); // -1..1 (kiri→kanan layar)
   const parallaxY = useRef(0); // -1..1 (atas→bawah layar)
-  const inspectPhase = useRef(false);
   // Pan drag inspeksi — user men-drag canvas → pandangan bergeser
   // (grab-style), terbatas agar papan tidak nyasar dari frame.
   const panX = useRef(0);
@@ -161,6 +190,9 @@ export default function CameraRig() {
   const dragLastX = useRef(0);
   const dragLastY = useRef(0);
   const dragMovedDist = useRef(0);
+  // Sisi aktif pan (dinding mana yang sedang dilihat saat drag) —
+  // menentukan tangent offset yang dipakai di useFrame.
+  const panSide = useRef<"board" | "cert">("board");
 
   // Drag-pan papan: pointerdown pada canvas saat boardOpen (BUKAN saat
   // boardInspect — pointerdown dari klik yang MEMASUKKI inspeksi terjadi
@@ -171,13 +203,16 @@ export default function CameraRig() {
   // menekan klik di akhir drag (drag bukan klik).
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
-      if (!useScrollStore.getState().boardOpen) return;
+      // Engage saat SALAH SATU dinding terbuka (board atau cert)
+      const st = useScrollStore.getState();
+      if (!st.boardOpen && !st.certWallOpen) return;
       if (!(e.target instanceof HTMLCanvasElement)) return;
       dragActive.current = true;
       dragLastX.current = e.clientX;
       dragLastY.current = e.clientY;
       dragMovedDist.current = 0;
       boardDrag.moved = false;
+      certDrag.moved = false;
     };
     const onMove = (e: PointerEvent) => {
       if (!dragActive.current) return;
@@ -187,19 +222,28 @@ export default function CameraRig() {
       dragLastY.current = e.clientY;
       dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
       const st = useScrollStore.getState();
-      // Tekan-and-drag dari papan terbuka: drag bermakna (>8px) langsung
-      // PROMOSI ke inspeksi (pan berlaku di fase inspect) + moved=true
-      // agar klik di akhir drag ditekan resolver papan.
-      if (dragMovedDist.current > 8 && !st.boardInspect) {
+      // Tekan-and-drag dari dinding terbuka: drag bermakna (>8px)
+      // PROMOSI ke inspeksi sisi yang aktif + tandai moved (drag ≠ klik)
+      if (dragMovedDist.current > 8 && st.boardOpen && !st.boardInspect) {
         st.setBoardInspect(true);
         boardDrag.moved = true;
+      } else if (
+        dragMovedDist.current > 8 &&
+        st.certWallOpen &&
+        !st.certInspect
+      ) {
+        st.setCertInspect(true);
+        certDrag.moved = true;
       }
-      if (dragMovedDist.current > 24) boardDrag.moved = true;
-      // Pan hanya bermakna saat inspeksi (termasuk hasil promosi di atas)
-      if (!useScrollStore.getState().boardInspect) return;
-      // Pandangan BERLAWANAN arah drag (push-style — dibalik sesuai
-      // permintaan user): drag kanan → kamera bergeser kanan melihat
-      // bagian kiri papan; drag bawah → kamera turun melihat bagian atas.
+      if (dragMovedDist.current > 24) {
+        boardDrag.moved = true;
+        certDrag.moved = true;
+      }
+      // Pan hanya bermakna saat inspeksi sisi aktif
+      if (!st.boardInspect && !st.certInspect) return;
+      // Pandangan mengikuti arah drag (push-style) — clamp ±0.6.
+      // Sisi aktif menentukan tangent offset di useFrame (CERT = mirror).
+      panSide.current = st.certInspect ? "cert" : "board";
       panX.current = Math.max(
         -0.6,
         Math.min(0.6, panX.current + dx * 0.0016),
@@ -233,35 +277,46 @@ export default function CameraRig() {
       window.removeEventListener("pointermove", onPointerMove);
   }, []);
   // Fase pan board: "closed" → "front" (waypoint depan karakter) →
-  // "open" → (boardInspect) "inspect". Pan SELALU membusur lewat depan
-  // karakter — bukan garis lurus diagonal menembus scene. Masuk/keluar
-  // inspeksi TIDAK lewat busur: gerakan dolly pendek langsung antar
-  // pose open ↔ inspect.
-  const boardPhase = useRef<"closed" | "front" | "open" | "inspect">("closed");
+  // "open" → (boardInspect) "inspect" — DAN mirror dinding kiri:
+  // "cert" (menghadap dinding) → (certInspect) "certinspect". Pan
+  // SELALU membusur lewat depan karakter. Inspeksi = dolly langsung.
+  type Side = "closed" | "front" | "open" | "inspect" | "cert" | "certinspect";
+  const boardPhase = useRef<Side>("closed");
   const lastBoardOpen = useRef(false);
   const lastBoardInspect = useRef(false);
+  const lastCertOpen = useRef(false);
+  const lastCertInspect = useRef(false);
   const settled = useRef(false);
 
   useFrame((_, delta) => {
-    const { progress, activeSection, boardOpen, boardInspect } =
+    const { progress, activeSection, boardOpen, boardInspect, certWallOpen, certInspect } =
       useScrollStore.getState();
 
     let lambda = 4; // responsif tapi lembut (mode normal)
 
     if (reducedMotion.current) {
       // Reduced motion: tanpa scrub/interpolasi & tanpa busur — shot
-      // statis per section (+ pose board/inspeksi langsung), settle
-      // sangat pendek.
+      // statis per section (+ pose board/cert langsung), settle pendek.
       const boardChanged =
         boardOpen !== lastBoardOpen.current ||
-        boardInspect !== lastBoardInspect.current;
+        boardInspect !== lastBoardInspect.current ||
+        certWallOpen !== lastCertOpen.current ||
+        certInspect !== lastCertInspect.current;
       lastBoardOpen.current = boardOpen;
       lastBoardInspect.current = boardInspect;
+      lastCertOpen.current = certWallOpen;
+      lastCertInspect.current = certInspect;
+      // Fase mengikuti store — board PRIORITAS (buka satu sisi menutup
+      // sisi lain, dijamin gesture layer)
       boardPhase.current = boardOpen
         ? boardInspect
           ? "inspect"
           : "open"
-        : "closed";
+        : certWallOpen
+          ? certInspect
+            ? "certinspect"
+            : "cert"
+          : "closed";
       if (
         settled.current &&
         activeSection === lastSection.current &&
@@ -274,8 +329,8 @@ export default function CameraRig() {
         settled.current = false;
       }
       if (boardChanged) settled.current = false;
-      // Keluar inspeksi → pan drag di-reset (jalur reduced-motion)
-      if (!boardInspect) {
+      // Keluar inspeksi (kedua sisi) → pan drag di-reset
+      if (!boardInspect && !certInspect) {
         panX.current = 0;
         panY.current = 0;
       }
@@ -303,25 +358,53 @@ export default function CameraRig() {
         _sampledTgt[0] = T[0];
         _sampledTgt[1] = T[1];
         _sampledTgt[2] = T[2];
-        // Pan drag user — sama dengan mode normal (drag = input user
-        // eksplisit, tetap diizinkan untuk reduced-motion)
-        _sampledPos[0] += BOARD_TX * panX.current;
-        _sampledPos[2] += BOARD_TZ * panX.current;
+        // Pan drag user — tangent sisi aktif (drag = input eksplisit)
+        const TX = panSide.current === "cert" ? CERT_TX : BOARD_TX;
+        const TZ = panSide.current === "cert" ? CERT_TZ : BOARD_TZ;
+        _sampledPos[0] += TX * panX.current;
+        _sampledPos[2] += TZ * panX.current;
         _sampledPos[1] += panY.current;
-        _sampledTgt[0] += BOARD_TX * panX.current;
-        _sampledTgt[2] += BOARD_TZ * panX.current;
+        _sampledTgt[0] += TX * panX.current;
+        _sampledTgt[2] += TZ * panX.current;
+        _sampledTgt[1] += panY.current;
+      } else if (certWallOpen && activeSection === "hero") {
+        const P = certInspect
+          ? isMobile.current
+            ? CERT_INSPECT_POS_M
+            : CERT_INSPECT_POS
+          : CERT_OPEN_POS;
+        const T = certInspect
+          ? isMobile.current
+            ? CERT_INSPECT_TGT_M
+            : CERT_INSPECT_TGT
+          : CERT_OPEN_TGT;
+        _sampledPos[0] = P[0];
+        _sampledPos[1] = P[1];
+        _sampledPos[2] = P[2];
+        _sampledTgt[0] = T[0];
+        _sampledTgt[1] = T[1];
+        _sampledTgt[2] = T[2];
+        const TX = panSide.current === "cert" ? CERT_TX : BOARD_TX;
+        const TZ = panSide.current === "cert" ? CERT_TZ : BOARD_TZ;
+        _sampledPos[0] += TX * panX.current;
+        _sampledPos[2] += TZ * panX.current;
+        _sampledPos[1] += panY.current;
+        _sampledTgt[0] += TX * panX.current;
+        _sampledTgt[2] += TZ * panX.current;
         _sampledTgt[1] += panY.current;
       }
       lambda = 10;
     } else {
-      // Transisi fase saat boardOpen berganti — jalur pan SELALU lewat
-      // waypoint depan karakter (busur dari kamera depan). Masuk/keluar
-      // inspeksi berpindah langsung (dolly pendek, tanpa busur).
+      // Transisi fase — board PRIORITAS; sisi lain menutup satu sama
+      // lain (dijamin gesture layer). Masuk/keluar inspeksi = dolly
+      // langsung; buka/tutup = busur lewat waypoint depan.
       if (
-        boardOpen &&
+        (boardOpen || certWallOpen) &&
         boardPhase.current !== "front" &&
         boardPhase.current !== "open" &&
-        boardPhase.current !== "inspect"
+        boardPhase.current !== "inspect" &&
+        boardPhase.current !== "cert" &&
+        boardPhase.current !== "certinspect"
       ) {
         boardPhase.current = "front";
         settled.current = false;
@@ -331,8 +414,13 @@ export default function CameraRig() {
       ) {
         boardPhase.current = "front"; // menutup: kembali lewat depan
         settled.current = false;
+      } else if (
+        !certWallOpen &&
+        (boardPhase.current === "cert" || boardPhase.current === "certinspect")
+      ) {
+        boardPhase.current = "front"; // menutup: kembali lewat depan
+        settled.current = false;
       } else if (boardOpen && boardInspect && boardPhase.current === "open") {
-        // Klik papan: masuk mode inspeksi
         boardPhase.current = "inspect";
         settled.current = false;
       } else if (
@@ -340,8 +428,21 @@ export default function CameraRig() {
         !boardInspect &&
         boardPhase.current === "inspect"
       ) {
-        // Keluar inspeksi: mundur ke pose open (tetap menghadap papan)
         boardPhase.current = "open";
+        settled.current = false;
+      } else if (
+        certWallOpen &&
+        certInspect &&
+        boardPhase.current === "cert"
+      ) {
+        boardPhase.current = "certinspect";
+        settled.current = false;
+      } else if (
+        certWallOpen &&
+        !certInspect &&
+        boardPhase.current === "certinspect"
+      ) {
+        boardPhase.current = "cert";
         settled.current = false;
       }
 
@@ -357,8 +458,8 @@ export default function CameraRig() {
         sampleShot(progress);
       }
 
-      // Keluar inspeksi → pan drag di-reset (goal kembali ke pose open).
-      if (!boardInspect) {
+      // Keluar inspeksi (kedua sisi) → pan drag di-reset
+      if (!boardInspect && !certInspect) {
         panX.current = 0;
         panY.current = 0;
       }
@@ -366,8 +467,7 @@ export default function CameraRig() {
       // Pilih GOAL pan (menimpa hasil sampling shot):
       if (boardPhase.current === "front") {
         // Leg 1: ke waypoint di depan karakter; tatapan tetap ke arah
-        // avatar — kamera "melingkar" dari kamera depan sebelum
-        // menoleh ke papan.
+        // avatar — kamera "melingkar" sebelum menoleh ke sisi aktif.
         _sampledPos[0] = BOARD_FRONT_POS[0];
         _sampledPos[1] = BOARD_FRONT_POS[1];
         _sampledPos[2] = BOARD_FRONT_POS[2];
@@ -375,26 +475,24 @@ export default function CameraRig() {
         _sampledTgt[1] = BOARD_FRONT_TGT[1];
         _sampledTgt[2] = BOARD_FRONT_TGT[2];
         lambda = Math.min(lambda, 3);
-        // Cukup dekat waypoint → lanjut ke leg berikutnya
+        // Cukup dekat waypoint → fase berikutnya mengikuti store
         const dx = camera.position.x - BOARD_FRONT_POS[0];
         const dy = camera.position.y - BOARD_FRONT_POS[1];
         const dz = camera.position.z - BOARD_FRONT_POS[2];
         if (dx * dx + dy * dy + dz * dz < 0.35) {
-          // Sampai di waypoint — fase berikutnya mengikuti store; bila
-          // inspeksi sudah diminta saat pan, langsung ke inspect.
           boardPhase.current = boardOpen
             ? boardInspect
               ? "inspect"
               : "open"
-            : "closed";
+            : certWallOpen
+              ? certInspect
+                ? "certinspect"
+                : "cert"
+              : "closed";
           settled.current = false;
         }
       } else if (boardOpen && activeSection === "hero") {
-        // Leg 2 / inspeksi: menghadap papan. Goal mengikuti store —
-        // boardInspect hanya berlaku saat boardOpen + hero (guard sama
-        // dengan open); activeProjectId tak mengubah pose (overlay 2D
-        // yang menampilkan proyek, kamera tetap di inspeksi). Lambda
-        // dipelankan → pan sinematik / dolly halus.
+        // Leg 2 / inspeksi PAPAN (kanan): goal mengikuti store.
         const P = boardInspect
           ? isMobile.current
             ? BOARD_INSPECT_POS_M
@@ -411,24 +509,42 @@ export default function CameraRig() {
         _sampledTgt[0] = T[0];
         _sampledTgt[1] = T[1];
         _sampledTgt[2] = T[2];
-        // Parallax kursor — HANYA saat inspeksi (guard di atas): offset
-        // kecil sepanjang tangent wajah papan. Basis tangent dihitung
-        // dari normal wajah (-0.891, 0, 0.454): kanan-layar = kanan-
-        // tangkapan, atas-layar = naik. Nol alokasi (ref scalar).
-        if (boardInspect) {
-          inspectPhase.current = true;
-        } else {
-          inspectPhase.current = false;
-        }
-        // Pan drag user — pos & target bergeser BERSAMAAN (translate
-        // view, bukan orbit): user bebas menjelajahi wajah papan.
-        // Drag aktif → lambda tinggi (responsif, tanpa rasa lag);
-        // setelah lepas → damping normal yang menghaluskan.
-        _sampledPos[0] += BOARD_TX * panX.current;
-        _sampledPos[2] += BOARD_TZ * panX.current;
+        // Parallax + pan drag — offset sepanjang tangent sisi aktif.
+        // Drag aktif → lambda tinggi (responsif, tanpa rasa lag).
+        const TX = panSide.current === "cert" ? CERT_TX : BOARD_TX;
+        const TZ = panSide.current === "cert" ? CERT_TZ : BOARD_TZ;
+        _sampledPos[0] += TX * panX.current;
+        _sampledPos[2] += TZ * panX.current;
         _sampledPos[1] += panY.current;
-        _sampledTgt[0] += BOARD_TX * panX.current;
-        _sampledTgt[2] += BOARD_TZ * panX.current;
+        _sampledTgt[0] += TX * panX.current;
+        _sampledTgt[2] += TZ * panX.current;
+        _sampledTgt[1] += panY.current;
+        lambda = dragActive.current ? 12 : Math.min(lambda, 3);
+      } else if (certWallOpen && activeSection === "hero") {
+        // Leg 2 / inspeksi DINDING (kiri) — mirror papan.
+        const P = certInspect
+          ? isMobile.current
+            ? CERT_INSPECT_POS_M
+            : CERT_INSPECT_POS
+          : CERT_OPEN_POS;
+        const T = certInspect
+          ? isMobile.current
+            ? CERT_INSPECT_TGT_M
+            : CERT_INSPECT_TGT
+          : CERT_OPEN_TGT;
+        _sampledPos[0] = P[0];
+        _sampledPos[1] = P[1];
+        _sampledPos[2] = P[2];
+        _sampledTgt[0] = T[0];
+        _sampledTgt[1] = T[1];
+        _sampledTgt[2] = T[2];
+        const TX = panSide.current === "cert" ? CERT_TX : BOARD_TX;
+        const TZ = panSide.current === "cert" ? CERT_TZ : BOARD_TZ;
+        _sampledPos[0] += TX * panX.current;
+        _sampledPos[2] += TZ * panX.current;
+        _sampledPos[1] += panY.current;
+        _sampledTgt[0] += TX * panX.current;
+        _sampledTgt[2] += TZ * panX.current;
         _sampledTgt[1] += panY.current;
         lambda = dragActive.current ? 12 : Math.min(lambda, 3);
       }

@@ -18,6 +18,7 @@ import { useScrollStore } from "@/store/useScrollStore";
  */
 export default function SwipeHint() {
   const boardOpen = useScrollStore((s) => s.boardOpen);
+  const certWallOpen = useScrollStore((s) => s.certWallOpen);
   const activeSection = useScrollStore((s) => s.activeSection);
   const textRef = useRef<HTMLParagraphElement>(null);
   const firstShow = useRef(true);
@@ -37,7 +38,8 @@ export default function SwipeHint() {
   useEffect(() => {
     const el = textRef.current;
     if (!el) return;
-    const show = gateDismissed && !boardOpen && activeSection === "hero";
+    const show =
+      gateDismissed && !boardOpen && !certWallOpen && activeSection === "hero";
     gsap.killTweensOf(el);
     if (show) {
       const delay = firstShow.current ? 1.2 : 0;
@@ -50,7 +52,7 @@ export default function SwipeHint() {
     } else {
       gsap.to(el, { autoAlpha: 0, duration: 0.3, ease: "power2.out" });
     }
-  }, [gateDismissed, boardOpen, activeSection]);
+  }, [gateDismissed, boardOpen, certWallOpen, activeSection]);
 
   // Pusat horizontal via inset-x-0 + flex (bukan translate) — transform
   // bebas konflik dengan tween GSAP (y) di elemen yang sama.
@@ -61,7 +63,7 @@ export default function SwipeHint() {
         aria-hidden
         className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40 opacity-0"
       >
-        Geser untuk menjelajah
+        Geser kanan & kiri untuk menjelajah
       </p>
     </div>
   );

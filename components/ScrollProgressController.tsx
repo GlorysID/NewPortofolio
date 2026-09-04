@@ -7,6 +7,7 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { SHOTS } from "@/data/shots";
 import { useScrollStore } from "@/store/useScrollStore";
 import { boardDrag } from "@/lib/boardDrag";
+import { certDrag } from "@/lib/certDrag";
 
 /**
  * ScrollProgressController — infrastruktur scroll GSAP.
@@ -170,14 +171,23 @@ export default function ScrollProgressController() {
       performance.now() < cooldownUntil;
 
     // Wheel — { passive: false }. Aturan GERAK (keras):
-    // - Papan TERBUKA  → SEMUA wheel diserap; satu-satunya aksi: geser
-    //   horizontal KE KIRI menutup papan. Vertikal = TIDAK TERJADI APA PUN.
-    // - Papan TERTUTUP → horizontal hanya bermakna di HERO (geser kanan =
-    //   buka); di section lain = TIDAK TERJADI APA PUN.
-    // - Vertikal (papan tertutup) = snap section seperti biasa.
+    // - Board TERBUKA     → wheel diserap; geser kiri = staged exit
+    //   (inspeksi → pan → tutup). Vertikal saat inspeksi = keluar.
+    // - Cert wall TERBUKA → wheel diserap; geser KANAN = staged exit
+    //   (mirror: dinding di kiri). Vertikal saat inspeksi = keluar.
+    // - Keduanya tertutup → horizontal di HERO: kanan = board, kiri =
+    //   cert wall. Vertikal = snap section.
     const onWheel = (e: WheelEvent) => {
-      const { boardOpen, activeSection, boardInspect, setBoardInspect } =
-        useScrollStore.getState();
+      const {
+        boardOpen,
+        activeSection,
+        boardInspect,
+        setBoardInspect,
+        certWallOpen,
+        certInspect,
+        setCertInspect,
+        setCertWallOpen,
+      } = useScrollStore.getState();
       const horizontal =
         Math.abs(e.deltaX) >= BOARD_WHEEL_THRESHOLD &&
         Math.abs(e.deltaX) > Math.abs(e.deltaY);
@@ -194,10 +204,23 @@ export default function ScrollProgressController() {
         }
         return;
       }
+      if (certWallOpen) {
+        e.preventDefault();
+        if (horizontal && e.deltaX > 0) {
+          // Geser KANAN bertahap: inspeksi → pan normal → tutup dinding
+          // (mirror papan — dinding ada di kiri).
+          if (certInspect) setCertInspect(false);
+          else setCertWallOpen(false);
+        } else if (!horizontal && certInspect) {
+          setCertInspect(false);
+        }
+        return;
+      }
       if (horizontal) {
         if (activeSection === "hero") {
           e.preventDefault();
-          if (e.deltaX > 0) setBoardOpen(true); // kanan = buka
+          if (e.deltaX > 0) setBoardOpen(true); // kanan = board
+          else setCertWallOpen(true); // kiri = cert wall
         }
         return; // di luar hero: benar-benar diabaikan
       }
@@ -247,7 +270,7 @@ export default function ScrollProgressController() {
       touchStartX = null;
       touchAxis = null;
 
-      const { boardOpen, activeSection, boardInspect, setBoardInspect } =
+      const { boardOpen, activeSection, boardInspect, setBoardInspect, certWallOpen, certInspect, setCertInspect, setCertWallOpen } =
         useScrollStore.getState();
       const horizontal =
         axis === "x" &&
@@ -256,16 +279,14 @@ export default function ScrollProgressController() {
 
       // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,
       // bukan gesture keluar. BACA SAJA — jangan reset di sini: flag
-      // juga dibaca resolver klik papan SETELAH touchend (click event
-      // menyusul touchend); reset dilakukan pointerdown berikutnya
-      // (CameraRig.onDown).
-      if (boardDrag.moved) {
+      // juga dibaca resolver klik SETELAH touchend (click event
+      // menyusul touchend); reset dilakukan pointerdown berikutnya.
+      if (boardDrag.moved || certDrag.moved) {
         return;
       }
 
-      // Papan TERBUKA: vertikal saat inspeksi = keluar inspeksi (tanpa
-      // snap) — KECUALI drag-pan baru saja terjadi (pointerup setelah
-      // drag = pan kamera, bukan gesture keluar).
+      // Board TERBUKA (prioritas): staged exit ke kiri; vertikal saat
+      // inspeksi = keluar inspeksi.
       if (boardOpen) {
         if (horizontal && dx < 0 && !isLocked()) {
           if (boardInspect) setBoardInspect(false);
@@ -275,11 +296,24 @@ export default function ScrollProgressController() {
         }
         return;
       }
-      // Papan tertutup: horizontal hanya bermakna di HERO — geser kanan
-      // (dx>0) membuka; di section lain & arah lain TIDAK TERJADI APA PUN.
+      // Cert wall TERBUKA: staged exit ke KANAN (mirror — dinding di
+      // kiri); vertikal saat inspeksi = keluar inspeksi.
+      if (certWallOpen) {
+        if (horizontal && dx > 0 && !isLocked()) {
+          if (certInspect) setCertInspect(false);
+          else setCertWallOpen(false);
+        } else if (!horizontal && certInspect) {
+          setCertInspect(false);
+        }
+        return;
+      }
+      // Keduanya tertutup: horizontal di HERO — kanan = board, kiri =
+      // cert wall. Di luar hero: diabaikan.
       if (horizontal) {
-        if (activeSection === "hero" && dx > 0 && !isLocked())
-          setBoardOpen(true);
+        if (activeSection === "hero" && !isLocked()) {
+          if (dx > 0) setBoardOpen(true);
+          else setCertWallOpen(true);
+        }
         return;
       }
       if (Math.abs(dy) < TOUCH_THRESHOLD) return;
@@ -287,33 +321,51 @@ export default function ScrollProgressController() {
       snapAdjacent(dy);
     };
 
-    // Keyboard — papan terbuka → tombol vertikal TIDAK melakukan apa pun
-    // (tidak boleh tabrakan pan-board vs snap). Panah kanan/kiri hanya
-    // bermakna di hero (buka) / saat papan terbuka (tutup).
+    // Keyboard — board PRIORITAS, cert wall mirror. Escape bertahap:
+    // overlay → inspeksi → pan normal (sisi yang aktif).
     const onKeyDown = (e: KeyboardEvent) => {
       const {
         activeSection,
         boardOpen,
         boardInspect,
         setBoardInspect,
+        certWallOpen,
+        certInspect,
+        setCertInspect,
+        setCertWallOpen,
       } = useScrollStore.getState();
       switch (e.key) {
         case "Escape": {
-          // Bertahap: quest window → inspeksi → pan normal.
+          // Bertahap: quest/overlay window → inspeksi → pan normal.
           const st = useScrollStore.getState();
           if (st.activeProjectId) st.setActiveProjectId(null);
-          else if (boardInspect) setBoardInspect(false);
+          else if (st.activeCertId) st.setActiveCertId(null);
+          else if (st.boardInspect) st.setBoardInspect(false);
+          else if (st.certInspect) st.setCertInspect(false);
           break;
         }
         case "ArrowRight":
           e.preventDefault();
-          if (activeSection === "hero" && !boardOpen && !isLocked())
+          if (certWallOpen) {
+            // kanan = staged exit dinding kiri (inspeksi → pan → tutup)
+            if (certInspect) setCertInspect(false);
+            else setCertWallOpen(false);
+          } else if (activeSection === "hero" && !boardOpen && !isLocked()) {
             setBoardOpen(true);
+          }
           break;
         case "ArrowLeft":
           e.preventDefault();
-          if (boardInspect) setBoardInspect(false);
-          else if (boardOpen) setBoardOpen(false);
+          if (boardOpen) {
+            if (boardInspect) setBoardInspect(false);
+            else setBoardOpen(false);
+          } else if (
+            activeSection === "hero" &&
+            !certWallOpen &&
+            !isLocked()
+          ) {
+            setCertWallOpen(true); // kiri = buka dinding sertifikat
+          }
           break;
         case "ArrowDown":
         case "PageDown":
@@ -324,7 +376,11 @@ export default function ScrollProgressController() {
             setBoardInspect(false); // vertikal = keluar inspeksi
             break;
           }
-          if (boardOpen) break; // TIDAK TERJADI APA PUN
+          if (certInspect) {
+            setCertInspect(false);
+            break;
+          }
+          if (boardOpen || certWallOpen) break; // TIDAK TERJADI APA PUN
           if (!isLocked())
             snapAdjacent(
               e.key === "ArrowDown" || e.key === "PageDown" ? 1 : -1
@@ -332,11 +388,13 @@ export default function ScrollProgressController() {
           break;
         case "Home":
           e.preventDefault();
-          if (!boardOpen && !isLocked()) scrollToSection(0);
+          if (!boardOpen && !certWallOpen && !isLocked())
+            scrollToSection(0);
           break;
         case "End":
           e.preventDefault();
-          if (!boardOpen && !isLocked()) scrollToSection(SECTION_COUNT - 1);
+          if (!boardOpen && !certWallOpen && !isLocked())
+            scrollToSection(SECTION_COUNT - 1);
           break;
         default:
           break;
