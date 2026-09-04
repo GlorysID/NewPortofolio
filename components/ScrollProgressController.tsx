@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { SHOTS } from "@/data/shots";
 import { useScrollStore } from "@/store/useScrollStore";
+import { boardDrag } from "@/lib/boardDrag";
 
 /**
  * ScrollProgressController — infrastruktur scroll GSAP.
@@ -253,9 +254,16 @@ export default function ScrollProgressController() {
         Math.abs(dx) >= TOUCH_THRESHOLD &&
         Math.abs(dx) > Math.abs(dy) * 1.2;
 
+      // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,
+      // bukan gesture keluar; tekan flag dan reset.
+      if (boardDrag.moved) {
+        boardDrag.moved = false;
+        return;
+      }
+
       // Papan TERBUKA: vertikal saat inspeksi = keluar inspeksi (tanpa
-      // snap); vertikal saat pan normal = TIDAK TERJADI APA PUN. Satu-
-      // satunya aksi: geser kiri (dx<0) — bertahap inspeksi → pan → tutup.
+      // snap) — KECUALI drag-pan baru saja terjadi (pointerup setelah
+      // drag = pan kamera, bukan gesture keluar).
       if (boardOpen) {
         if (horizontal && dx < 0 && !isLocked()) {
           if (boardInspect) setBoardInspect(false);

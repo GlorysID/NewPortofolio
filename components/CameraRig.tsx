@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { SHOTS, SHOT_BY_ID } from "@/data/shots";
 import type { SectionId } from "@/store/useScrollStore";
 import { useScrollStore } from "@/store/useScrollStore";
+import { boardDrag } from "@/lib/boardDrag";
 
 /**
  * CameraRig — kamera sinematik berbasis scroll (final, fase 6).
@@ -152,6 +153,61 @@ export default function CameraRig() {
   const parallaxX = useRef(0); // -1..1 (kiri→kanan layar)
   const parallaxY = useRef(0); // -1..1 (atas→bawah layar)
   const inspectPhase = useRef(false);
+  // Pan drag inspeksi — user men-drag canvas → pandangan bergeser
+  // (grab-style), terbatas agar papan tidak nyasar dari frame.
+  const panX = useRef(0);
+  const panY = useRef(0);
+  const dragActive = useRef(false);
+  const dragLastX = useRef(0);
+  const dragLastY = useRef(0);
+  const dragMovedDist = useRef(0);
+
+  // Drag-pan inspeksi: pointerdown pada canvas saat inspeksi → drag
+  // menggeser pandangan sepanjang tangent & vertikal (ter-clamp).
+  // Gerakan > 8px menandai boardDrag.moved → klik berikutnya ditekan
+  // oleh resolver papan (drag bukan klik).
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (!useScrollStore.getState().boardInspect) return;
+      if (!(e.target instanceof HTMLCanvasElement)) return;
+      dragActive.current = true;
+      dragLastX.current = e.clientX;
+      dragLastY.current = e.clientY;
+      dragMovedDist.current = 0;
+      boardDrag.moved = false;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragActive.current) return;
+      const dx = e.clientX - dragLastX.current;
+      const dy = e.clientY - dragLastY.current;
+      dragLastX.current = e.clientX;
+      dragLastY.current = e.clientY;
+      dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
+      if (dragMovedDist.current > 8) boardDrag.moved = true;
+      // Grab-style: drag kanan → pandangan bergeser ke kanan
+      panX.current = Math.max(
+        -1.2,
+        Math.min(1.2, panX.current - dx * 0.0028),
+      );
+      panY.current = Math.max(
+        -0.6,
+        Math.min(0.6, panY.current + dy * 0.0028),
+      );
+    };
+    const onUp = () => {
+      dragActive.current = false;
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []);
   useEffect(() => {
     const onPointerMove = (e: PointerEvent) => {
       parallaxX.current = (e.clientX / window.innerWidth) * 2 - 1;
@@ -272,6 +328,12 @@ export default function CameraRig() {
         sampleShot(progress);
       }
 
+      // Keluar inspeksi → pan drag di-reset (goal kembali ke pose open).
+      if (!boardInspect) {
+        panX.current = 0;
+        panY.current = 0;
+      }
+
       // Pilih GOAL pan (menimpa hasil sampling shot):
       if (boardPhase.current === "front") {
         // Leg 1: ke waypoint di depan karakter; tatapan tetap ke arah
@@ -333,6 +395,14 @@ export default function CameraRig() {
         } else {
           inspectPhase.current = false;
         }
+        // Pan drag user — pos & target bergeser BERSAMAAN (translate
+        // view, bukan orbit): user bebas menjelajahi wajah papan.
+        _sampledPos[0] += BOARD_TX * panX.current;
+        _sampledPos[2] += BOARD_TZ * panX.current;
+        _sampledPos[1] += panY.current;
+        _sampledTgt[0] += BOARD_TX * panX.current;
+        _sampledTgt[2] += BOARD_TZ * panX.current;
+        _sampledTgt[1] += panY.current;
         lambda = Math.min(lambda, 3);
       }
       // Fase "closed": goal = pose shot hasil sampling (perilaku normal).

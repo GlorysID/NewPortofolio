@@ -7,6 +7,7 @@ import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import { BOARD_PROJECTS } from "@/data/projects";
 import { useScrollStore } from "@/store/useScrollStore";
+import { boardDrag } from "@/lib/boardDrag";
 
 /**
  * Chalkboard — papan proyek 3D bergaya QUEST BOARD MMORPG.
@@ -297,6 +298,11 @@ function BoardClickProxy() {
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
+        // Akhir drag-pan = BUKAN klik; tekan flag dan reset.
+        if (boardDrag.moved) {
+          boardDrag.moved = false;
+          return;
+        }
         const { boardInspect, setBoardInspect, setActiveProjectId } =
           useScrollStore.getState();
         if (!boardInspect) {
