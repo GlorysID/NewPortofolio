@@ -1,33 +1,37 @@
 ---
-# ============================================================
-# TEMPLATE PROYEK QUEST BOARD (form-only — tanpa tulis MDX)
+# ==============================================================
+# TEMPLATE PROJECT QUEST BOARD
+# Cukup isi bagian dalam tanda kutip — tidak ada coding sama sekali.
 #
-# Cara pakai:
-# 1. Salin file ini → 05-nama-proyek.mdx (nomor = urutan kertas)
-# 2. Isi 5 field WAJIB di bawah
-# 3. (Opsional) isi cover/video — lihat panduan media di bawah
-# 4. Push → build otomatis → kertas baru muncul di papan (maks 12)
-#
-# Field opsional: hapus barisnya kalau tidak dipakai.
-# Body MDX di bawah "---" TIDAK wajib; kalau ditulis, tampil di
-# jendela quest di bawah summary.
-# ============================================================
+# CARA PAKAI:
+# 1. Copy file ini, ganti namanya jadi 06-nama-project.mdx
+#    (angka di depan menentukan urutan kertas di papan)
+# 2. Isi semua kolom di bawah
+# 3. Kalau ada foto/video, lihat petunjuk bagian MEDIA di bawah
+# 4. Push ke GitHub → kertas baru otomatis muncul di papan
+# ==============================================================
 
-# ── WAJIB ──────────────────────────────────────────────────
+# ===== WAJIB DIISI =====
 title: "Nama Project"
 year: "2025"
 tags: ["Web", "AI"]
-summary: "Deskripsi 2-3 kalimat yang tampil di jendela quest."
-link: "https://..."
+summary: "Ceritakan project-mu di sini, 2 sampai 3 kalimat. Kalimat ini yang muncul di jendela quest saat kertas diklik."
+link: "https://link-project.com"
 
-# ── OPSIONAL: MEDIA ────────────────────────────────────────
-# 1) Taruh file di content/projects/media/<folder-bebas>/
-#    (sarankan: samakan nama folder dengan nama file .mdx ini)
-# 2) Tulis NAMA FILE-nya di sini — URL publik diurus otomatis.
-#    cover  : gambar (png/jpg/webm/svg)
-#    video  : file lokal (mp4/webm/mov) ATAU link YouTube
-#
-# cover: "cover.png"
+# ===== OPSIONAL 1: LINK GITHUB =====
+# Hapus baris ini kalau tidak ada repo GitHub.
+link-github: "https://github.com/GlorysID/nama-project"
+
+# ===== OPSIONAL 2: FOTO COVER =====
+# 1. Taruh fotonya di folder: content/projects/media/
+# 2. Tulis nama filenya persis di bawah ini.
+#    Foto besar otomatis dikompres saat build — tidak perlu resize manual.
+# cover: "nama-foto.png"
+
+# ===== OPSIONAL 3: VIDEO =====
+# Pilih SALAH SATU:
+# a) Link YouTube: tulis link-nya langsung
+# video: "https://youtu.be/xxxxxxx"
+# b) File video: taruh di content/projects/media/ lalu tulis namanya
 # video: "demo.mp4"
-# video: "https://youtu.be/xxxxxxxxxxx"
 ---
