@@ -32,6 +32,10 @@ const HOLD = 0.4;
 // yaw ~80° untuk memframanya penuh.
 const BOARD_OPEN_POS: [number, number, number] = [3.2, 1.9, 4.6];
 const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
+// Pose open MOBILE — mundur lebih jauh & lebih tinggi: layar portrait
+// sempit + FOV horizontal kecil membuat papan makin besar di frame.
+const BOARD_OPEN_POS_M: [number, number, number] = [1.4, 2.2, 6.6];
+const BOARD_OPEN_TGT_M: [number, number, number] = [11.5, 1.5, 0.4];
 
 // Pose inspeksi papan (boardInspect): dolly-in dari pose open — kamera
 // merapat ke wajah papan sampai grid 2×2 kertas mengisi ~70% frame.
@@ -286,12 +290,16 @@ export default function CameraRig() {
           ? isMobile.current
             ? BOARD_INSPECT_POS_M
             : BOARD_INSPECT_POS
-          : BOARD_OPEN_POS;
+          : isMobile.current
+            ? BOARD_OPEN_POS_M
+            : BOARD_OPEN_POS;
         const T = boardInspect
           ? isMobile.current
             ? BOARD_INSPECT_TGT_M
             : BOARD_INSPECT_TGT
-          : BOARD_OPEN_TGT;
+          : isMobile.current
+            ? BOARD_OPEN_TGT_M
+            : BOARD_OPEN_TGT;
         _sampledPos[0] = P[0];
         _sampledPos[1] = P[1];
         _sampledPos[2] = P[2];
@@ -383,12 +391,16 @@ export default function CameraRig() {
           ? isMobile.current
             ? BOARD_INSPECT_POS_M
             : BOARD_INSPECT_POS
-          : BOARD_OPEN_POS;
+          : isMobile.current
+            ? BOARD_OPEN_POS_M
+            : BOARD_OPEN_POS;
         const T = boardInspect
           ? isMobile.current
             ? BOARD_INSPECT_TGT_M
             : BOARD_INSPECT_TGT
-          : BOARD_OPEN_TGT;
+          : isMobile.current
+            ? BOARD_OPEN_TGT_M
+            : BOARD_OPEN_TGT;
         _sampledPos[0] = P[0];
         _sampledPos[1] = P[1];
         _sampledPos[2] = P[2];

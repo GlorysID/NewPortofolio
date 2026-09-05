@@ -62,7 +62,7 @@ export default function SwipeHint() {
         aria-hidden
         className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40 opacity-0"
       >
-        Geser kanan & kiri untuk menjelajah
+        Geser kanan untuk melihat project
       </p>
     </div>
   );
