@@ -67,15 +67,16 @@ export function getCertificates(): RawCertificate[] {
         typeof data.link === "string" && data.link.length > 0
           ? data.link
           : undefined;
+      // image DIEKSTRAK DULU — dipakai filter `missing` di bawahnya
+      const image =
+        typeof data.image === "string" && data.image.length > 0
+          ? data.image
+          : "";
 
       const missing = REQUIRED_CERT_FIELDS.filter((field) => {
         const value: Record<string, string> = { title, issuer, year, image };
         return !value[field];
       });
-      const image =
-        typeof data.image === "string" && data.image.length > 0
-          ? data.image
-          : "";
       if (missing.length > 0 || !image) {
         console.warn(
           `[certificates] Lewati ${file} — frontmatter wajib kosong: ${[...missing, ...(image ? [] : ["image"])].join(", ")}`,
