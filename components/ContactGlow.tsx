@@ -44,6 +44,7 @@ export default function ContactGlow() {
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, 0.035, 0]}
       renderOrder={1}
+      raycast={() => null}
     >
       <circleGeometry args={[1.25, 48]} />
       <meshBasicMaterial

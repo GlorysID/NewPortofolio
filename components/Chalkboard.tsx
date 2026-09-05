@@ -496,15 +496,16 @@ function BoardModel({
   }, [onFitted, scene, paperCount, paperSides]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
-  // Sambil memberi tahu StaticShadows bahwa papan sudah ADA di scene —
-  // bake bayangan pertama yang MENGHITUNG papan jalan di jendela gate
-  // (bukan tepat di klik gerbang).
+  // PLUS raycast=null: R3F men-tes SEMUA mesh pada SETIAP pointermove
+  // (ratusan event/detik saat drag) — model 108rb vertex di-skip dari
+  // raycast (klik lewat BoardClickProxy, bukan mesh model).
   useEffect(() => {
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
+        mesh.raycast = () => null;
       }
     });
     window.dispatchEvent(new Event("chalkboard:fitted"));

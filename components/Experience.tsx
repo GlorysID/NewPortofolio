@@ -109,7 +109,7 @@ function StudioFloor() {
     /* Tanpa receiveShadow: lantai #050507 — bayangan tak terlihat, tapi
        sampling shadow map per-piksel di seluruh permukaannya = fill-rate
        tersembunyi terbesar. ContactGlow tetap memberi pijakan cahaya. */
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} raycast={() => null}>
       <planeGeometry args={[60, 60]} />
       <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
     </mesh>

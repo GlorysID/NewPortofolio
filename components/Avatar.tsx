@@ -87,6 +87,11 @@ function GLTFModel() {
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
+        // Skip dari raycast: avatar 513rb vertex tidak butuh hover —
+        // klik papan lewat BoardClickProxy. R3F men-tes SEMUA mesh pada
+        // SETIAP pointermove (ratusan event/detik) — tanpa skip ini,
+        // raycast 500rb+ triangle = CPU spike = FPS drop saat drag.
+        mesh.raycast = () => null;
       }
     });
   }, [scene]);

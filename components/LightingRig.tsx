@@ -197,7 +197,7 @@ function BeamCone({
   if (!texture) return null;
 
   return (
-    <mesh position={position} quaternion={quaternion} renderOrder={2}>
+    <mesh position={position} quaternion={quaternion} renderOrder={2} raycast={() => null}>
       <coneGeometry
         args={[radius, LIGHTING.beamVisual.height, 32, 1, true]}
       />
@@ -238,6 +238,7 @@ function BeamFloorPool({
       rotation={[-Math.PI / 2, 0, 0]}
       position={position}
       renderOrder={1}
+      raycast={() => null}
     >
       <circleGeometry args={[LIGHTING.pool.radius, 48]} />
       <meshBasicMaterial
