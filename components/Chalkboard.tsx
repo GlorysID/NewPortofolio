@@ -143,6 +143,11 @@ function BoardModel({
 }) {
   const { scene } = useGLTF(BOARD_URL);
   const group = useRef<THREE.Group>(null);
+  /** Raycast ASLI per mesh papan — disimpan saat traverse, di-null-kan
+      untuk runtime (FPS), di-restore sementara oleh castAt (scan). */
+  const boardRaycastsRef = useRef<Map<THREE.Mesh, THREE.Mesh["raycast"]>>(
+    new Map(),
+  );
   // Hasil fit (faceZ/width) — diisi layout effect, dibaca scan async
   const fitRef = useRef<{ faceZ: number; width: number } | null>(null);
   // Hasil scan (dipakai ulang saat paperCount berubah — scan CUMA SEKALI)
@@ -237,6 +242,11 @@ function BoardModel({
       x: number,
       y: number,
     ): { z: number; facing: boolean } | null => {
+      // HYBRID: restore raycast ASLI mesh papan → intersect → null lagi.
+      // Runtime tetap null demi FPS; scan/placement butuh ray asli.
+      boardRaycastsRef.current.forEach((original, mesh) => {
+        mesh.raycast = original;
+      });
       rayOrigin.set(x, y, 10);
       parent.localToWorld(rayOrigin);
       rayEnd.set(x, y, 0);
@@ -244,6 +254,9 @@ function BoardModel({
       rayDir.subVectors(rayEnd, rayOrigin).normalize();
       raycaster.set(rayOrigin, rayDir);
       const hit = raycaster.intersectObject(scene, true)[0];
+      boardRaycastsRef.current.forEach((_, mesh) => {
+        mesh.raycast = () => null;
+      });
       if (!hit || !hit.face) return null;
       hitLocal.copy(hit.point);
       parent.worldToLocal(hitLocal);
@@ -496,16 +509,20 @@ function BoardModel({
   }, [onFitted, scene, paperCount, paperSides]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
-  // PENTING: mesh papan TIDAK boleh raycast=null — surface-scan
-  // (penempatan kertas) memakai Raycaster manual ke mesh ini. R3F
-  // pointer events tidak terpengaruh: mereka hanya men-tes objek
-  // ber-handler (kertas + proxy), bukan seluruh scene.
+  // HYBRID RAYCAST: runtime mesh raycast=NULL (R3F pointer raycast
+  // hanya men-tes kertas + proxy → FPS stabil). Scan/perhitungan
+  // kertas menembalikan raycast ASLI sementara via boardRaycastsRef
+  // (castAt restore → ray → null lagi).
   useEffect(() => {
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
+        if (!boardRaycastsRef.current.has(mesh)) {
+          boardRaycastsRef.current.set(mesh, mesh.raycast);
+        }
+        mesh.raycast = () => null;
       }
     });
     window.dispatchEvent(new Event("chalkboard:fitted"));
