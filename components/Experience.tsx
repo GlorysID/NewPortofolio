@@ -154,11 +154,10 @@ function StaticShadows() {
  * Experience — scene utama R3F (final, fase 6).
  *
  * Performa mobile / low-end:
- * - dpr di-clamp ke [1, 1.75]: layar devicePixelRatio tinggi (4K/retina)
- *   tidak me-render di atas 1.75, layar 1x render di resolusi native
- *   (tidak lagi supersample 1.75x). DynamicQuality (PerformanceMonitor
- *   + AdaptiveDpr) menurunkan dpr bertahap saat GPU kewalahan dan
- *   mengembalikannya saat headroom kembali.
+ * - dpr di-clamp ke [1, 1.25]: GPU lemah (iGPU) jenuh di dpr tinggi —
+ *   1.25 pada layar bergerak praktis identik dengan 1.75, hemat ±30%
+ *   fill-rate. DynamicQuality menurunkan dpr bertahap saat GPU
+ *   kewalahan dan mengembalikannya saat headroom kembali.
  * - powerPreference "high-performance": minta GPU diskrit bila tersedia.
  * - frameloop default "always" — CameraRig damping tiap frame, jangan
  *   diganti "demand".
@@ -218,7 +217,7 @@ export default function Experience() {
     >
       <Canvas
         camera={{ position: [0, 1.6, 6.2], fov: 35 }}
-        dpr={[1, 1.75]}
+        dpr={[1, 1.25]}
         gl={{
           antialias: false, // dpr 1.75 sudah supersample — AA mubazir
           alpha: true,
