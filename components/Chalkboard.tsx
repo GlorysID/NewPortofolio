@@ -861,9 +861,13 @@ export default function Chalkboard() {
   const paperCount = Math.min(projects.length, MAX_PAPERS);
   // Petunjuk sisi per kertas ("left"/"right"/undefined) — paralel
   // dengan urutan kertas (= urut filename), di-clamp ke paperCount.
-  const paperSides = projects
-    .slice(0, paperCount)
-    .map((p) => p.position);
+  // MEMOIZED: tanpa ini, array baru tiap render → effect scan/placement
+  // re-run tiap render → onFitted → setBoard → re-render → LOOP TAK
+  // BERUJUNG (akar FPS drop mendalam, baru ketemu).
+  const paperSides = useMemo(
+    () => projects.slice(0, paperCount).map((p) => p.position),
+    [projects, paperCount],
+  );
 
   // Bbox papan ter-fit — null selama model belum termuat/ter-fit.
   const [board, setBoard] = useState<FittedBoard | null>(null);

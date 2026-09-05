@@ -100,35 +100,6 @@ function DynamicQuality() {
  */
 
 /**
- * (StaticShadows DIHAPUS — shadows={false}: bayangan nyaris tak
- * terlihat di lantai near-black, biaya pass GPU-nya mahal di GPU
- * lemah. Mood tetap via kolam emas + ContactGlow + beam kerucut.)
- */
-
-/**
- * StudioFloor — lantai studio GELAP STATIS (tanpa real-time
- * reflection). Mood studio tetap utuh via kolam emas, ContactGlow,
- * beam + kerucut, dan bayangan yang jatuh ke lantai ini.
- */
-function StudioFloor() {
-  return (
-    /* Tanpa receiveShadow: lantai #050507 — bayangan tak terlihat, tapi
-       sampling shadow map per-piksel di seluruh permukaannya = fill-rate
-       tersembunyi terbesar. ContactGlow tetap memberi pijakan cahaya. */
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} raycast={() => null}>
-      <planeGeometry args={[60, 60]} />
-      <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
-    </mesh>
-  );
-}
-
-/**
- * (StaticShadows DIHAPUS — shadows={false}: bayangan nyaris tak
- * terlihat di lantai near-black, biaya pass GPU-nya mahal di GPU
- * lemah. Mood tetap via kolam emas + ContactGlow + beam kerucut.)
- */
-
-/**
  * Experience — scene utama R3F (final, fase 6).
  *
  * Performa mobile / low-end:
@@ -141,6 +112,51 @@ function StudioFloor() {
  *   diganti "demand".
  * - alpha true: background gradient CSS di belakang canvas.
  */
+/**
+ * StudioFloor — lantai studio GELAP STATIS dengan receiveShadow untuk
+ * bayangan karakter (permintaan user: shadow jangan dihapus — bake
+ * sekali via autoUpdate=false, jadi biaya per-frame-nya cuma sampling).
+ */
+function StudioFloor() {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.001, 0]}
+      receiveShadow
+      raycast={() => null}
+    >
+      <planeGeometry args={[60, 60]} />
+      <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
+    </mesh>
+  );
+}
+
+/**
+ * StaticShadows — scene STATIS: pass bayangan (render ulang semua
+ * caster + sampling 1024²) TIDAK berjalan tiap frame — autoUpdate
+ * false, di-bake saat papan/kertas masuk scene (di dalam jendela
+ * loading). Bayangan karakter dipertahankan (permintaan user).
+ */
+function StaticShadows() {
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    const bake = () => {
+      gl.shadowMap.needsUpdate = true;
+    };
+    bake(); // mount — scene kosong/parsial, murah
+    const onFitted = () => bake(); // papan glb masuk scene
+    const onPapers = () => setTimeout(bake, 400); // kertas masuk scene
+    window.addEventListener("chalkboard:fitted", onFitted);
+    window.addEventListener("chalkboard:papers", onPapers);
+    return () => {
+      window.removeEventListener("chalkboard:fitted", onFitted);
+      window.removeEventListener("chalkboard:papers", onPapers);
+    };
+  }, [gl]);
+  return null;
+}
+
 /**
  * SceneWarmup — jembatan assetsLoaded → sceneReady DI DALAM Canvas.
  * Setelah semua aset termuat: frame 1 memaksa kompilasi SEMUA shader
@@ -211,7 +227,7 @@ export default function Experience() {
            murni di GPU lemah. Bayangan di lantai near-black #050507
            nyaris tak terlihat — mood tetap via kolam emas + ContactGlow
            + beam kerucut. */
-        shadows={false}
+        shadows="percentage"
         /* Background void di-set via <color attach="background"> */
         style={{ background: "#000000" }}
       >
@@ -221,6 +237,7 @@ export default function Experience() {
             berbasis fps rata-rata, bukan noise. */}
         <DynamicQuality />
         <AdaptiveDpr pixelated={false} />
+        <StaticShadows />
         <SceneWarmup />
 
         {/* Background void: hitam pekat solid, tanpa gradasi */}
@@ -244,8 +261,9 @@ export default function Experience() {
             avatar tampak berpijak di titik cahaya */}
         <ContactGlow />
 
-        {/* Lantai studio gelap statis — tanpa real-time reflection */}
-        <StudioFloor />
+      {/* Lantai studio gelap statis — receiveShadow untuk bayangan
+          karakter (permintaan user: shadow jangan dihapus) */}
+      <StudioFloor />
 
         {/* Kamera sinematik berbasis scroll (reduced-motion aware) */}
         <CameraRig />
