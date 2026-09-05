@@ -496,16 +496,16 @@ function BoardModel({
   }, [onFitted, scene, paperCount, paperSides]);
 
   // Shadow: tiap mesh ikut casting — perlakuan sama dengan Avatar.
-  // PLUS raycast=null: R3F men-tes SEMUA mesh pada SETIAP pointermove
-  // (ratusan event/detik saat drag) — model 108rb vertex di-skip dari
-  // raycast (klik lewat BoardClickProxy, bukan mesh model).
+  // PENTING: mesh papan TIDAK boleh raycast=null — surface-scan
+  // (penempatan kertas) memakai Raycaster manual ke mesh ini. R3F
+  // pointer events tidak terpengaruh: mereka hanya men-tes objek
+  // ber-handler (kertas + proxy), bukan seluruh scene.
   useEffect(() => {
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
-        mesh.raycast = () => null;
       }
     });
     window.dispatchEvent(new Event("chalkboard:fitted"));
