@@ -51,6 +51,12 @@ export const SHOTS: CameraShot[] = [
     position: [0, 2.4, 7.2],
     target: [0, 1.4, 0],
   },
+  {
+    id: "certificates",
+    label: "Sertifikat",
+    position: [0, 2.4, 7.2],
+    target: [0, 1.4, 0],
+  },
 ];
 
 export const SHOT_BY_ID = Object.fromEntries(

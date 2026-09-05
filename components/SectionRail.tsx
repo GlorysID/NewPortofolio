@@ -24,6 +24,7 @@ const RAIL_SECTIONS: ReadonlyArray<{ id: SectionId; label: string }> = [
   { id: "skills", label: "Ke Keahlian" },
   { id: "projects", label: "Ke Proyek" },
   { id: "contact", label: "Ke Kontak" },
+  { id: "certificates", label: "Ke Sertifikat" },
 ];
 
 export default function SectionRail() {

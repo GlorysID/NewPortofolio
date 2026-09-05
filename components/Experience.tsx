@@ -6,7 +6,6 @@ import { useEffect, useRef } from "react";
 import Avatar from "./Avatar";
 import CameraRig from "./CameraRig";
 import Chalkboard from "./Chalkboard";
-import CertificateWall from "./CertificateWall";
 import LightingRig from "./LightingRig";
 import ContactGlow from "./ContactGlow";
 import { useScrollStore } from "@/store/useScrollStore";
@@ -206,16 +205,15 @@ function SceneWarmup() {
 }
 
 export default function Experience() {
-  // Board ATAU cert wall terbuka (hero) → canvas harus menerima pointer
-  // agar klik papan/kertas/dinding ke-raycast. Di luar kondisi itu
-  // pointer-events-none supaya teks section & kartu tetap klikabel.
+  // Papan terbuka (hero) → canvas harus menerima pointer agar klik
+  // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
+  // supaya teks section & kartu tetap klikabel.
   const boardOpen = useScrollStore((s) => s.boardOpen);
-  const certWallOpen = useScrollStore((s) => s.certWallOpen);
 
   return (
     <div
       className={`fixed inset-0 z-0 ${
-        boardOpen || certWallOpen ? "pointer-events-auto" : "pointer-events-none"
+        boardOpen ? "pointer-events-auto" : "pointer-events-none"
       }`}
     >
       <Canvas
@@ -260,9 +258,6 @@ export default function Experience() {
         {/* Papan proyek 3D di kanan panggung (di dalam Suspense-nya
             sendiri; useProgress enter gate menunggu model ini juga) */}
         <Chalkboard />
-
-        {/* Certificate Wall — spoke KIRI, mirror eksak papan kanan */}
-        <CertificateWall />
 
         {/* Pool cahaya putih di titik pijak — melapisi shadow,
             avatar tampak berpijak di titik cahaya */}

@@ -10,8 +10,8 @@ import ContentCards from "@/components/ContentCards";
 import FilmGrain from "@/components/FilmGrain";
 import SectionRail from "@/components/SectionRail";
 import ProjectOverlay from "@/components/ProjectOverlay";
-import CertOverlay from "@/components/CertOverlay";
 import SwipeHint from "@/components/SwipeHint";
+import Certificates from "@/sections/Certificates";
 
 /**
  * Halaman utama.
@@ -47,23 +47,23 @@ export default function Home() {
           di bawah enter gate & kilatan kamera) */}
       <SectionRail />
 
-      {/* Jendela quest MMORPG untuk proyek papan 3D (z-[36]) +
-          jendela sertifikat untuk dinding kiri + petunjuk geser tipis */}
+      {/* Quest window project (z-[36]) + petunjuk geser tipis */}
       <ProjectOverlay />
-      <CertOverlay />
       <SwipeHint />
 
       {/* Konten scroll di depan — pointer-events-none: section-section
           ini cuma jangkar scroll-spy & teks (tanpa elemen interaktif).
           Tanpa ini, layer full-screen di atas canvas menyerap klik →
           chalkboard tak bisa diklik. Semua interaksi DOM (kartu, rail,
-          overlay) hidup di layer fixed di luar wrapper ini. */}
+          overlay, grid sertifikat) hidup di layer fixed di luar wrapper
+          ini. */}
       <div className="pointer-events-none relative z-10">
         <Hero />
         <About />
         <Skills />
         <Projects />
         <Contact />
+        <Certificates />
       </div>
     </main>
   );
