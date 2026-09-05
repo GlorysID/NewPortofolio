@@ -16,10 +16,10 @@ import { buildMediaIndex, resolveMedia } from "./media-index";
  * Diurutkan by filename; maks 12 dirender (MAX_CERTS di hook).
  */
 
-/** Field frontmatter wajib — file tanpa ini di-skip dengan warning. */
+/** Field frontmatter wajib — file tanpa ini di-skip dengan warning.
+    `issuer` OPSIONAL (tidak ditampilkan di kartu). */
 export const REQUIRED_CERT_FIELDS = [
   "title",
-  "issuer",
   "year",
   "image",
 ] as const;
@@ -27,7 +27,8 @@ export const REQUIRED_CERT_FIELDS = [
 export interface RawCertificate {
   id: string;
   title: string;
-  issuer: string;
+  /** Opsional — tidak ditampilkan di section sertifikat */
+  issuer?: string;
   year: string;
   /** URL publik gambar (webp preference, /certificates-media/…) */
   image: string;
@@ -74,7 +75,7 @@ export function getCertificates(): RawCertificate[] {
           : "";
 
       const missing = REQUIRED_CERT_FIELDS.filter((field) => {
-        const value: Record<string, string> = { title, issuer, year, image };
+        const value: Record<string, string> = { title, year, image };
         return !value[field];
       });
       if (missing.length > 0 || !image) {

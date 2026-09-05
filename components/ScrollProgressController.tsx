@@ -229,6 +229,14 @@ export default function ScrollProgressController() {
     const onWheel = (e: WheelEvent) => {
       const { boardOpen, activeSection, boardInspect, setBoardInspect } =
         useScrollStore.getState();
+      // Wheel di atas area scroll internal (grid sertifikat) →
+      // serahkan ke native scrolling, gesture system tidak ikut campur.
+      if (
+        e.target instanceof Element &&
+        e.target.closest("[data-native-scroll]")
+      ) {
+        return;
+      }
       const horizontal =
         Math.abs(e.deltaX) >= BOARD_WHEEL_THRESHOLD &&
         Math.abs(e.deltaX) > Math.abs(e.deltaY);
@@ -262,13 +270,21 @@ export default function ScrollProgressController() {
     };
 
     // Touch — catat Y saat touchstart, nilai saat touchend menentukan swipe.
+    // Mulai di atas area scroll internal (grid sertifikat) → gesture
+    // system TIDAK ikut campur: native scrolling milik area tersebut.
+    let nativeScrollStart = false;
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
       touchStartY = t ? t.clientY : null;
       touchStartX = t ? t.clientX : null;
       touchAxis = null; // arah dominan gestur belum diketahui
+      nativeScrollStart = !!(
+        e.target instanceof Element &&
+        e.target.closest("[data-native-scroll]")
+      );
     };
     const onTouchMove = (e: TouchEvent) => {
+      if (nativeScrollStart) return; // serahkan ke native scrolling
       // Tentukan arah dominan sekali di gerak pertama yang bermakna:
       // horizontal → biarkan lewat (tanpa preventDefault) supaya gestur
       // sampai ke touchend; vertikal → halangi scroll native (snap
@@ -304,6 +320,13 @@ export default function ScrollProgressController() {
         axis === "x" &&
         Math.abs(dx) >= TOUCH_THRESHOLD &&
         Math.abs(dx) > Math.abs(dy) * 1.2;
+
+      // Gestur dimulai di area scroll internal (grid sertifikat) →
+      // serahkan ke native scrolling; bukan gesture snap.
+      if (nativeScrollStart) {
+        nativeScrollStart = false;
+        return;
+      }
 
       // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,
       // bukan gesture keluar. BACA SAJA — jangan reset di sini: flag

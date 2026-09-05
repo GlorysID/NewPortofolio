@@ -70,8 +70,14 @@ export default function Certificates() {
           Credentials · Roll 03
         </p>
 
-        {/* Grid photo prints : kosong: satu frame cetakan kosong */}
-        <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Grid photo prints — SCROLL INTERNAL (area lebih tinggi dari
+            viewport; gesture system menyerap swipe vertikal, jadi area
+            ini diberi scroll native sendiri via data-native-scroll).
+            Kosong: satu frame cetakan kosong */}
+        <div
+          data-native-scroll
+          className="mt-12 max-h-[calc(100dvh-17rem)] overflow-y-auto grid grid-cols-1 gap-x-10 gap-y-14 pr-2 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {!loading && certificates.length === 0 ? (
             <article className="-rotate-[0.8deg] bg-[#fffefa] p-3 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.8)] ring-1 ring-[#20201f]/15">
               <div className="flex aspect-[4/3] items-center justify-center border border-dashed border-[#20201f]/20">
@@ -102,12 +108,12 @@ export default function Certificates() {
                   />
                   {/* Caption strip : di area putih tebal bawah */}
                   <div className="absolute inset-x-3 bottom-3">
-                    <h3 className="truncate font-body text-[14px] font-semibold leading-snug text-[#20201f]">
-                      {cert.title}
-                    </h3>
-                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.28em] text-[#6f5a39]">
-                      {cert.issuer} · {cert.year}
-                    </p>
+                  <h3 className="truncate font-body text-[14px] font-semibold leading-snug text-[#20201f]">
+                    {cert.title}
+                  </h3>
+                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.28em] text-[#6f5a39]">
+                    {cert.year}
+                  </p>
                   </div>
                 </div>
                 {/* Verifikasi link : di bawah frame, gaya micro-label */}
