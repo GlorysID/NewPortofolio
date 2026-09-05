@@ -100,6 +100,12 @@ function DynamicQuality() {
  */
 
 /**
+ * (StaticShadows DIHAPUS — shadows={false}: bayangan nyaris tak
+ * terlihat di lantai near-black, biaya pass GPU-nya mahal di GPU
+ * lemah. Mood tetap via kolam emas + ContactGlow + beam kerucut.)
+ */
+
+/**
  * StudioFloor — lantai studio GELAP STATIS (tanpa real-time
  * reflection). Mood studio tetap utuh via kolam emas, ContactGlow,
  * beam + kerucut, dan bayangan yang jatuh ke lantai ini.
@@ -117,41 +123,10 @@ function StudioFloor() {
 }
 
 /**
- * StaticShadows — scene ini STATIS (tanpa animasi): bayangan tidak
- * berubah sepanjang sesi. Pass bayangan (me-render ulang SEMUA model
- * tiap frame — papan sendiri ±1 juta render-vertex) dimatikan dan
- * hanya di-bake sekali-sekali, SEMUA di dalam jendela loading:
- * - mount + +1500ms + +3000ms (spaced, jendela gate masih hitam)
- * - `chalkboard:fitted` — papan glb masuk scene (bake pertama yang
- *   menghitung papan, tetap di dalam jendela gate, BUKAN di klik)
- * - `chalkboard:papers` (+400ms) — kertas masuk scene.
- * Bake pasca-klik DIHAPUS: SceneWarmup yang membake ulang di frame
- * ke-2 setelah aset masuk (sceneReady), dan klik kini murni komposit.
+ * (StaticShadows DIHAPUS — shadows={false}: bayangan nyaris tak
+ * terlihat di lantai near-black, biaya pass GPU-nya mahal di GPU
+ * lemah. Mood tetap via kolam emas + ContactGlow + beam kerucut.)
  */
-function StaticShadows() {
-  const gl = useThree((s) => s.gl);
-  useEffect(() => {
-    gl.shadowMap.autoUpdate = false;
-    const bake = () => {
-      gl.shadowMap.needsUpdate = true;
-    };
-    const timers: number[] = [];
-    const bakeIn = (ms: number) => timers.push(window.setTimeout(bake, ms));
-    bake(); // mount — scene kosong/parsial, murah
-    bakeIn(1500);
-    bakeIn(3000);
-    const onFitted = () => bake(); // papan masuk scene (jendela gate)
-    const onPapers = () => bakeIn(400); // kertas masuk scene
-    window.addEventListener("chalkboard:fitted", onFitted);
-    window.addEventListener("chalkboard:papers", onPapers);
-    return () => {
-      timers.forEach((t) => window.clearTimeout(t));
-      window.removeEventListener("chalkboard:fitted", onFitted);
-      window.removeEventListener("chalkboard:papers", onPapers);
-    };
-  }, [gl]);
-  return null;
-}
 
 /**
  * Experience — scene utama R3F (final, fase 6).
@@ -231,7 +206,12 @@ export default function Experience() {
            loop tidak selalu sinkron dengan ticker gesture) — biaya
            render di balik gerbang hitam kecil, jangan dioptimasi. */
         frameloop="always"
-        shadows="percentage"
+        /* Shadows DIHAPUS TOTAL (fix FPS final): render target 1024² +
+           full pass me-render ulang semua model setiap bake = biaya GPU
+           murni di GPU lemah. Bayangan di lantai near-black #050507
+           nyaris tak terlihat — mood tetap via kolam emas + ContactGlow
+           + beam kerucut. */
+        shadows={false}
         /* Background void di-set via <color attach="background"> */
         style={{ background: "#000000" }}
       >
@@ -241,7 +221,6 @@ export default function Experience() {
             berbasis fps rata-rata, bukan noise. */}
         <DynamicQuality />
         <AdaptiveDpr pixelated={false} />
-        <StaticShadows />
         <SceneWarmup />
 
         {/* Background void: hitam pekat solid, tanpa gradasi */}
