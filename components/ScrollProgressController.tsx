@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { SHOTS } from "@/data/shots";
-import { useScrollStore } from "@/store/useScrollStore";
+import { useScrollStore, type SectionId } from "@/store/useScrollStore";
 import { boardDrag } from "@/lib/boardDrag";
 
 /**
@@ -102,11 +102,27 @@ export default function ScrollProgressController() {
               progressRaf = requestAnimationFrame(flushProgress);
             }
 
-            const index = Math.round(self.progress * (SECTION_COUNT - 1));
-            const section = SHOTS[index]?.id ?? "hero";
+            // Mapping section berbasis POSISI AKTUAL dari DOM — tinggi
+            // section tidak seragam (Sertifikat > 1 viewport), formula
+            // rata membuat Contact ter-skip ke Sertifikat. Fallback rata
+            // bila section belum ter-mount.
+            const tops = cachedTops;
+            let section: string;
+            if (tops) {
+              const scrollY = self.progress * maxScroll();
+              section = "hero";
+              for (let i = 0; i < tops.length; i++) {
+                if (scrollY >= tops[i]) section = SHOTS[i]?.id ?? "hero";
+              }
+            } else {
+              const index = Math.round(
+                self.progress * (SECTION_COUNT - 1)
+              );
+              section = SHOTS[index]?.id ?? "hero";
+            }
             if (section !== lastActive) {
               lastActive = section;
-              setActiveSection(section);
+              setActiveSection(section as SectionId);
               // Pindah section keluar hero → papan proyek otomatis tertutup.
               if (section !== "hero") setBoardOpen(false);
             }
@@ -136,9 +152,38 @@ export default function ScrollProgressController() {
         (document.documentElement.scrollHeight ?? 0) - window.innerHeight
       );
 
+    // ------------------------------------------------------------------
+    // Posisi section AKTUAL dari DOM — dipakai snap & mapping section.
+    // Penting: tinggi section tidak seragam (Sertifikat lebih tinggi
+    // dari satu viewport karena grid 8 sertifikat) — formula rata
+    // (index/(N-1) × maxScroll) membuat Contact ter-skip ke Sertifikat.
+    // ------------------------------------------------------------------
+    const getSectionTops = (): number[] | null => {
+      const tops: number[] = [];
+      for (const s of SHOTS) {
+        const el = document.getElementById(s.id);
+        if (!el) return null; // section belum ter-mount — fallback rata
+        tops.push(el.getBoundingClientRect().top + window.scrollY);
+      }
+      return tops;
+    };
+    let cachedTops: number[] | null = null;
+    const refreshTops = () => {
+      cachedTops = getSectionTops();
+    };
+    // Refresh awal (setelah mount + font) & saat ukuran berubah.
+    requestAnimationFrame(refreshTops);
+    window.addEventListener("resize", refreshTops);
+    window.addEventListener("load", refreshTops);
+    window.addEventListener("chalkboard:papers", refreshTops);
+
     const scrollToSection = (index: number) => {
       const clamped = Math.max(0, Math.min(SECTION_COUNT - 1, index));
-      const top = (clamped / (SECTION_COUNT - 1)) * maxScroll();
+      // Ukur fresh saat gesture (murah, 6 query) — selalu akurat.
+      const tops = getSectionTops();
+      const top = tops
+        ? Math.min(tops[clamped] ?? 0, maxScroll())
+        : (clamped / (SECTION_COUNT - 1)) * maxScroll();
       if (prefersReducedMotion) {
         window.scrollTo(0, top);
         locked = false;
@@ -159,9 +204,14 @@ export default function ScrollProgressController() {
     };
 
     const snapAdjacent = (direction: number) => {
-      const current = Math.round(
-        (window.scrollY / Math.max(1, maxScroll())) * (SECTION_COUNT - 1)
-      );
+      // Ukur fresh — akurat walau tinggi section berubah sejak mount.
+      const tops = getSectionTops();
+      if (!tops) return; // fallback rata di onUpdate — jarang terjadi
+      const y = window.scrollY;
+      let current = 0;
+      tops.forEach((t, i) => {
+        if (y >= t) current = i;
+      });
       scrollToSection(current + Math.sign(direction));
     };
 
@@ -348,8 +398,12 @@ export default function ScrollProgressController() {
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKeyDown);
 
-    // Refresh setelah font/layout stabil agar ukuran trigger akurat
-    const raf = requestAnimationFrame(() => ScrollTrigger.refresh());
+    // Refresh setelah font/layout stabil agar ukuran trigger akurat —
+    // sekalian segarkan posisi section (tops) untuk mapping aktif.
+    const raf = requestAnimationFrame(() => {
+      ScrollTrigger.refresh();
+      refreshTops();
+    });
 
     return () => {
       window.removeEventListener("wheel", onWheel);
@@ -357,6 +411,9 @@ export default function ScrollProgressController() {
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", refreshTops);
+      window.removeEventListener("load", refreshTops);
+      window.removeEventListener("chalkboard:papers", refreshTops);
       snapTween?.kill();
       cancelAnimationFrame(raf);
       if (progressRaf) cancelAnimationFrame(progressRaf);

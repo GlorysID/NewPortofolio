@@ -36,9 +36,13 @@ export default function SectionRail() {
     boardOpen && activeSection === "hero" ? "projects" : activeSection;
 
   const jumpTo = (index: number) => {
-    const max =
-      document.documentElement.scrollHeight - window.innerHeight;
-    const top = (index / (RAIL_SECTIONS.length - 1)) * max;
+    // Posisi section AKTUAL dari DOM — tinggi section tidak seragam
+    // (Sertifikat > 1 viewport), formula rata membuat target meleset.
+    const el = document.getElementById(RAIL_SECTIONS[index].id);
+    const top = el
+      ? el.getBoundingClientRect().top + window.scrollY
+      : (index / (RAIL_SECTIONS.length - 1)) *
+        (document.documentElement.scrollHeight - window.innerHeight);
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
