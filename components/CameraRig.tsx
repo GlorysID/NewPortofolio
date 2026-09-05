@@ -116,6 +116,21 @@ function sampleShot(progress: number) {
   _sampledTgt[2] = THREE.MathUtils.lerp(from.target[2], to.target[2], t);
 }
 
+// Framing mobile — portrait mempersempit FOV horizontal drastis.
+// Kamera ditarik MUNDUR sepanjang sumbu pandang (pos → target) dengan
+// faktor tetap: komposisi desktop direplikasi di HP. Target tak bergerak
+// (subjek tetap terpusat). Hanya untuk shot section — pose board punya
+// varian _M sendiri.
+const MOBILE_FRAMING = 1.25;
+function applyMobileFraming() {
+  _sampledPos[0] =
+    _sampledTgt[0] + (_sampledPos[0] - _sampledTgt[0]) * MOBILE_FRAMING;
+  _sampledPos[1] =
+    _sampledTgt[1] + (_sampledPos[1] - _sampledTgt[1]) * MOBILE_FRAMING;
+  _sampledPos[2] =
+    _sampledTgt[2] + (_sampledPos[2] - _sampledTgt[2]) * MOBILE_FRAMING;
+}
+
 export default function CameraRig() {
   const camera = useThree((s) => s.camera);
   const lookTarget = useRef(new THREE.Vector3(0, 1.3, 0));
@@ -285,6 +300,7 @@ export default function CameraRig() {
       _sampledTgt[0] = shot.target[0];
       _sampledTgt[1] = shot.target[1];
       _sampledTgt[2] = shot.target[2];
+      if (isMobile.current) applyMobileFraming();
       if (boardOpen && activeSection === "hero") {
         const P = boardInspect
           ? isMobile.current
@@ -355,6 +371,7 @@ export default function CameraRig() {
       } else if (!settled.current) {
         sampleShot(progress);
       }
+      if (isMobile.current) applyMobileFraming();
 
       // Keluar inspeksi → pan drag di-reset
       if (!boardInspect) {

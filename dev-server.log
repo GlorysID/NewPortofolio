@@ -10,7 +10,11 @@
 [copy-media] webp perpustakaanonline.png → perpustakaanonline.40962b2e.webp (867KB → 23KB)
 [copy-media] webp Senuajournal.jpg → Senuajournal.8e2c83be.webp (890KB → 50KB)
 [copy-media] 6 webp dibuat, 0 dilewati (sudah kecil).
-[copy-media][certs] folder media tidak ada — dilewati.
+[copy-media][certs] 8 file disalin.
+[copy-media][certs] webp Sertifikat1.jpg → Sertifikat1.5441a5eb.webp (94KB → 25KB)
+[copy-media][certs] webp Sertifikat2.jpg → Sertifikat2.a110a284.webp (103KB → 33KB)
+[copy-media][certs] webp Sertifikat8.jpg → Sertifikat8.2e8f591a.webp (391KB → 34KB)
+[copy-media][certs] 3 webp dibuat, 5 dilewati (sudah kecil).
 
 > portfolio@0.1.0 dev
 > next dev
@@ -20,16 +24,21 @@
 
  ✓ Starting...
    automatically enabled Fast Refresh for 1 custom loader
- ✓ Ready in 5.4s
+ ✓ Ready in 3s
  ○ Compiling / ...
- ✓ Compiled / in 15.4s (1297 modules)
- GET / 200 in 16257ms
- ✓ Compiled in 1032ms (624 modules)
- GET / 200 in 82ms
+ ✓ Compiled / in 4.8s (1270 modules)
+ GET / 200 in 5407ms
+ ✓ Compiled in 759ms (624 modules)
+ GET / 200 in 81ms
  ○ Compiling /certificates-data ...
- ✓ Compiled /certificates-data in 921ms (678 modules)
+ ✓ Compiled /certificates-data in 597ms (678 modules)
  ✓ Compiled (759 modules)
- GET /projects-data 200 in 3535ms
- GET /favicon.ico 200 in 3594ms
- GET /certificates-data 200 in 3558ms
- GET /favicon.ico 200 in 12ms
+ GET /certificates-data 200 in 1290ms
+ GET /favicon.ico 200 in 1376ms
+ GET /projects-data 200 in 2147ms
+ GET / 200 in 301ms
+ GET /favicon.ico 200 in 17ms
+ GET / 200 in 81ms
+ GET /certificates-data 200 in 39ms
+ GET /projects-data 200 in 55ms
+ GET /favicon.ico 200 in 25ms
