@@ -59,6 +59,8 @@ const NOISE_FLOOR = 3; // event di bawah ini = derau mikro (jari menyentuh tanpa
 const STREAM_GAP_RESET_MS = 200; // jeda antar-event > ini = stream input baru → accum dibuang (scroll terpisah tidak menjumlah)
 const BOARD_WHEEL_THRESHOLD = 24; // px deltaX minimum — board open/close
 const TOUCH_THRESHOLD = 48; // px swipe minimum (touchstart → touchend) — 40 terlalu sensitif utk intent user r6
+const BOARD_SWIPE_MIN = 40; // px minimum khusus intent horizontal board — arc jempol sering <48px
+const EDGE_ZONE_PX = 16; // zona tepi utk guard back/forward — 24 terlalu lebar, menelan swipe sah yang mulai dekat tepi
 const SNAP_DURATION = 0.6; // detik per animasi snap
 const COOLDOWN_MS = 250; // jeda setelah snap selesai sebelum menerima input lagi
 const FLICK_EXIT_DX = 64; // px geser kiri minimum — flick keluar inspeksi (coarse)
@@ -422,7 +424,7 @@ export default function ScrollProgressController() {
       touchStartX = t ? t.clientX : null;
       touchAxis = null; // arah dominan gestur belum diketahui
       touchStartTime = t ? performance.now() : 0;
-      touchEdge = !!t && (t.clientX < 24 || t.clientX > window.innerWidth - 24);
+      touchEdge = !!t && (t.clientX < EDGE_ZONE_PX || t.clientX > window.innerWidth - EDGE_ZONE_PX);
       chainBlocked = false;
       const target =
         e.target instanceof Element ? e.target : null;
@@ -545,13 +547,17 @@ export default function ScrollProgressController() {
 
       const { boardOpen, activeSection, boardInspect, setBoardInspect, setBoardOpen } =
         useScrollStore.getState();
-      // Dominansi dihitung ULANG saat touchend dari dx/dy aktual —
-      // axis-lock awal hanya untuk routing touchmove; lock itu membuat
-      // swipe hampir-horizontal salah klasifikasi (laporan: "geser
-      // kanan ke chalkboard susah").
+      // Intent horizontal BOARD — dominansi LONGGAR (dx > dy, ambang
+      // 40px khusus): arc jempol saat "geser kanan" melengkung turun,
+      // rasio ketat 1.15 memakan swipe sah (laporan HP: "gabisa geser
+      // ke kanan"). Tujuan tetap terfilter ketat di dalam blok: hanya
+      // hero-open / board-close yang berlaku; sisanya jatuh ke snap.
       const horizontal =
+        Math.abs(dx) >= BOARD_SWIPE_MIN &&
+        Math.abs(dx) > Math.abs(dy);
+      const horizontalTight =
         Math.abs(dx) >= TOUCH_THRESHOLD &&
-        Math.abs(dx) > Math.abs(dy) * 1.15;
+        Math.abs(dx) > Math.abs(dy) * 1.3;
 
       // Kontrol UI eksplisit (backdrop "Tutup" quest, panel) — TANPA
       // logika gesture sama sekali: tap harus menghasilkan click
@@ -632,9 +638,10 @@ export default function ScrollProgressController() {
         return;
       }
 
-      // Papan tertutup: horizontal non-hero di luar hero diabaikan
-      // (sudah ditangani blok intent di atas; tak ada aksi lain).
-      if (horizontal) return;
+      // Papan tertutup + bukan hero: horizontal = dead-end, tapi hanya
+      // yang BENAR-BENAR mendominan (rasio ketat); yang nyaris-sejajar
+      // dibiarkan jatuh ke snap vertikal (anti swipe wobbly jadi mati).
+      if (horizontalTight) return;
 
       if (Math.abs(dy) < TOUCH_THRESHOLD) return;
       if (isLocked()) return; // Kunci aktif: cegah loncat section saat animasi berlangsung

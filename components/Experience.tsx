@@ -9,7 +9,7 @@ import Chalkboard from "./Chalkboard";
 import LightingRig from "./LightingRig";
 import ContactGlow from "./ContactGlow";
 import { useScrollStore } from "@/store/useScrollStore";
-import { useViewportTier, tierRefs } from "@/hooks/useViewportTier";
+import { useViewportTier, tierRefs, MQ } from "@/hooks/useViewportTier";
 
 /**
  * DynamicQuality — pengendali kualitas adaptif.
@@ -225,6 +225,17 @@ export default function Experience() {
   // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
   // supaya teks section & kartu tetap klikabel.
   const boardOpen = useScrollStore((s) => s.boardOpen);
+  // DPR clamp per kelas device — dibaca SEKALI saat Canvas dibuat
+  // (Experience client-only, ssr:false → window pasti ada):
+  // - Desktop/laptop: dpr fisik 1-1.5 → clamp 1.25 (sebelumnya, cukup).
+  // - Phone/tablet coarse: dpr fisik 2.6-3.5 → clamp lama 1.25 membuat
+  //   render 1.25× lalu di-upscale ±3× = PATAH/burik (laporan user).
+  //   1.75 ≈ supersample desktop klasik — tajam jelas lebih baik, biaya
+  //   fill-rate tetap jauh di bawah native; DynamicQuality tetap turun
+  //   otomatis bila GPU kewalahan (ladder × initialDpr).
+  const isCoarseDevice =
+    typeof window !== "undefined" && window.matchMedia(MQ.coarse).matches;
+  const dprMax = isCoarseDevice ? 1.75 : 1.25;
 
   return (
     <div
@@ -234,9 +245,9 @@ export default function Experience() {
     >
       <Canvas
         camera={{ position: [0, 1.6, 6.2], fov: 35 }}
-        dpr={[1, 1.25]}
+        dpr={[1, dprMax]}
         gl={{
-          antialias: false, // dpr 1.75 sudah supersample — AA mubazir
+          antialias: false, // clamp 1.25/1.75 sudah supersample — AA mubazir
           alpha: true,
           powerPreference: "high-performance",
         }}
