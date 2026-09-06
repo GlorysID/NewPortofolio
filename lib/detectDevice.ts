@@ -1,8 +1,8 @@
 /**
  * detectDevice.ts — Deteksi kapabilitas perangkat untuk alokasi resource adaptif.
  * 
- * Mendeteksi perangkat berspesifikasi rendah (entry-level mobile) tanpa
- * mengganggu perangkat desktop atau flagship mobile (iPhone, Snapdragon 8, dsb.).
+ * Mendeteksi perangkat berspesifikasi rendah (HP entry-level maupun laptop dengan iGPU lemah/CPU <= 4 core)
+ * tanpa mengganggu perangkat bertenaga tinggi (PC gaming, MacBook, flagship phone).
  */
 
 let cachedLowEnd: boolean | null = null;
@@ -11,27 +11,27 @@ export function isLowEndDevice(): boolean {
   if (typeof window === "undefined") return false;
   if (cachedLowEnd !== null) return cachedLowEnd;
 
-  // Hanya periksa pada perangkat sentuh/mobile
-  const isCoarse = window.matchMedia("(pointer: coarse)").matches;
-  if (!isCoarse) {
-    cachedLowEnd = false;
-    return false;
+  // 1. Data Saver mode aktif
+  const conn = (navigator as unknown as { connection?: { saveData?: boolean } }).connection;
+  if (conn?.saveData) {
+    cachedLowEnd = true;
+    return true;
   }
 
-  // 1. Hardware Concurrency: CPU cores <= 4 (ciri khas HP budget/entry)
+  // 2. Hardware Concurrency: CPU cores <= 4 (khas HP budget & laptop i3/celeron/dual-core lama)
   if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) {
     cachedLowEnd = true;
     return true;
   }
 
-  // 2. Device Memory: RAM <= 4 GB
+  // 3. Device Memory: RAM <= 4 GB
   const nav = navigator as unknown as { deviceMemory?: number };
   if (nav.deviceMemory && nav.deviceMemory <= 4) {
     cachedLowEnd = true;
     return true;
   }
 
-  // 3. Deteksi renderer GPU via WebGL (Mali entry / PowerVR / Adreno seri 5xx/610)
+  // 4. Deteksi renderer GPU via WebGL
   try {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -41,9 +41,20 @@ export function isLowEndDevice(): boolean {
         const renderer = (gl as WebGLRenderingContext)
           .getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
           ?.toLowerCase() || "";
-        // GPU entry-level yang sering mengalami bottleneck fill-rate
+        
+        // Mobile iGPU entry: Mali series, PowerVR, Adreno seri 3xx/4xx/5xx/610/612/616/620
         if (
-          /mali-g5[12]|mali-g31|mali-t|powervr|adreno \(tm\) 5|adreno \(tm\) 610|adreno \(tm\) 612|adreno \(tm\) 616/.test(
+          /mali|powervr|adreno \(tm\) [345]|adreno \(tm\) 61[026]|adreno \(tm\) 620/.test(
+            renderer
+          )
+        ) {
+          cachedLowEnd = true;
+          return true;
+        }
+
+        // Laptop iGPU lemah / software fallback: Intel HD / UHD / Iris / Graphics, Mesa, LLVMpipe, SwiftShader, Vega 3/6
+        if (
+          /intel.*(hd|uhd|iris|graphics)|intel\(r\)|mesa|llvmpipe|swiftshader|microsoft basic render|vega [36]|radeon.*vega|radeon.*graphics|geforce gt|geforce 9[1-4]0m/.test(
             renderer
           )
         ) {

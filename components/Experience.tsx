@@ -54,7 +54,7 @@ function DynamicQuality() {
   const setDpr = useThree((s) => s.setDpr);
   const initialDpr = useThree((s) => s.viewport.initialDpr);
   const { coarse } = useViewportTier();
-  const isLowEnd = coarse && isLowEndDevice();
+  const isLowEnd = isLowEndDevice();
 
   // Low-end mulai dari rung 0 (paling hemat) agar tidak lag di awal; coarse umum mulai rung 1; desktop rung 2
   const rung = useRef(isLowEnd ? 0 : coarse ? 1 : QUALITY_LADDER.length - 1);
@@ -152,6 +152,7 @@ function DynamicQuality() {
  */
 function StudioFloor() {
   const { coarse } = useViewportTier();
+  const isLowEnd = isLowEndDevice();
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
@@ -160,7 +161,7 @@ function StudioFloor() {
       raycast={() => null}
     >
       <planeGeometry args={[60, 60]} />
-      {coarse ? (
+      {isLowEnd || coarse ? (
         <meshLambertMaterial color="#050507" />
       ) : (
         <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
@@ -242,17 +243,17 @@ export default function Experience() {
   const boardOpen = useScrollStore((s) => s.boardOpen);
   const isCoarseDevice =
     typeof window !== "undefined" && window.matchMedia(MQ.coarse).matches;
-  const isLowEnd = isCoarseDevice && isLowEndDevice();
+  const isLowEnd = typeof window !== "undefined" && isLowEndDevice();
 
   // DPR adaptif per kapabilitas perangkat:
-  // - Desktop: [1, 1.25] (100% identik dengan sebelumnya)
-  // - HP Flagship / High-End: [1, 1.45] (sangat tajam & jernih)
-  // - HP Spek Rendah: [0.85, 1.15] (>60% lebih hemat fill-rate, FPS stabil 60)
-  const dprRange: [number, number] = !isCoarseDevice
-    ? [1, 1.25]
-    : isLowEnd
-    ? [0.85, 1.15]
-    : [1, 1.45];
+  // - Perangkat Spek Rendah (HP budget & Laptop iGPU lemah): [0.85, 1.0] (tajam 1080p native, hemat >60% fill-rate)
+  // - HP Flagship: [1, 1.35] (sangat tajam & jernih)
+  // - Desktop PC Ber-GPU: [1, 1.25] (standar desktop)
+  const dprRange: [number, number] = isLowEnd
+    ? [0.85, 1.0]
+    : isCoarseDevice
+    ? [1, 1.35]
+    : [1, 1.25];
 
   // Smart idle throttling: rendering hanya berjalan saat ada gerakan / interaksi
   const [frameloop, setFrameloop] = useState<"always" | "demand">("always");
@@ -319,7 +320,7 @@ export default function Experience() {
           precision: isLowEnd ? "mediump" : "highp",
         }}
         frameloop={frameloop}
-        shadows="percentage"
+        shadows={isLowEnd ? true : "percentage"}
         tabIndex={-1}
         style={{
           background: "#000000",

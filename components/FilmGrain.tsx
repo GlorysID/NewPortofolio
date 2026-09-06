@@ -13,7 +13,20 @@
  *   prefers-reduced-motion.
  * - pointer-events-none: tidak menghalangi interaksi apa pun.
  */
+import { useEffect, useState } from "react";
+import { isLowEndDevice } from "@/lib/detectDevice";
+
 export default function FilmGrain() {
+  const [disabled, setDisabled] = useState(false);
+
+  useEffect(() => {
+    if (isLowEndDevice()) {
+      setDisabled(true);
+    }
+  }, []);
+
+  if (disabled) return null;
+
   return (
     <div
       aria-hidden

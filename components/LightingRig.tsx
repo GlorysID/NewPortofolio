@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useViewportTier } from "@/hooks/useViewportTier";
+import { isLowEndDevice } from "@/lib/detectDevice";
+import { useScrollStore } from "@/store/useScrollStore";
 
 /**
  * LightingRig — setup 3-titik sinematik + alur cahaya vertikal
@@ -287,6 +289,10 @@ export default function LightingRig() {
   // dinaikkan terarah; desktop tidak tersentuh.
   const compact = tier === "compact";
   const K = compact ? 1.3 : 1;
+  const isLowEnd = typeof window !== "undefined" && isLowEndDevice();
+  const boardOpen = useScrollStore((s) => s.boardOpen);
+  const isMobileOrLowEnd = isLowEnd || compact;
+
   // Apex sorot chalkboard digeser ke kiri sedikit di compact (11.1 vs 11.4)
   // agar tepat di tengah tanpa bergeser terlalu jauh. Target aim tetap kaki papan.
   // Desktop persis seperti sebelumnya.
@@ -334,7 +340,7 @@ export default function LightingRig() {
         intensity={LIGHTING.key.intensity * K}
         color={LIGHTING.key.color}
         castShadow
-        shadow-mapSize={compact ? [512, 512] : [1024, 1024]}
+        shadow-mapSize={isMobileOrLowEnd ? [512, 512] : [1024, 1024]}
         shadow-bias={-0.0002}
         shadow-camera-left={-3}
         shadow-camera-right={14.5}
@@ -354,25 +360,25 @@ export default function LightingRig() {
         color={LIGHTING.rim.color}
       />
 
-      {/* FILL — sisi kiri-depan, netral-dingin (dinaikkan: sisi bayang
-          wajah dulu hampir hitam — laporan user "wajah terlalu gelap") */}
+      {/* FILL — sisi kiri-depan, netral-dingin (diperkuat di low-end untuk mengangkat wajah tanpa ekstra point light) */}
       <directionalLight
         position={LIGHTING.fill.position}
-        intensity={LIGHTING.fill.intensity * K}
+        intensity={LIGHTING.fill.intensity * K * (isLowEnd ? 1.4 : 1)}
         color={LIGHTING.fill.color}
       />
 
       {/* FACE LIGHT — lembut depan-atas wajah, warm-netral, tanpa shadow.
-          Khusus mengangkat wajah di shot close-up (about/skills) tanpa
-          mengubah mood studio gelap. */}
-      <pointLight
-        position={LIGHTING.faceLight.position}
-        intensity={LIGHTING.faceLight.intensity * (compact ? 1.5 : 1)}
-        color={LIGHTING.faceLight.color}
-        distance={LIGHTING.faceLight.distance}
-        decay={1.5}
-        castShadow={false}
-      />
+          Disederhanakan ke fill light di low-end untuk memotong beban fragment shader. */}
+      {!isLowEnd && (
+        <pointLight
+          position={LIGHTING.faceLight.position}
+          intensity={LIGHTING.faceLight.intensity * (compact ? 1.5 : 1)}
+          color={LIGHTING.faceLight.color}
+          distance={LIGHTING.faceLight.distance}
+          decay={1.5}
+          castShadow={false}
+        />
+      )}
 
       {/* SOROT ATAS — key vertikal hangat dari y≈6.6 ke kaki avatar.
           Tanpa shadow (satu-satunya shadow caster tetap key di atas).
@@ -397,68 +403,70 @@ export default function LightingRig() {
       />
       <BeamFloorPool position={[0, 0.02, 0]} segments={SEG.pool} />
 
-      {/* SOROT CHALKBOARD — lampu + kerucut + kolam, bahasa visual
-          identik dengan sorot karakter, dipasang di kaki papan
-          (satu panggung, satu cerita cahaya). */}
-      <spotLight
-        ref={boardRef}
-        position={boardApex}
-        angle={LIGHTING.boardBeam.angle}
-        penumbra={LIGHTING.boardBeam.penumbra}
-        distance={9}
-        decay={1.6}
-        intensity={LIGHTING.boardBeam.intensity * (compact ? 1.15 : 1)}
-        color={LIGHTING.boardBeam.color}
-        castShadow={false}
-      />
-      <BeamCone
-        apex={boardApex}
-        aim={boardAim}
-        radius={LIGHTING.beamVisual.radiusBoard}
-        segments={SEG.cone}
-      />
-      <BeamFloorPool
-        position={[boardAim[0], 0.02, boardAim[2]]}
-        segments={SEG.pool}
-      />
+      {/* SOROT CHALKBOARD — hanya aktif saat papan terbuka atau di perangkat high-end */}
+      {(!isLowEnd || boardOpen) && (
+        <>
+          <spotLight
+            ref={boardRef}
+            position={boardApex}
+            angle={LIGHTING.boardBeam.angle}
+            penumbra={LIGHTING.boardBeam.penumbra}
+            distance={9}
+            decay={1.6}
+            intensity={LIGHTING.boardBeam.intensity * (compact ? 1.15 : 1)}
+            color={LIGHTING.boardBeam.color}
+            castShadow={false}
+          />
+          <BeamCone
+            apex={boardApex}
+            aim={boardAim}
+            radius={LIGHTING.beamVisual.radiusBoard}
+            segments={SEG.cone}
+          />
+          <BeamFloorPool
+            position={[boardAim[0], 0.02, boardAim[2]]}
+            segments={SEG.pool}
+          />
+        </>
+      )}
 
-      {/* UPLIGHT KAKI PAPAN — offset identik dengan uplight karakter;
-          perlakuan bawah chalkboard = persis perlakuan karakter. */}
-      <pointLight
-        position={LIGHTING.boardUplightA.position}
-        intensity={LIGHTING.boardUplightA.intensity}
-        color={LIGHTING.boardUplightA.color}
-        distance={LIGHTING.boardUplightA.distance}
-        decay={2}
-        castShadow={false}
-      />
-      <pointLight
-        position={LIGHTING.boardUplightB.position}
-        intensity={LIGHTING.boardUplightB.intensity}
-        color={LIGHTING.boardUplightB.color}
-        distance={LIGHTING.boardUplightB.distance}
-        decay={2}
-        castShadow={false}
-      />
-
-      {/* UPLIGHT KAKI PANGGUNG — dua titik hangat asimetris, menggemakan
-          sorot dari bawah; tanpa shadow, jarak terbatas (hemat fill-rate). */}
-      <pointLight
-        position={LIGHTING.uplightA.position}
-        intensity={LIGHTING.uplightA.intensity}
-        color={LIGHTING.uplightA.color}
-        distance={LIGHTING.uplightA.distance}
-        decay={2}
-        castShadow={false}
-      />
-      <pointLight
-        position={LIGHTING.uplightB.position}
-        intensity={LIGHTING.uplightB.intensity}
-        color={LIGHTING.uplightB.color}
-        distance={LIGHTING.uplightB.distance}
-        decay={2}
-        castShadow={false}
-      />
+      {/* UPLIGHT KAKI PAPAN & PANGGUNG — dinonaktifkan di low-end (sudah dilapisi BeamFloorPool & ContactGlow) */}
+      {!isLowEnd && (
+        <>
+          <pointLight
+            position={LIGHTING.boardUplightA.position}
+            intensity={LIGHTING.boardUplightA.intensity}
+            color={LIGHTING.boardUplightA.color}
+            distance={LIGHTING.boardUplightA.distance}
+            decay={2}
+            castShadow={false}
+          />
+          <pointLight
+            position={LIGHTING.boardUplightB.position}
+            intensity={LIGHTING.boardUplightB.intensity}
+            color={LIGHTING.boardUplightB.color}
+            distance={LIGHTING.boardUplightB.distance}
+            decay={2}
+            castShadow={false}
+          />
+          <pointLight
+            position={LIGHTING.uplightA.position}
+            intensity={LIGHTING.uplightA.intensity}
+            color={LIGHTING.uplightA.color}
+            distance={LIGHTING.uplightA.distance}
+            decay={2}
+            castShadow={false}
+          />
+          <pointLight
+            position={LIGHTING.uplightB.position}
+            intensity={LIGHTING.uplightB.intensity}
+            color={LIGHTING.uplightB.color}
+            distance={LIGHTING.uplightB.distance}
+            decay={2}
+            castShadow={false}
+          />
+        </>
+      )}
     </>
   );
 }

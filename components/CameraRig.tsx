@@ -144,12 +144,6 @@ export default function CameraRig() {
   // nilai skalar — reassign ref bukan alokasi objek)
   const lastProgress = useRef(-1);
   const lastSection = useRef<SectionId>("hero");
-  // Parallax kursor saat inspeksi papan — dilacak global (pointermove
-  // pasif), offset RELATIF terhadap normal wajah papan: kursor kanan →
-  // kamera geser kanan-tangkapan, kursor atas → naik. Aktif HANYA di
-  // fase inspect; amplitudo kecil supaya framing tetap terjaga.
-  const parallaxX = useRef(0); // -1..1 (kiri→kanan layar)
-  const parallaxY = useRef(0); // -1..1 (atas→bawah layar)
   // Pan drag inspeksi — user men-drag canvas → pandangan bergeser
   // (grab-style), terbatas agar papan tidak nyasar dari frame.
   const panX = useRef(0);
@@ -240,15 +234,6 @@ export default function CameraRig() {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, []);
-  useEffect(() => {
-    const onPointerMove = (e: PointerEvent) => {
-      parallaxX.current = (e.clientX / window.innerWidth) * 2 - 1;
-      parallaxY.current = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    return () =>
-      window.removeEventListener("pointermove", onPointerMove);
   }, []);
   // Fase pan board: "closed" → "front" (waypoint depan karakter) →
   // "open" → (boardInspect) "inspect". Pan SELALU membusur lewat depan

@@ -538,6 +538,19 @@ function BoardModel({
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
+        mesh.frustumCulled = true;
+        if (mesh.geometry && !mesh.geometry.boundingSphere) {
+          mesh.geometry.computeBoundingSphere();
+        }
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m) => {
+              m.side = THREE.FrontSide;
+            });
+          } else {
+            mesh.material.side = THREE.FrontSide;
+          }
+        }
         if (!boardRaycastsRef.current.has(mesh)) {
           boardRaycastsRef.current.set(mesh, mesh.raycast);
         }
