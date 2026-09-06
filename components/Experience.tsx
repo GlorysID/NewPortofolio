@@ -39,6 +39,16 @@ import { useViewportTier, tierRefs, MQ } from "@/hooks/useViewportTier";
  */
 const QUALITY_LADDER = [0.72, 0.85, 1] as const;
 
+/** SceneFog — densitas per-tier: shot compact 2× lebih jauh dari
+ *  desktop → fog lama 0.075 menelan ±13-28% terang di jarak itu
+ *  (laporan: "HP jauh lebih gelap dari desktop"). 0.05 di compact
+ *  menyeimbangkan; desktop tetap 0.075 persis. Reaktif via hook —
+ *  rotasi device ikut menyesuaikan. */
+function SceneFog() {
+  const { tier } = useViewportTier();
+  return <fogExp2 attach="fog" args={["#000000", tier === "compact" ? 0.05 : 0.075]} />;
+}
+
 function DynamicQuality() {
   const setDpr = useThree((s) => s.setDpr);
   const initialDpr = useThree((s) => s.viewport.initialDpr);
@@ -278,8 +288,11 @@ export default function Experience() {
         <color attach="background" args={["#000000"]} />
 
         {/* Fog hitam pekat — area jauh melebur ke void, tanpa
-            gradasi kebiruan */}
-        <fogExp2 attach="fog" args={["#000000", 0.075]} />
+            gradasi kebiruan. DENSITAS PER-TIER: shot compact 2× lebih
+            jauh dari desktop → fog lama 0.075 menelan ±13-28% terang
+            di jarak itu (laporan: "HP jauh lebih gelap"). 0.05 di
+            compact menyeimbangkan; desktop tetap 0.075 persis. */}
+        <SceneFog />
 
         {/* Lighting 3-titik sinematik (key/rim/fill) — hardcoded */}
         <LightingRig />

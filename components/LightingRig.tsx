@@ -279,6 +279,18 @@ export default function LightingRig() {
     tier === "compact"
       ? { cone: 20, pool: 32 }
       : { cone: 32, pool: 48 };
+  // BOOST CAHAYA COMPACT (laporan: "pencahayaan HP jauh lebih gelap
+  // dari desktop") — shot compact 2× lebih jauh + kamera frontal
+  // menampilkan sisi wajah yang tak kena key. Key/fill/face/beam
+  // dinaikkan terarah; desktop tidak tersentuh.
+  const compact = tier === "compact";
+  const K = compact ? 1.3 : 1;
+  // Apex sorot chalkboard digeser ke kanan di compact — dari sudut
+  // kamera mobile, apex lama (10.25) tampak kiri dari papan (laporan:
+  // "bagian atas sorot kurang ke kanan"). Desktop persis.
+  const boardApex: [number, number, number] = compact
+    ? [11.4, 6.6, 1.4]
+    : LIGHTING.boardBeam.position;
   const rimRef = useRef<THREE.SpotLight>(null);
   const rimTarget = useRef(new THREE.Object3D());
   const boardRef = useRef<THREE.SpotLight>(null);
@@ -318,7 +330,7 @@ export default function LightingRig() {
           x=13 — bayangan papan jatuh sungguhan, satu-satunya caster. */}
       <directionalLight
         position={LIGHTING.key.position}
-        intensity={LIGHTING.key.intensity}
+        intensity={LIGHTING.key.intensity * K}
         color={LIGHTING.key.color}
         castShadow
         shadow-mapSize={[1024, 1024]}
@@ -345,7 +357,7 @@ export default function LightingRig() {
           wajah dulu hampir hitam — laporan user "wajah terlalu gelap") */}
       <directionalLight
         position={LIGHTING.fill.position}
-        intensity={LIGHTING.fill.intensity}
+        intensity={LIGHTING.fill.intensity * K}
         color={LIGHTING.fill.color}
       />
 
@@ -354,7 +366,7 @@ export default function LightingRig() {
           mengubah mood studio gelap. */}
       <pointLight
         position={LIGHTING.faceLight.position}
-        intensity={LIGHTING.faceLight.intensity}
+        intensity={LIGHTING.faceLight.intensity * (compact ? 1.5 : 1)}
         color={LIGHTING.faceLight.color}
         distance={LIGHTING.faceLight.distance}
         decay={1.5}
@@ -370,7 +382,7 @@ export default function LightingRig() {
         angle={LIGHTING.beam.angle}
         penumbra={LIGHTING.beam.penumbra}
         decay={1.6}
-        intensity={LIGHTING.beam.intensity}
+        intensity={LIGHTING.beam.intensity * K}
         color={LIGHTING.beam.color}
         castShadow={false}
       />
@@ -389,17 +401,17 @@ export default function LightingRig() {
           (satu panggung, satu cerita cahaya). */}
       <spotLight
         ref={boardRef}
-        position={LIGHTING.boardBeam.position}
+        position={boardApex}
         angle={LIGHTING.boardBeam.angle}
         penumbra={LIGHTING.boardBeam.penumbra}
         distance={9}
         decay={1.6}
-        intensity={LIGHTING.boardBeam.intensity}
+        intensity={LIGHTING.boardBeam.intensity * (compact ? 1.15 : 1)}
         color={LIGHTING.boardBeam.color}
         castShadow={false}
       />
       <BeamCone
-        apex={LIGHTING.boardBeam.position}
+        apex={boardApex}
         aim={LIGHTING.boardBeam.aim}
         radius={LIGHTING.beamVisual.radiusBoard}
         segments={SEG.cone}

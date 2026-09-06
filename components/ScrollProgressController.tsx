@@ -206,6 +206,7 @@ export default function ScrollProgressController() {
     // menyerap lompatan sebagai damping kamera.
     // ------------------------------------------------------------------
     let locked = false; // true selama animasi snap berjalan
+    let lockedSince = 0; // timestamp mulai lock — hard-cap 3s anti lock basi (tween di-kill)
     let cooldownUntil = 0; // timestamp ms — setelah animasi, tunggu sejenak
     let snapTween: gsap.core.Tween | null = null;
     // Wheel gesture gate (round 6B) — SATU gestur wheel = TEPAT satu
@@ -295,6 +296,7 @@ export default function ScrollProgressController() {
       // Kunci kedua input (wheel & touch) selama animasi + cooldown
       // sehingga tidak ada gestur geser yang melompati section.
       locked = true;
+      lockedSince = performance.now();
       cooldownUntil =
         performance.now() + SNAP_DURATION * 1000 + COOLDOWN_MS;
       snapTween?.kill();
@@ -337,7 +339,12 @@ export default function ScrollProgressController() {
     };
 
     const isLocked = () =>
-      locked || (snapTween !== null && snapTween.isActive()) ||
+      // HARD CAP 3s (bug: "balik ke hero gabisa scroll"): tween yang
+      // di-kill sebelum onComplete tak pernah me-reset `locked` —
+      // lock basi >3s dianggap tidak terkunci, gesture system tetap
+      // hidup. Tween normal (600ms) jauh di bawah cap ini.
+      (locked && performance.now() - lockedSince < 3000) ||
+      (snapTween !== null && snapTween.isActive()) ||
       performance.now() < cooldownUntil;
 
     // Wheel — { passive: false }. Aturan GERAK (keras):
@@ -592,13 +599,23 @@ export default function ScrollProgressController() {
       // CameraRig), jadi syarat itu membuat flick exit mustahil di
       // jalur 3D. Trailing click setelah flick tetap tertelan: moved
       // sudah true dan resolver proxy meng-consume + me-reset flag.
+      // FLICK KANAN CEPAT (velocity) — satu-satunya jalan keluar papan
+      // yang boleh menembus suppress pan: flick cepat (<400ms). Slow
+      // pan kanan saat inspeksi TIDAK keluar (laporan: "geser-geser
+      // suka keluar sendiri" — dulu intent-close jalan sebelum
+      // suppress pan, memakan pan yang sah).
       if (
         coarse &&
-        boardInspect &&
-        dx >= FLICK_EXIT_DX &&
-        elapsed < 450
+        boardOpen &&
+        dx >= (boardInspect ? FLICK_EXIT_DX : BOARD_SWIPE_MIN) &&
+        elapsed < 400 &&
+        Math.abs(dy) < Math.abs(dx) * 1.5 &&
+        !edgeStart &&
+        !uiStart &&
+        !isLocked()
       ) {
-        setBoardInspect(false);
+        if (boardInspect) setBoardInspect(false);
+        else setBoardOpen(false);
         return;
       }
 
@@ -656,7 +673,19 @@ export default function ScrollProgressController() {
 
       // Vertikal saat inspeksi di coarse = PAN kamera (miliki
       // CameraRig) — bukan exit. Fine pointer: vertikal tetap keluar.
+      // ESCAPE HATCH (bug: "balik ke hero gabisa scroll lagi") — swipe
+      // vertikal KUAT saat papan terbuka (gesture yang TIDAK jadi pan,
+      // jadi lolos suppress) = tutup papan; scroll tak pernah mati.
       if (boardOpen) {
+        if (
+          !isLocked() &&
+          Math.abs(dy) >= 72 &&
+          Math.abs(dy) > Math.abs(dx) * 1.3
+        ) {
+          if (boardInspect) setBoardInspect(false);
+          setBoardOpen(false);
+          return;
+        }
         if (!coarse && boardInspect && !horizontal) setBoardInspect(false);
         return;
       }
