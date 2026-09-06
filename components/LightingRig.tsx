@@ -49,7 +49,7 @@ const LIGHTING = {
   // palet amber. Wajah user complaint: "terlalu gelap".
   faceLight: {
     position: [0.9, 2.6, 2.6] as [number, number, number],
-    intensity: 2.5,
+    intensity: 1.6,
     color: "#fff4e6",
     distance: 6,
   },
@@ -62,7 +62,7 @@ const LIGHTING = {
   },
   fill: {
     position: [-2.4, 1.4, 2.8] as [number, number, number],
-    intensity: 1.1,
+    intensity: 0.75,
     color: "#b8c4e0",
   },
   // Lampu sorot atas — key vertikal hangat, mengarah ke (0,0,0)

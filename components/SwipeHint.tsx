@@ -62,7 +62,14 @@ export default function SwipeHint() {
         aria-hidden
         className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40 opacity-0"
       >
-        Geser kanan untuk melihat project
+        {/* Dua varian teks: desktop (≥1024px) menyebut input keyboard —
+            interaksi board di desktop = wheel/arrow kanan; layar sentuh
+            tetap "geser kanan". Dipilih via CSS (bukan JS) agar tidak
+            menambah state; teks panjang terlalu ramai di layar kecil. */}
+        <span className="hidden lg:inline">
+          Geser kanan menggunakan arrow kanan untuk melihat project
+        </span>
+        <span className="lg:hidden">Geser kanan untuk melihat project</span>
       </p>
     </div>
   );
