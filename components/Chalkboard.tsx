@@ -12,6 +12,7 @@ import {
   MAX_PAPERS,
   type BoardProject,
 } from "@/lib/useBoardProjects";
+import { tierRefs } from "@/hooks/useViewportTier";
 
 /**
  * Chalkboard — papan proyek 3D bergaya QUEST BOARD MMORPG.
@@ -65,6 +66,24 @@ const PAPER_W = 0.42;
 const PAPER_H = 0.56;
 /** Jarak minimum antar-pusat kertas (rejection sampling) */
 const MIN_PAPER_DIST = 0.5;
+
+/** Perbesaran proxy hit kertas pada pointer COARSE — target sentuh
+    1.35× (bukan 1.5: pada jarak antar-kertas minimum 0.5, proxy 1.5×
+    mudah saling menimpa). Desktop: proxy tidak dirender sama sekali. */
+const COARSE_HIT_SCALE = 1.35;
+
+/** dataset.coarse dibaca SEKALI (lazy — saat kertas pertama mount).
+    Atribut disinkronkan modul hooks/useViewportTier sejak import —
+    graph import Experience memuatnya sebelum komponen mana pun render. */
+let coarseHitCache: boolean | null = null;
+function coarseHitEnabled(): boolean {
+  if (coarseHitCache === null) {
+    coarseHitCache =
+      typeof document !== "undefined" &&
+      document.documentElement.dataset.coarse === "true";
+  }
+  return coarseHitCache;
+}
 /** Scan: step grid 0.18 (≈280 ray — resolusi region masih longgar)
     & chunk 60 ray per idle callback — scan berjalan di BACKGROUND
     (requestIdleCallback) tanpa memblokir gate/first render. */
@@ -766,19 +785,41 @@ function QuestPaper({
   );
 
   return (
-    <mesh
-      ref={meshRef}
-      position={[x, y, z]}
-      rotation={[tiltX, 0, rotZ]}
-      castShadow={false}
-      receiveShadow
-      userData={{ projectId: project.id }}
-      onPointerOver={onOver}
-      onPointerOut={onOut}
-    >
-      <planeGeometry args={[PAPER_W, PAPER_H]} />
-      <meshStandardMaterial map={texture} roughness={0.96} metalness={0} />
-    </mesh>
+    <>
+      <mesh
+        ref={meshRef}
+        position={[x, y, z]}
+        rotation={[tiltX, 0, rotZ]}
+        castShadow={false}
+        receiveShadow
+        userData={{ projectId: project.id }}
+        onPointerOver={onOver}
+        onPointerOut={onOut}
+      >
+        <planeGeometry args={[PAPER_W, PAPER_H]} />
+        <meshStandardMaterial map={texture} roughness={0.96} metalness={0} />
+      </mesh>
+      {/* Proxy hit tak terlihat (COARSE saja) — bidang raycast 1.35×
+          mengikuti transform kertas; userData.projectId membuat resolver
+          papan (BoardClickProxy) menemukan proyek lewat e.intersections
+          seperti kertas biasa. Desktop: tidak dirender — scene identik.
+          onPointerOver no-op: HANYA untuk mendaftarkan mesh ke daftar
+          interaksi R3F — tanpa handler apa pun mesh TIDAK ikut
+          diraycast, dan target sentuh ×1.35 tidak berfungsi. */}
+      {coarseHitEnabled() && (
+        <mesh
+          position={[x, y, z]}
+          rotation={[tiltX, 0, rotZ]}
+          userData={{ projectId: project.id }}
+          onPointerOver={() => {}}
+        >
+          <planeGeometry
+            args={[PAPER_W * COARSE_HIT_SCALE, PAPER_H * COARSE_HIT_SCALE]}
+          />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      )}
+    </>
   );
 }
 
@@ -788,7 +829,9 @@ function QuestPaper({
     - belum inspeksi → masuk inspeksi (dolly-in kamera)
     - saat inspeksi → baca e.intersections: kertas di belakang proxy
       yang tertabrak (userData.projectId) membuka quest window-nya;
-      klik area papan kosong → keluar inspeksi (kembali ke pan normal).
+      klik area papan kosong → keluar inspeksi (kembali ke pan normal);
+      klik yang meleset total dari papan saat inspeksi juga keluar
+      inspeksi (onPointerMissed).
     Alur lengkap: open → inspeksi → quest (klik kertas) → inspeksi
     (Tutup/ESC) → pan normal (klik area kosong papan). */
 function BoardClickProxy({
@@ -814,6 +857,15 @@ function BoardClickProxy({
       }}
       onPointerOut={() => {
         document.body.style.cursor = "";
+      }}
+      onPointerMissed={() => {
+        // Klik yang MELESAT dari proxy papan (tap area kosong canvas /
+        // objek lain) saat inspeksi → keluar inspeksi. Pelengkap flick
+        // kiri di ScrollProgressController. Tanpa inspeksi: klik kosong
+        // = no-op (perilaku desktop utuh).
+        const { boardInspect, setBoardInspect } =
+          useScrollStore.getState();
+        if (boardInspect) setBoardInspect(false);
       }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
@@ -897,10 +949,11 @@ export default function Chalkboard() {
     ? (board.region.minY + board.region.maxY) / 2
     : 1.5;
   // Label "lihat dekat": di atas region writable (bukan di atas bbox —
-  // region bisa lebih rendah dari papan penuh).
+  // region bisa lebih rendah dari papan penuh). Pada portrait, kamera lebih tinggi
+  // dan bersudut menunduk sehingga butuh elevasi lebih tinggi agar tidak memotong bingkai papan.
   const labelY = board
-    ? Math.min(board.region.maxY + 0.25, 3.15)
-    : 3.15;
+    ? Math.min(board.region.maxY + (tierRefs.portrait.current ? 0.58 : 0.25), 3.45)
+    : 3.45;
   const labelX = proxyX;
 
   return (

@@ -46,19 +46,20 @@ export default function SectionRail() {
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    window.dispatchEvent(new CustomEvent("rail:jump"));
     window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
   };
 
   return (
     <nav
       aria-label="Navigasi section"
-      className={`fixed right-4 top-1/2 z-30 -translate-y-1/2 transition-opacity duration-300 sm:right-6 ${
+      className={`fixed right-2 top-1/2 z-30 -translate-y-1/2 transition-opacity duration-300 sm:right-6 [@media(max-height:479px)]:right-1 ${
         boardOpen && activeSection === "hero"
           ? "pointer-events-none opacity-0" // papan terbuka → rail hilang
           : "opacity-100"
       }`}
     >
-      <ul className="flex flex-col items-center gap-[10px]">
+      <ul className="flex flex-col items-center gap-[10px] [@media(max-width:767px)]:gap-2">
         {RAIL_SECTIONS.map((section, index) => {
           const isActive = section.id === effective;
           return (
@@ -68,15 +69,15 @@ export default function SectionRail() {
                 onClick={() => jumpTo(index)}
                 aria-label={section.label}
                 aria-current={isActive ? "true" : undefined}
-                className="group flex h-6 w-10 items-center justify-center outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/60 focus-visible:outline-offset-2"
+                className="group flex h-6 w-6 items-center justify-center outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/60 focus-visible:outline-offset-2 sm:w-10 [@media(pointer:coarse)]:h-7 sm:[@media(pointer:coarse)]:w-12"
               >
                 {/* Garis — transisi width/height/background-color saja
                     (area piksel kecil; tanpa layout thrash yang terasa). */}
                 <span
                   className={`rounded-full transition-[width,height,background-color] duration-300 ease-out ${
                     isActive
-                      ? "h-[3px] w-10 bg-white"
-                      : "h-[2px] w-6 bg-white/25 group-hover:bg-white/50"
+                      ? "h-[3px] w-5 bg-white sm:w-10"
+                      : "h-[2px] w-3 bg-white/25 group-hover:bg-white/50 sm:w-6"
                   }`}
                 />
               </button>

@@ -9,6 +9,7 @@ import Chalkboard from "./Chalkboard";
 import LightingRig from "./LightingRig";
 import ContactGlow from "./ContactGlow";
 import { useScrollStore } from "@/store/useScrollStore";
+import { useViewportTier, tierRefs } from "@/hooks/useViewportTier";
 
 /**
  * DynamicQuality — pengendali kualitas adaptif.
@@ -19,13 +20,15 @@ import { useScrollStore } from "@/store/useScrollStore";
  * ~2.5 detik) berada di luar bounds. Artinya: turun kualitas hanya
  * saat GPU benar-benar kewalahan, dan naik lagi saat headroom kembali.
  *
- * Bounds (fps): layar <=100Hz → [45, 58]; >100Hz → [55, 70].
+ * Bounds (fps): refreshrate >100Hz → [48, 60]; <=100Hz → [38, 50]
+ * — HANYA di tier compact. Desktop memakai bounds asli [45, 58] /
+ * [55, 70] (kontrak "desktop byte-identical").
  * flipflops 4: belokan arah ke-5 (naik-turun yang tak menentu) memicu
  * fallback → dpr menetap di lantai regressed sampai reload.
  *
  * Tangga dpr = multiplier terhadap dpr awal (hasil clamp [1, 1.75]):
- *   rung 2 (default): 1.00 → hidpi 1.75
- *   rung 1          : 0.85 → hidpi ~1.49
+ *   rung 2 (desktop default): 1.00 → hidpi 1.75
+ *   rung 1 (compact default): 0.85 → hidpi ~1.49
  *   rung 0          : 0.72 → hidpi ~1.26
  *
  * PENTING (fix glitch hitam): perubahan dpr = SET SEKALI via setDpr.
@@ -39,8 +42,12 @@ const QUALITY_LADDER = [0.72, 0.85, 1] as const;
 function DynamicQuality() {
   const setDpr = useThree((s) => s.setDpr);
   const initialDpr = useThree((s) => s.viewport.initialDpr);
+  // Tier coarse (layar sentuh) mulai SATU rung di bawah (0.85): GPU
+  // mobile tidak menunggu ±2.5 dtk sampling PerformanceMonitor untuk
+  // turun. Desktop: rung penuh — dpr awal tak pernah disentuh.
+  const { coarse } = useViewportTier();
 
-  const rung = useRef(QUALITY_LADDER.length - 1);
+  const rung = useRef(coarse ? 1 : QUALITY_LADDER.length - 1);
   const latest = useRef({ initialDpr, setDpr });
   latest.current = { initialDpr, setDpr };
 
@@ -56,6 +63,17 @@ function DynamicQuality() {
     },
     []
   );
+
+  // Terapkan rung awal SEKALI di mount — hanya saat rung < penuh
+  // (coarse). Desktop: rung 2 = dpr awal, TANPA setDpr (canvas resize
+  // tidak pernah terjadi — kontrak "set sekali" tetap utuh).
+  useEffect(() => {
+    if (rung.current !== QUALITY_LADDER.length - 1) {
+      latest.current.setDpr(
+        QUALITY_LADDER[rung.current] * latest.current.initialDpr
+      );
+    }
+  }, []);
 
   const onIncline = () => {
     const next = Math.min(rung.current + 1, QUALITY_LADDER.length - 1);
@@ -79,9 +97,14 @@ function DynamicQuality() {
 
   return (
     <PerformanceMonitor
-      bounds={(refreshrate) =>
-        refreshrate > 100 ? [55, 70] : [45, 58]
-      }
+      /* Bounds per tier (read dari tierRefs — tanpa re-render):
+         compact = ambang agresif; desktop = nilai asli. */
+      bounds={(refreshrate) => {
+        if (tierRefs.compact.current) {
+          return refreshrate > 100 ? [48, 60] : [38, 50];
+        }
+        return refreshrate > 100 ? [55, 70] : [45, 58];
+      }}
       flipflops={4}
       onIncline={onIncline}
       onDecline={onDecline}

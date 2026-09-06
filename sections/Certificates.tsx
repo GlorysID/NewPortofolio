@@ -76,7 +76,7 @@ export default function Certificates() {
             Kosong: satu frame cetakan kosong */}
         <div
           data-native-scroll
-          className="mt-12 max-h-[calc(100dvh-17rem)] overflow-y-auto grid grid-cols-1 gap-x-10 gap-y-14 pr-2 sm:grid-cols-2 lg:grid-cols-3"
+          className="mt-12 max-h-[calc(100dvh-17rem)] overflow-y-auto grid grid-cols-1 gap-x-10 gap-y-14 pr-2 sm:grid-cols-2 lg:grid-cols-3 [@media(max-width:767px)]:mt-6 [@media(max-width:767px)]:max-h-[calc(100dvh-13rem)] [@media(max-width:767px)]:gap-y-8 [@media(max-height:479px)]:max-h-[calc(100dvh-8rem)]"
         >
           {!loading && certificates.length === 0 ? (
             <article className="-rotate-[0.8deg] bg-[#fffefa] p-3 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.8)] ring-1 ring-[#20201f]/15">

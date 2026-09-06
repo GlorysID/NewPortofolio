@@ -205,12 +205,26 @@ export default function ContentCard({
       : "translate-x-8 opacity-0 invisible pointer-events-none";
   const shownClass = "translate-x-0 opacity-100 visible pointer-events-auto";
 
+  // Area scroll native di kertas kartu — ScrollProgressController
+  // menyerahkan gesture HANYA ke elemen bertanda (cek presence-only),
+  // jadi atribut dipasang kondisional via matchMedia saat render
+  // (konsisten dgn pemakaian matchMedia reduced-motion di file ini;
+  // SSR aman — window-guard). Dua kasus:
+  // - landscape phone pendek (≤479px tinggi) — kertas bisa meluap;
+  // - portrait compact (≤1023px) — kartu bottom-sheet; bila konten
+  //   tetap meluap di device langka, gesture system harus chain-block
+  //   agar scroll native kertas tetap berjalan.
+  const shortViewport =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-height: 479px)").matches;
+  const nativeScroll = shortViewport;
+
   return (
     <aside
       aria-hidden={!active}
       className={`fixed top-1/2 z-20 w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] max-h-[calc(100dvh-3rem)] -translate-y-1/2 transition-all duration-500 ease-out ${positionClass} ${
         active ? shownClass : hiddenClass
-      }`}
+      } [@media(max-width:767px)]:top-auto [@media(max-width:767px)]:bottom-[calc(env(safe-area-inset-bottom)+1rem)] [@media(max-width:767px)]:left-1/2 [@media(max-width:767px)]:right-auto [@media(max-width:767px)]:translate-y-0 [@media(max-width:767px)]:-translate-x-1/2 [@media(max-width:767px)]:max-h-[calc(100dvh-4.5rem)] [@media(max-width:767px)]:w-[calc(100vw-3.25rem)] [@media(max-width:767px)]:max-w-[335px] [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:top-auto [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:bottom-[calc(env(safe-area-inset-bottom)+2rem)] [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:left-1/2 [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:right-auto [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:translate-y-0 [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:-translate-x-1/2 [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:max-h-[calc(100dvh-6rem)] [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:w-[min(70vw,400px)] [@media(max-height:479px)]:max-h-[calc(100dvh-2rem)]`}
     >
       {/* Wrapper animasi — transform/opacity/shadow GSAP di sini saja.
           Bayangan class = nilai istirahat (senada nilai akhir tween).
@@ -269,27 +283,28 @@ export default function ContentCard({
                 pt-8 area konten memberi ruang bagi separuh-bawah judul yang
                 menumpang tepi atas kartu. */}
             <div
-              className={`max-h-[calc(100vh-3rem)] max-h-[calc(100dvh-3rem)] overflow-hidden rounded-[3px] bg-[#fffefa] text-left ${
+              data-native-scroll={nativeScroll ? true : undefined}
+              className={`max-h-[calc(100vh-3rem)] max-h-[calc(100dvh-3rem)] overflow-hidden rounded-[3px] bg-[#fffefa] text-left [@media(max-height:479px)]:overflow-y-auto [@media(max-width:1023px)_and_(orientation:portrait)]:overflow-y-auto [@media(max-width:767px)]:[--card-tilt-factor:0.5] [@media(max-width:767px)]:p-3 [@media(max-width:767px)]:pb-3 ${
                 variant === "print"
                   ? "p-4 pb-0"
                   : variant === "card"
                     ? "p-5"
                     : "p-4"
               }`}
-              style={{ transform: `rotate(${tilt}deg)` }}
+              style={{ transform: `rotate(calc(${tilt}deg * var(--card-tilt-factor, 1)))` }}
             >
               {variant === "print" ? (
                 /* Bingkai foto putih — margin rata, strip bawah lebih tebal
                     (pb-14) ala cetakan klasik; hairline ring memisahkan
                     bingkai dari kertas */
-                <div className="rounded-[2px] bg-white p-3 pb-14 pt-8 ring-1 ring-[#20201f]/10">
+                <div className="rounded-[2px] bg-white p-3 pb-14 pt-8 ring-1 ring-[#20201f]/10 [@media(max-width:1023px)_and_(orientation:portrait)]:pt-4 [@media(max-width:1023px)_and_(orientation:portrait)]:pb-4 [@media(max-width:767px)]:p-2.5 [@media(max-width:767px)]:pt-3.5 [@media(max-width:767px)]:pb-3.5">
                   {children}
                 </div>
               ) : (
                 /* Artefak kertas lain — hairline ring inset (keluarga
                     cetakan yang sama), konten menyusun strukturnya sendiri */
                 <div
-                  className={`rounded-[2px] ring-1 ring-[#20201f]/10 ${
+                  className={`rounded-[2px] ring-1 ring-[#20201f]/10 [@media(max-width:1023px)_and_(orientation:portrait)]:p-4 [@media(max-width:1023px)_and_(orientation:portrait)]:pt-7 [@media(max-width:1023px)_and_(orientation:portrait)]:pb-7 ${
                     variant === "card" ? "p-5 pt-8 pb-10" : "p-4 pt-8 pb-10"
                   }`}
                 >
@@ -309,9 +324,12 @@ export default function ContentCard({
                 aria-hidden
                 className={`pointer-events-none absolute left-0 top-0 z-10 select-none whitespace-nowrap font-display uppercase leading-none tracking-tight text-accent ${
                   cardTitle.sizeClass ?? "text-[clamp(2.6rem,11vw,4rem)]"
-                }`}
+                } [@media(max-width:1023px)_and_(orientation:portrait)]:[--title-ty:-78%] [@media(max-width:1023px)_and_(orientation:portrait)]:[--title-tx:0px] [@media(max-width:767px)]:text-[clamp(2rem,8.5vw,2.7rem)] [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:text-[clamp(2.5rem,6vw,3.2rem)]`}
                 style={{
-                  transform: `translate(${cardTitle.x}px, ${cardTitle.y}%) rotate(${cardTitle.rotate}deg)`,
+                  // Offset via CSS var dgn fallback nilai desktop — compact
+                  // (V variant) menimpa var → judul mengambang elegan di atas tepi
+                  // atas kartu (-68%) tanpa menutupi teks dalam kartu.
+                  transform: `translate(var(--title-tx, ${cardTitle.x}px), var(--title-ty, ${cardTitle.y}%)) rotate(${cardTitle.rotate}deg)`,
                 }}
               >
                 {cardTitle.word}

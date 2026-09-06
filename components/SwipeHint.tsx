@@ -56,7 +56,7 @@ export default function SwipeHint() {
   // Pusat horizontal via inset-x-0 + flex (bukan translate) — transform
   // bebas konflik dengan tween GSAP (y) di elemen yang sama.
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-5 z-30 flex justify-center">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] z-30 flex justify-center">
       <p
         ref={textRef}
         aria-hidden

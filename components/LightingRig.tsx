@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useViewportTier } from "@/hooks/useViewportTier";
 
 /**
  * LightingRig — setup 3-titik sinematik + alur cahaya vertikal
@@ -166,10 +167,13 @@ function BeamCone({
   apex: apexProp,
   aim,
   radius,
+  segments,
 }: {
   apex: [number, number, number];
   aim: [number, number, number];
   radius: number;
+  /** Resolusi radial kerucut — dipangkas di tier compact. */
+  segments: number;
 }) {
   const texture = useMemo(() => makeBeamTexture(), []);
 
@@ -185,7 +189,7 @@ function BeamCone({
     );
     const pos = apex.clone().addScaledVector(down, LIGHTING.beamVisual.height / 2);
     return { position: pos, quaternion: quat };
-  }, [apexProp, aim, radius]);
+  }, [apexProp, aim]);
 
   // Dispose texture saat unmount (pola sama dengan ContactGlow)
   useEffect(() => {
@@ -199,7 +203,7 @@ function BeamCone({
   return (
     <mesh position={position} quaternion={quaternion} renderOrder={2} raycast={() => null}>
       <coneGeometry
-        args={[radius, LIGHTING.beamVisual.height, 32, 1, true]}
+        args={[radius, LIGHTING.beamVisual.height, segments, 1, true]}
       />
       <meshBasicMaterial
         map={texture}
@@ -220,8 +224,11 @@ function BeamCone({
  *  dari atas ke lantai. */
 function BeamFloorPool({
   position,
+  segments,
 }: {
   position: [number, number, number];
+  /** Resolusi radial kolam — dipangkas di tier compact. */
+  segments: number;
 }) {
   const texture = useMemo(() => makePoolTexture(), []);
 
@@ -240,7 +247,7 @@ function BeamFloorPool({
       renderOrder={1}
       raycast={() => null}
     >
-      <circleGeometry args={[LIGHTING.pool.radius, 48]} />
+      <circleGeometry args={[LIGHTING.pool.radius, segments]} />
       <meshBasicMaterial
         map={texture}
         transparent
@@ -254,6 +261,14 @@ function BeamFloorPool({
 }
 
 export default function LightingRig() {
+  // Resolusi geometri dekoratif per-tier: dua kerucut additive & dua
+  // kolam emas dipangkas di compact (20/32) — hemat vertex/fill-rate,
+  // visual praktis setara. Desktop: 32/48 (nilai lama persis).
+  const { tier } = useViewportTier();
+  const SEG =
+    tier === "compact"
+      ? { cone: 20, pool: 32 }
+      : { cone: 32, pool: 48 };
   const rimRef = useRef<THREE.SpotLight>(null);
   const rimTarget = useRef(new THREE.Object3D());
   const boardRef = useRef<THREE.SpotLight>(null);
@@ -342,8 +357,9 @@ export default function LightingRig() {
         apex={LIGHTING.beam.position}
         aim={[0, 0, 0]}
         radius={LIGHTING.beamVisual.radius}
+        segments={SEG.cone}
       />
-      <BeamFloorPool position={[0, 0.02, 0]} />
+      <BeamFloorPool position={[0, 0.02, 0]} segments={SEG.pool} />
 
       {/* SOROT CHALKBOARD — lampu + kerucut + kolam, bahasa visual
           identik dengan sorot karakter, dipasang di kaki papan
@@ -363,9 +379,11 @@ export default function LightingRig() {
         apex={LIGHTING.boardBeam.position}
         aim={LIGHTING.boardBeam.aim}
         radius={LIGHTING.beamVisual.radiusBoard}
+        segments={SEG.cone}
       />
       <BeamFloorPool
         position={[LIGHTING.boardBeam.aim[0], 0.02, LIGHTING.boardBeam.aim[2]]}
+        segments={SEG.pool}
       />
 
       {/* UPLIGHT KAKI PAPAN — offset identik dengan uplight karakter;

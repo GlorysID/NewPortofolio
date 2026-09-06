@@ -7,6 +7,7 @@ import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { SHOTS } from "@/data/shots";
 import { useScrollStore, type SectionId } from "@/store/useScrollStore";
 import { boardDrag } from "@/lib/boardDrag";
+import { MQ } from "@/hooks/useViewportTier";
 
 /**
  * ScrollProgressController — infrastruktur scroll GSAP.
@@ -27,11 +28,17 @@ import { boardDrag } from "@/lib/boardDrag";
  * - Satu gestur (wheel / swipe / tombol keyboard) langsung memindahkan
  *   halaman ke section BERSEBELAHAN — tidak menunggu scroll idle
  *   seperti snap bawaan ScrollTrigger.
- * - Wheel: deltaY bermakna pertama (≥ WHEEL_THRESHOLD px) → snap.
+ * - Wheel (round 6B, dua timestamp): lastRawWheelT diupdate di SEMUA
+ *   event (drop termasuk); re-arm butuh raw stream tenang ≥180ms DAN
+ *   lock tween+cooldown sudah berakhir. Kontrak: stream gap <180ms =
+ *   SATU gestur selamanya (momentum tak pernah double-advance);
+ *   pause ≥180ms pasca-lock = gestur baru (recovery cepat).
  * - Touch: swipe vertikal ≥ TOUCH_THRESHOLD px (touchstart→touchend)
- *   → snap searah swipe.
+ *   → snap searah swipe; swipe kedua selama lock DIBUANG (bukan
+ *   diantrekan).
  * - Keyboard: ArrowDown/ArrowUp, PageDown/PageUp → tetangga;
- *   Home/End → pertama/terakhir (semua preventDefault).
+ *   Home/End → pertama/terakhir (semua preventDefault, drop saat
+ *   lock aktif — tanpa antrean).
  * - Lock input selama animasi snap; setelah selesai, cooldown singkat
  *   untuk meredam momentum trackpad.
  * - prefers-reduced-motion: reduce → pindah instan tanpa animasi
@@ -47,11 +54,14 @@ if (typeof window !== "undefined") {
 
 const SECTION_COUNT = SHOTS.length; // 5 section
 
-const WHEEL_THRESHOLD = 4; // px deltaY minimum — bunuh event phantom trackpad
+const STEP_ACC_THRESHOLD = 25; // akumulasi |deltaY| per LANGKAH — trackpad pelan pun capai dalam 1–2 event; jitter jari diam (jendela lock) tak terkumpul secukupnya
+const NOISE_FLOOR = 3; // event di bawah ini = derau mikro (jari menyentuh tanpa niat) — diabaikan total
+const STREAM_GAP_RESET_MS = 200; // jeda antar-event > ini = stream input baru → accum dibuang (scroll terpisah tidak menjumlah)
 const BOARD_WHEEL_THRESHOLD = 24; // px deltaX minimum — board open/close
-const TOUCH_THRESHOLD = 40; // px swipe minimum (touchstart → touchend)
+const TOUCH_THRESHOLD = 48; // px swipe minimum (touchstart → touchend) — 40 terlalu sensitif utk intent user r6
 const SNAP_DURATION = 0.6; // detik per animasi snap
 const COOLDOWN_MS = 250; // jeda setelah snap selesai sebelum menerima input lagi
+const FLICK_EXIT_DX = 64; // px geser kiri minimum — flick keluar inspeksi (coarse)
 
 export default function ScrollProgressController() {
   useEffect(() => {
@@ -61,12 +71,21 @@ export default function ScrollProgressController() {
     let lastWritten = -1; // nilai progress terakhir yang benar-benar ditulis
     let pending: number | null = null;
     let progressRaf = 0;
+    // Anti-stale tops: gambar sertifikat lazy mengubah tinggi section
+    // SAAT user scroll → cachedTops basi → spy & snap salah target.
+    // Segarkan maksimal 2×/detik di jalur flush (sudah rAF-throttled).
+    let lastTopsRefresh = 0;
 
     const flushProgress = () => {
       progressRaf = 0;
       if (pending === null) return;
       const p = pending;
       pending = null;
+      const now = performance.now();
+      if (now - lastTopsRefresh > 500) {
+        lastTopsRefresh = now;
+        refreshTops();
+      }
       // Tulis hanya bila delta terasa (≥0.001) atau tepat di boundary
       // 0/1 — visual identik (delta 0.001 = 0.1% halaman), hemat
       // re-render/notifikasi subscriber store.
@@ -106,13 +125,35 @@ export default function ScrollProgressController() {
             // section tidak seragam (Sertifikat > 1 viewport), formula
             // rata membuat Contact ter-skip ke Sertifikat. Fallback rata
             // bila section belum ter-mount.
+            //
+            // THRESHOLD TENGAH VIEWPORT: section aktif ketika TOP-nya
+            // melewati tengah layar (bukan tepi atas). Dengan spy tepi-
+            // atas, section TINGGI (Sertifikat) sudah "masuk" dari bawah
+            // selagi kartu Contact masih aktif sampai top-nya tepat di
+            // atas — satu viewport penuh kartu Contact + grid Sertifikat
+            // tampil BERSAMAAN (laporan: "Contact & Sertifikat menimpa").
+            // Tengah-viewport memindah crossfade ½ viewport lebih awal:
+            // kartu berganti saat section berikutnya menguasai ≥½ layar.
+            // Di STOP snap (scrollY tepat di top section) section aktif
+            // IDENTIK dengan spy lama — perilaku desktop/stop tidak
+            // berubah; section terakhir (Sertifikat) aktif sampai akhir.
+            //
+            // Pengecualian section TERAKHIR (Sertifikat, >100vh, grid
+            // mulai ±150px dari top section): ambang 0.9vh — kartu
+            // Contact lepas SEBELUM satu piksel grid pun menyentuh
+            // viewport (grid masuk saat scrollY = top+150−vh; switch di
+            // top−0.9vh = 66px lebih awal) → Contact & grid Sertifikat
+            // tidak pernah tampil bersamaan saat scroll transisi.
             const tops = cachedTops;
             let section: string;
             if (tops) {
               const scrollY = self.progress * maxScroll();
               section = "hero";
               for (let i = 0; i < tops.length; i++) {
-                if (scrollY >= tops[i]) section = SHOTS[i]?.id ?? "hero";
+                const frac = i === tops.length - 1 ? 0.9 : 0.5;
+                if (scrollY + window.innerHeight * frac >= tops[i]) {
+                  section = SHOTS[i]?.id ?? "hero";
+                }
               }
             } else {
               const index = Math.round(
@@ -132,6 +173,31 @@ export default function ScrollProgressController() {
     });
 
     // ------------------------------------------------------------------
+    // Coarse pointer (layar sentuh utama) — dibaca SEKALI + listener
+    // live: seluruh penyetelan gesture di bawah hanya aktif saat
+    // coarse; jalur fine pointer identik dengan sebelumnya. Pinch-zoom
+    // halaman juga dimatikan (gesturestart) selama coarse.
+    // ------------------------------------------------------------------
+    const mqCoarse = window.matchMedia(MQ.coarse);
+    let coarse = mqCoarse.matches;
+    const onGestureStart = (e: Event) => e.preventDefault();
+    const setPinchGuard = (active: boolean) => {
+      if (active) {
+        document.addEventListener("gesturestart", onGestureStart, {
+          passive: false,
+        });
+      } else {
+        document.removeEventListener("gesturestart", onGestureStart);
+      }
+    };
+    setPinchGuard(coarse);
+    const onCoarseChange = (e: MediaQueryListEvent) => {
+      coarse = e.matches;
+      setPinchGuard(coarse);
+    };
+    mqCoarse.addEventListener("change", onCoarseChange);
+
+    // ------------------------------------------------------------------
     // Gesture snapper — fullpage-style: satu gestur → snap ke section
     // bersebelahan. Window adalah scroller; #main-scroll adalah kontainer
     // tinggi (section h-screen bertumpuk). Scrub: 1 pada ScrollTrigger
@@ -140,8 +206,42 @@ export default function ScrollProgressController() {
     let locked = false; // true selama animasi snap berjalan
     let cooldownUntil = 0; // timestamp ms — setelah animasi, tunggu sejenak
     let snapTween: gsap.core.Tween | null = null;
+    // Wheel gesture gate (round 6B) — SATU gestur wheel = TEPAT satu
+    // advan section. MODEL: STEPPING THROTTLE (fullpage klasik).
+    // - Selama input wheel MENGALIR (event berjarak < STREAM_GAP_RESET_MS),
+    //   tiap siklus lock (~850ms) memajukan TEPAT satu section — scroll
+    //   kontinu terasa "berpindah terus", tanpa perlu lepas jari.
+    // - Jeda > STREAM_GAP_RESET_MS = stream baru: accum dibuang, jadi
+    //   gesekan kecil terpisah tidak pernah menjumlah diri.
+    // - Selama lock: event diabaikan (1 langkah per siklus lock), tapi
+    //   TIDAK dibuang permanen — stream yang masih mengalir otomatis
+    //   memicu langkah berikutnya begitu lock lepas.
+    // - NOISE_FLOOR: event mikro (jari diam di trackpad) diabaikan.
+    let wheelAccum = 0;
+    let lastWheelT = 0;
     let touchStartY: number | null = null;
     let touchStartX: number | null = null;
+    // Waktu touchstart (ms) — usia gesture untuk uji flick keluar
+    // inspeksi di coarse.
+    let touchStartTime = 0;
+    // Guard tepi: gesture yang lahir <24px dari tepi kiri/kanan layar
+    // milik gesture sistem browser (back/forward, selalu horizontal)
+    // — hanya swallow gesture horizontal; vertical dari tepi sah.
+    let touchEdge = false;
+    // Gesture mulai di kontrol UI eksplisit ([data-ui-interactive] —
+    // backdrop/panel quest): tanpa snap, tanpa flick, tanpa board op;
+    // touchmove tetap di-preventDefault (bunuh native scroll halaman
+    // di belakang sheet) supaya synthesized click selalu sampai.
+    let touchUiStart = false;
+    // Gesture mulai di region native-scroll: elemen penandanya cached
+    // untuk chain-block (lihat onTouchMove) + apakah elemen itu
+    // scroller sungguhan (overflow auto/scroll) atau passthrough
+    // (grid sertifikat — native scroll HALAMAN memang disengaja).
+    let nativeScrollEl: Element | null = null;
+    let nativeScrollIsScroller = false;
+    // Chain-block pernah mencegah scroll halaman di gesture ini
+    // (scroller nested mentok) → touchend boleh menjalankan snap.
+    let chainBlocked = false;
     // Arah dominan gestur touch ("x" | "y" | null) — diputuskan sekali
     // di touchmove pertama yang bermakna: horizontal → board, vertikal → snap.
     let touchAxis: "x" | "y" | null = null;
@@ -190,7 +290,11 @@ export default function ScrollProgressController() {
         cooldownUntil = performance.now() + COOLDOWN_MS;
         return;
       }
+      // Kunci kedua input (wheel & touch) selama animasi + cooldown
+      // sehingga tidak ada gestur geser yang melompati section.
       locked = true;
+      cooldownUntil =
+        performance.now() + SNAP_DURATION * 1000 + COOLDOWN_MS;
       snapTween?.kill();
       snapTween = gsap.to(window, {
         duration: SNAP_DURATION,
@@ -204,15 +308,30 @@ export default function ScrollProgressController() {
     };
 
     const snapAdjacent = (direction: number) => {
-      // Ukur fresh — akurat walau tinggi section berubah sejak mount.
       const tops = getSectionTops();
-      if (!tops) return; // fallback rata di onUpdate — jarang terjadi
-      const y = window.scrollY;
-      let current = 0;
-      tops.forEach((t, i) => {
-        if (y >= t) current = i;
-      });
-      scrollToSection(current + Math.sign(direction));
+      if (!tops) return;
+      // BASIS SECTION LOGIS (fix root-cause skip): current diambil dari
+      // activeSection (spy scroll-spy = section yang PASTI sedang di-
+      // layar saat gate membuka event), BUKAN window.scrollY mentah.
+      // scrollY mentah mid-tween/rail-glide menghasilkan current salah
+      // → skip section (laporan: "skip section yang lain"). Spy selalu
+      // benar di titik gate membuka event karena isLocked() menahan
+      // event selama tween.
+      const { activeSection } = useScrollStore.getState();
+      let current = SHOTS.findIndex((s) => s.id === activeSection);
+      if (current < 0) {
+        // Fallback defensif: derive dari posisi aktual.
+        const y = window.scrollY;
+        current = 0;
+        tops.forEach((t, i) => {
+          if (y >= t - 30) current = i;
+        });
+      }
+      const target = Math.max(
+        0,
+        Math.min(SECTION_COUNT - 1, current + Math.sign(direction))
+      );
+      scrollToSection(target);
     };
 
     const isLocked = () =>
@@ -260,13 +379,37 @@ export default function ScrollProgressController() {
         }
         return; // di luar hero: benar-benar diabaikan
       }
+      // ------------------------------------------------------------------
+      // VERTIKAL — STEPPING THROTTLE (model fullpage klasik):
+      // - Input MENGALIR (gap antar event < STREAM_GAP_RESET_MS): tiap
+      //   siklus lock (~850ms) maju TEPAT satu section — trackpad/mouse
+      //   scroll kontinu terasa berpindah terus tanpa lepas jari.
+      // - Jeda > STREAM_GAP_RESET_MS = stream baru → accum dibuang
+      //   (gesekan kecil terpisah tidak pernah menjumlah diri).
+      // - NOISE_FLOOR: event mikro (jari diam di trackpad) diabaikan.
+      // - Selama lock: event diabaikan — stream yang masih mengalir
+      //   otomatis melangkahkan begitu lock lepas (throttle, bukan gate).
+      // - preventDefault di SEMUA jalur vertikal: gesture system pemilik
+      //   scroll halaman (tanpa drift antara section).
+      // ------------------------------------------------------------------
+      const nowT = performance.now();
+      const gap = nowT - lastWheelT;
+      lastWheelT = nowT;
+      // Stream baru setelah jeda panjang → buang sisa akumulasi lama.
+      if (gap > STREAM_GAP_RESET_MS) wheelAccum = 0;
       if (isLocked()) {
+        // Satu langkah sudah dipakai untuk siklus lock ini.
         e.preventDefault();
         return;
       }
-      if (Math.abs(e.deltaY) < WHEEL_THRESHOLD) return; // phantom trackpad
       e.preventDefault();
-      snapAdjacent(e.deltaY);
+      // Firefox line-mode: 1 notch = 3 lines ≈ 100px — samakan skala.
+      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+      if (Math.abs(dy) < NOISE_FLOOR) return;
+      wheelAccum += Math.abs(dy);
+      if (wheelAccum < STEP_ACC_THRESHOLD) return;
+      wheelAccum = 0; // langkah dipakai — langkah berikutnya lewat lock
+      snapAdjacent(dy);
     };
 
     // Touch — catat Y saat touchstart, nilai saat touchend menentukan swipe.
@@ -278,29 +421,104 @@ export default function ScrollProgressController() {
       touchStartY = t ? t.clientY : null;
       touchStartX = t ? t.clientX : null;
       touchAxis = null; // arah dominan gestur belum diketahui
-      nativeScrollStart = !!(
-        e.target instanceof Element &&
-        e.target.closest("[data-native-scroll]")
-      );
+      touchStartTime = t ? performance.now() : 0;
+      touchEdge = !!t && (t.clientX < 24 || t.clientX > window.innerWidth - 24);
+      chainBlocked = false;
+      const target =
+        e.target instanceof Element ? e.target : null;
+      const nativeMark = target?.closest("[data-native-scroll]") ?? null;
+      nativeScrollEl = nativeMark;
+      nativeScrollIsScroller = !!nativeMark &&
+        (getComputedStyle(nativeMark).overflowY === "auto" ||
+          getComputedStyle(nativeMark).overflowY === "scroll");
+      nativeScrollStart = !!nativeMark;
+      // Kontrol UI eksplisit (backdrop/panel quest) — gesture system
+      // mundur total; click sintetis harus selalu sampai.
+      touchUiStart = !!target?.closest("[data-ui-interactive]");
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (nativeScrollStart) return; // serahkan ke native scrolling
+      if (nativeScrollStart) {
+        // COARSE — cegah scroll CHAINING dari scroller nested mentok
+        // ke halaman: kartu mobile yang kontennya pas/mentok membuat
+        // browser meneruskan scroll ke PAGE secara native (momentum)
+        // → halaman nyasar dari snap → swipe terasa mati lalu skip.
+        // Scroller sungguhan di ujungnya → preventDefault + tandai;
+        // scroller yang muat (tidak scrollable) → block total.
+        // Passthrough (grid sertifikat, overflow visible) → biarkan:
+        // membaca sertifikat = native scroll halaman (by design).
+        if (coarse && nativeScrollEl && nativeScrollIsScroller) {
+          const el = nativeScrollEl;
+          const scrollable = el.scrollHeight - el.clientHeight > 1;
+          const t = e.touches[0];
+          const dyNow =
+            t && touchStartY !== null ? touchStartY - t.clientY : 0;
+          const atTop = el.scrollTop <= 0;
+          const atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+          const mustBlock =
+            !scrollable ||
+            (dyNow > 2 && atEnd) ||
+            (dyNow < -2 && atTop);
+          if (mustBlock) {
+            // HANYA bila preventDefault MASIH BISA bekerja (cancelable):
+            // cancelable=false = Chrome sudah commit ke scroll native
+            // (grid sedang menggulir sendiri, biasanya mentok tepi di
+            // TENGAH gesture). Menandai chainBlocked di state itu
+            // menyulap snap section dari gesture milik grid — inilah
+            // akar "macet lalu tiba-tiba lompat" (round-6D probe).
+            if (e.cancelable) {
+              e.preventDefault();
+              if (Math.abs(dyNow) > 2) chainBlocked = true;
+            }
+          }
+        }
+        return; // selain itu: serahkan ke native scrolling
+      }
+      // Kontrol UI eksplisit (backdrop quest, dsb.) — gesture TAP
+      // (jitter <10px) DILEPAS sepenuhnya: preventDefault touchmove di
+      // iOS/Android MENYINGKIRKAN click sintetis gesture itu — inilah
+      // akar "Tutup/backdrop tidak bisa diklik". Swipe besar (>10px)
+      // di-preventDefault supaya halaman di belakang sheet tidak
+      // ikut menggulir; touchend-nya di-skip (uiStart).
+      if (touchUiStart) {
+        const t = e.touches[0];
+        if (
+          t &&
+          touchStartY !== null &&
+          Math.abs(t.clientY - touchStartY) > 10
+        ) {
+          e.preventDefault();
+        }
+        return;
+      }
       // Tentukan arah dominan sekali di gerak pertama yang bermakna:
-      // horizontal → biarkan lewat (tanpa preventDefault) supaya gestur
-      // sampai ke touchend; vertikal → halangi scroll native (snap
-      // dikejar di touchend). Tidak ada scroll horizontal di halaman,
-      // jadi melepas kunci horizontal aman.
+      // horizontal → fine pointer: biarkan lewat (tanpa preventDefault)
+      // supaya gestur sampai ke touchend; coarse: native scroll
+      // dihalangi saat papan terbuka / di hero (lihat bawah).
+      // Vertikal → halangi scroll native (snap dikejar di touchend).
+      // Tidak ada scroll horizontal di halaman, jadi melepas kunci
+      // horizontal aman.
       if (touchAxis === null) {
         const t = e.touches[0];
         if (t && touchStartX !== null && touchStartY !== null) {
           const dx = Math.abs(t.clientX - touchStartX);
           const dy = Math.abs(t.clientY - touchStartY);
-          if (dx > 8 || dy > 8) {
+          // Kunci arah: 8px fine pointer, 12px coarse (sentuhan lebih
+          // kasar — cegah axis "kembar" di gerak awal).
+          const axisLock = coarse ? 12 : 8;
+          if (dx > axisLock || dy > axisLock) {
             touchAxis = dx > dy ? "x" : "y";
           }
         }
       }
-      if (touchAxis === "x") return;
+      if (touchAxis === "x") {
+        // Coarse: horizontal saat papan terbuka / di hero → kunci
+        // native scroll supaya gesture papan bersih (tanpa bounce).
+        if (coarse) {
+          const st = useScrollStore.getState();
+          if (st.boardOpen || st.activeSection === "hero") e.preventDefault();
+        }
+        return;
+      }
       e.preventDefault();
     };
     const onTouchEnd = (e: TouchEvent) => {
@@ -310,9 +528,21 @@ export default function ScrollProgressController() {
       const dy = touchStartY - t.clientY; // geser ke atas → dy positif
       const dx = touchStartX === null ? 0 : t.clientX - touchStartX;
       const axis = touchAxis;
+      const elapsed = performance.now() - touchStartTime;
+      // Salin + reset SEMUA state gesture SEBELUM return mana pun —
+      // tanpa ini, return awal meninggalkan flag menyala dan gesture
+      // BERIKUTNYA salah klasifikasi (sumber "swipe pertama mati").
       touchStartY = null;
       touchStartX = null;
       touchAxis = null;
+      const edgeStart = touchEdge;
+      touchEdge = false;
+      const uiStart = touchUiStart;
+      touchUiStart = false;
+      const nativeStart = nativeScrollStart;
+      nativeScrollStart = false;
+      const wasChainBlocked = chainBlocked;
+      chainBlocked = false;
 
       const { boardOpen, activeSection, boardInspect, setBoardInspect } =
         useScrollStore.getState();
@@ -321,10 +551,46 @@ export default function ScrollProgressController() {
         Math.abs(dx) >= TOUCH_THRESHOLD &&
         Math.abs(dx) > Math.abs(dy) * 1.2;
 
-      // Gestur dimulai di area scroll internal (grid sertifikat) →
-      // serahkan ke native scrolling; bukan gesture snap.
-      if (nativeScrollStart) {
-        nativeScrollStart = false;
+      // Kontrol UI eksplisit (backdrop "Tutup" quest, panel) — TANPA
+      // logika gesture sama sekali: tap harus menghasilkan click
+      // sintetis (closure 2px tersedia — handler touch tidak pernah
+      // preventDefault di jalur ini).
+      if (uiStart) return;
+
+      // Edge-swipe guard: gesture tepi milik sistem browser (back/
+      // forward — HORIZONTAL). Vertikal dari tepi tetap gesture
+      // halaman yang sah (user menyentuh dekat tepi saat memegang HP).
+      if (edgeStart && horizontal) return;
+
+      // Gesture native-scroll (kartu mobile / panel quest / grid
+      // sertifikat): seluruhnya milik elemen — KECUALI chain-block
+      // scroller mentok (onTouchMove) — gesture itu tetap milik
+      // scroller, tapi touchend-nya BOLEH snap (panjang ≥40px =
+      // intent pindah section yang jelas).
+      if (nativeStart && !wasChainBlocked) return;
+
+      // COARSE — flick kiri CEPAT keluar inspeksi. VELOCITY-based
+      // (dx/elapsed), bukan window usia: sebelumnya `now-start<350ms`
+      // MENYINGKIRKAN flick jari cepat yang diakhiri sebelum batas
+      // waktu termasuk — harusnya `elapsed` BOLEH lebih besar asal
+      // kecepatannya tinggi (450ms @ ≥142px/s; jempol mudah ≥400px/s).
+      // BoardOpen TIDAK disyaratkan: inspeksi selalu berada di dalam
+      // board, dan pada perangkat sentuh flag ini terpasang JAUH lebih
+      // awal (drag-promote pointermove) — syarat lama membuat flick
+      // pertama sesudah inspect sering meleset.
+      //
+      // PENTING: boardDrag.moved TIDAK boleh jadi syarat — flick
+      // 64px+ di canvas SELALU menaikkan moved (>24px via pointermove
+      // CameraRig), jadi syarat itu membuat flick exit mustahil di
+      // jalur 3D. Trailing click setelah flick tetap tertelan: moved
+      // sudah true dan resolver proxy meng-consume + me-reset flag.
+      if (
+        coarse &&
+        boardInspect &&
+        dx <= -FLICK_EXIT_DX &&
+        elapsed < 450
+      ) {
+        setBoardInspect(false);
         return;
       }
 
@@ -336,14 +602,19 @@ export default function ScrollProgressController() {
         return;
       }
 
-      // Board TERBUKA (prioritas): staged exit ke kiri; vertikal saat
-      // inspeksi = keluar inspeksi.
+      // Board TERBUKA: horizontal kiri = staged exit (inspeksi → pan
+      // normal → tutup). Vertikal di coarse = PAN kamera (miliki
+      // CameraRig), JADI TIDAK keluar inspeksi di sini — keluar
+      // vertikal coarse dipindah ke bawah (di luar blok boardOpen).
       if (boardOpen) {
         if (horizontal && dx < 0 && !isLocked()) {
           if (boardInspect) setBoardInspect(false);
           else setBoardOpen(false);
-        } else if (!horizontal && boardInspect) {
-          setBoardInspect(false);
+        }
+        if (!coarse) {
+          // FINE pointer: vertikal saat inspeksi = keluar (desktop,
+          // tidak berubah).
+          if (!horizontal && boardInspect) setBoardInspect(false);
         }
         return;
       }
@@ -356,7 +627,13 @@ export default function ScrollProgressController() {
         return;
       }
       if (Math.abs(dy) < TOUCH_THRESHOLD) return;
-      if (isLocked()) return;
+      if (isLocked()) return; // Kunci aktif: cegah loncat section saat animasi berlangsung
+
+      if (boardInspect) {
+        setBoardInspect(false);
+        return;
+      }
+
       snapAdjacent(dy);
     };
 
@@ -415,11 +692,19 @@ export default function ScrollProgressController() {
       }
     };
 
+    const onRailJump = () => {
+      snapTween?.kill();
+      locked = false;
+      cooldownUntil = 0; // lock lebar — langkah wheel berikutnya langsung siap
+      wheelAccum = 0;
+    };
+
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("rail:jump", onRailJump);
 
     // Refresh setelah font/layout stabil agar ukuran trigger akurat —
     // sekalian segarkan posisi section (tops) untuk mapping aktif.
@@ -429,11 +714,14 @@ export default function ScrollProgressController() {
     });
 
     return () => {
+      mqCoarse.removeEventListener("change", onCoarseChange);
+      setPinchGuard(false); // lepas gesturestart guard
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("rail:jump", onRailJump);
       window.removeEventListener("resize", refreshTops);
       window.removeEventListener("load", refreshTops);
       window.removeEventListener("chalkboard:papers", refreshTops);

@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { SHOTS, SHOT_BY_ID } from "@/data/shots";
+import { SHOTS, SHOTS_COMPACT } from "@/data/shots";
+import { tierRefs } from "@/hooks/useViewportTier";
 import type { SectionId } from "@/store/useScrollStore";
 import { useScrollStore } from "@/store/useScrollStore";
 import { boardDrag } from "@/lib/boardDrag";
@@ -23,6 +24,13 @@ import { boardDrag } from "@/lib/boardDrag";
  *   pendek (settle cepat) — efektif cross-fade antar still.
  */
 
+// Refs tier viewport (non-rerender) — store tunggal modul
+// hooks/useViewportTier: portrait → tabel shot & pose board compact,
+// coarse → ambang drag/pan berbeda. Dibaca di useFrame/event handler
+// TANPA memicu render ulang.
+const portraitRef = tierRefs.portrait;
+const coarseRef = tierRefs.coarse;
+
 // Porsi segmen untuk "menetap" di tiap shot sebelum bergerak
 const HOLD = 0.4;
 
@@ -32,10 +40,12 @@ const HOLD = 0.4;
 // yaw ~80° untuk memframanya penuh.
 const BOARD_OPEN_POS: [number, number, number] = [3.2, 1.9, 4.6];
 const BOARD_OPEN_TGT: [number, number, number] = [12.8, 1.35, 0.2];
-// Pose open MOBILE — mundur lebih jauh & lebih tinggi: layar portrait
+// Pose open COMPACT — mundur lebih jauh & lebih tinggi: layar portrait
 // sempit + FOV horizontal kecil membuat papan makin besar di frame.
-const BOARD_OPEN_POS_M: [number, number, number] = [1.4, 2.2, 6.6];
-const BOARD_OPEN_TGT_M: [number, number, number] = [11.5, 1.5, 0.4];
+// Target x 12.46 (solve NDC round 5): papan tepat di TENGAH layar
+// (center NDC x 0.001; tepi ±0.49, pojok kertas ±0.55 — semua in-frame).
+const BOARD_OPEN_POS_C: [number, number, number] = [1.4, 2.25, 7.0];
+const BOARD_OPEN_TGT_C: [number, number, number] = [12.46, 1.45, 0.4];
 
 // Pose inspeksi papan (boardInspect): dolly-in dari pose open — kamera
 // merapat ke wajah papan sampai grid 2×2 kertas mengisi ~70% frame.
@@ -55,11 +65,11 @@ const BOARD_INSPECT_TGT: [number, number, number] = [12.8, 1.45, 0.2];
 const BOARD_TX = -0.454;
 const BOARD_TZ = -0.891;
 
-// Pose inspeksi mobile — mundur lebih jauh (layar sempit + FOV sama
+// Pose inspeksi COMPACT — mundur lebih jauh (layar sempit + FOV sama
 // membuat papan lebih besar di frame) dan lebih tinggi sedikit agar
 // grid 2×2 kertas terjadi di tengah frame vertikal.
-const BOARD_INSPECT_POS_M: [number, number, number] = [10.2, 1.8, 1.45];
-const BOARD_INSPECT_TGT_M: [number, number, number] = [12.8, 1.4, 0.2];
+const BOARD_INSPECT_POS_C: [number, number, number] = [9.2, 1.8, 2.1];
+const BOARD_INSPECT_TGT_C: [number, number, number] = [12.8, 1.42, 0.2];
 
 // Waypoint busur: saat membuka/menutup board, kamera LEWAT DULU di
 // depan karakter (sedikit ke kiri + maju) — gerakan "melingkar dari
@@ -91,7 +101,10 @@ function smoothstep(t: number): number {
 /** Posisi & target ideal pada progress tertentu (tanpa damping).
  *  Menulis hasil ke buffer modul _sampledPos/_sampledTgt — bebas alokasi. */
 function sampleShot(progress: number) {
-  const segCount = SHOTS.length - 1;
+  // Tabel shot per-tier — SATU titik pemilihan (portrait = compact).
+  // Desktop mengambil SHOTS persis seperti sebelumnya.
+  const table = portraitRef.current ? SHOTS_COMPACT : SHOTS;
+  const segCount = table.length - 1;
   const scaled = THREE.MathUtils.clamp(progress, 0, 1) * segCount;
   const seg = Math.min(Math.floor(scaled), segCount - 1);
   const rawT = scaled - seg;
@@ -104,8 +117,8 @@ function sampleShot(progress: number) {
         ? 1
         : smoothstep((rawT - half) / (1 - HOLD));
 
-  const from = SHOTS[seg];
-  const to = SHOTS[seg + 1];
+  const from = table[seg];
+  const to = table[seg + 1];
 
   // Identik dengan lerp3 sebelumnya: lerp per-komponen
   _sampledPos[0] = THREE.MathUtils.lerp(from.position[0], to.position[0], t);
@@ -116,50 +129,16 @@ function sampleShot(progress: number) {
   _sampledTgt[2] = THREE.MathUtils.lerp(from.target[2], to.target[2], t);
 }
 
-// Framing mobile — portrait mempersempit FOV horizontal drastis.
-// Kamera ditarik MUNDUR sepanjang sumbu pandang (pos → target) dengan
-// faktor tetap: komposisi desktop direplikasi di HP. Target tak bergerak
-// (subjek tetap terpusat). Hanya untuk shot section — pose board punya
-// varian _M sendiri.
-const MOBILE_FRAMING = 1.25;
-function applyMobileFraming() {
-  _sampledPos[0] =
-    _sampledTgt[0] + (_sampledPos[0] - _sampledTgt[0]) * MOBILE_FRAMING;
-  _sampledPos[1] =
-    _sampledTgt[1] + (_sampledPos[1] - _sampledTgt[1]) * MOBILE_FRAMING;
-  _sampledPos[2] =
-    _sampledTgt[2] + (_sampledPos[2] - _sampledTgt[2]) * MOBILE_FRAMING;
-}
-
 export default function CameraRig() {
   const camera = useThree((s) => s.camera);
   const lookTarget = useRef(new THREE.Vector3(0, 1.3, 0));
   const desiredPos = useRef(new THREE.Vector3(...SHOTS[0].position));
   const desiredTarget = useRef(new THREE.Vector3(...SHOTS[0].target));
 
-  // Deteksi prefers-reduced-motion (live) + layar kecil (pose inspeksi
-  // mobile: mundur lebih jauh — FOV sama di layar sempit membuat papan
-  // tampak lebih besar, jadi kamera perlu jarak ekstra).
-  const reducedMotion = useRef(false);
-  const isMobile = useRef(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mqSmall = window.matchMedia("(max-width: 640px)");
-    reducedMotion.current = mq.matches;
-    isMobile.current = mqSmall.matches;
-    const onChangeM = (e: MediaQueryListEvent) => {
-      reducedMotion.current = e.matches;
-    };
-    const onChangeS = (e: MediaQueryListEvent) => {
-      isMobile.current = e.matches;
-    };
-    mq.addEventListener("change", onChangeM);
-    mqSmall.addEventListener("change", onChangeS);
-    return () => {
-      mq.removeEventListener("change", onChangeM);
-      mqSmall.removeEventListener("change", onChangeS);
-    };
-  }, []);
+  // Tier viewport — refs non-rerender dari hooks/useViewportTier (satu
+  // set matchMedia di level modul): reduced-motion mematikan scrub,
+  // portrait memilih pose board compact, coarse mengubah ambang drag.
+  const reducedMotion = tierRefs.reducedMotion;
 
   // Velocity-gate: ref pointer input & status settle (bebas alokasi,
   // nilai skalar — reassign ref bukan alokasi objek)
@@ -185,8 +164,9 @@ export default function CameraRig() {
   // sebelum flag inspect terpasang, yang di-set saat click = pointerup;
   // kalau nunggu inspect, press-drag satu gerakan tak pernah engage).
   // Drag menggeser pandangan sepanjang tangent & vertikal (ter-clamp).
-  // Drag > 8px saat belum inspeksi = PROMOSI ke inspeksi; boardDrag.moved
-  // menekan klik di akhir drag (drag bukan klik).
+  // Drag bermakna saat belum inspeksi = PROMOSI ke inspeksi (8px fine /
+  // 14px coarse); boardDrag.moved menekan klik di akhir drag (drag bukan
+  // klik).
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       const st = useScrollStore.getState();
@@ -206,23 +186,39 @@ export default function CameraRig() {
       dragLastY.current = e.clientY;
       dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
       const st = useScrollStore.getState();
-      // Tekan-and-drag dari papan terbuka: drag bermakna (>8px) langsung
-      // PROMOSI ke inspeksi + moved=true agar klik di akhir drag ditekan.
-      if (dragMovedDist.current > 8 && st.boardOpen && !st.boardInspect) {
+      // Tekan-and-drag dari papan terbuka: drag bermakna langsung
+      // PROMOSI ke inspeksi + moved=true agar klik di akhir drag
+      // ditekan. Ambang: 8px fine pointer, 14px coarse (jari lebih
+      // kasar — hindari promosi tak sengaja).
+      const PROMOTE_AT = coarseRef.current ? 14 : 8;
+      if (
+        dragMovedDist.current > PROMOTE_AT &&
+        st.boardOpen &&
+        !st.boardInspect
+      ) {
         st.setBoardInspect(true);
         boardDrag.moved = true;
       }
       if (dragMovedDist.current > 24) boardDrag.moved = true;
       // Pan hanya bermakna saat inspeksi
       if (!st.boardInspect) return;
-      // Pandangan mengikuti arah drag (push-style) — clamp ±0.6.
+      // Pandangan mengikuti arah drag (push-style) — clamp per-tier:
+      // Pada layar mobile portrait (layar sempit vertikal), batas horizontal
+      // diperluas (±1.75m) agar pengguna dapat menggeser sampai ke ujung
+      // kertas & sudut papan paling kiri dan paling kanan.
+      const isPortrait = portraitRef.current;
+      const isCoarse = coarseRef.current;
+      const PAN_CLAMP_X = isPortrait ? 1.75 : (isCoarse ? 1.2 : 0.6);
+      const PAN_CLAMP_Y = isPortrait ? 0.8 : 0.6;
+      const panSpeed = (isPortrait || isCoarse) ? 0.0028 : 0.0016;
+
       panX.current = Math.max(
-        -0.6,
-        Math.min(0.6, panX.current + dx * 0.0016),
+        -PAN_CLAMP_X,
+        Math.min(PAN_CLAMP_X, panX.current + dx * panSpeed),
       );
       panY.current = Math.max(
-        -0.6,
-        Math.min(0.6, panY.current + dy * 0.0016),
+        -PAN_CLAMP_Y,
+        Math.min(PAN_CLAMP_Y, panY.current + dy * panSpeed),
       );
     };
     const onUp = () => {
@@ -293,28 +289,28 @@ export default function CameraRig() {
         panX.current = 0;
         panY.current = 0;
       }
-      const shot = SHOT_BY_ID[activeSection] ?? SHOTS[0];
+      const table = portraitRef.current ? SHOTS_COMPACT : SHOTS;
+      const shot = table.find((s) => s.id === activeSection) ?? table[0];
       _sampledPos[0] = shot.position[0];
       _sampledPos[1] = shot.position[1];
       _sampledPos[2] = shot.position[2];
       _sampledTgt[0] = shot.target[0];
       _sampledTgt[1] = shot.target[1];
       _sampledTgt[2] = shot.target[2];
-      if (isMobile.current) applyMobileFraming();
       if (boardOpen && activeSection === "hero") {
         const P = boardInspect
-          ? isMobile.current
-            ? BOARD_INSPECT_POS_M
+          ? portraitRef.current
+            ? BOARD_INSPECT_POS_C
             : BOARD_INSPECT_POS
-          : isMobile.current
-            ? BOARD_OPEN_POS_M
+          : portraitRef.current
+            ? BOARD_OPEN_POS_C
             : BOARD_OPEN_POS;
         const T = boardInspect
-          ? isMobile.current
-            ? BOARD_INSPECT_TGT_M
+          ? portraitRef.current
+            ? BOARD_INSPECT_TGT_C
             : BOARD_INSPECT_TGT
-          : isMobile.current
-            ? BOARD_OPEN_TGT_M
+          : portraitRef.current
+            ? BOARD_OPEN_TGT_C
             : BOARD_OPEN_TGT;
         _sampledPos[0] = P[0];
         _sampledPos[1] = P[1];
@@ -371,7 +367,7 @@ export default function CameraRig() {
       } else if (!settled.current) {
         sampleShot(progress);
       }
-      if (isMobile.current) applyMobileFraming();
+      // (Compact framing kini murni via SHOTS_COMPACT di sampleShot.)
 
       // Keluar inspeksi → pan drag di-reset
       if (!boardInspect) {
@@ -405,18 +401,18 @@ export default function CameraRig() {
       } else if (boardOpen && activeSection === "hero") {
         // Leg 2 / inspeksi PAPAN (kanan): goal mengikuti store.
         const P = boardInspect
-          ? isMobile.current
-            ? BOARD_INSPECT_POS_M
+          ? portraitRef.current
+            ? BOARD_INSPECT_POS_C
             : BOARD_INSPECT_POS
-          : isMobile.current
-            ? BOARD_OPEN_POS_M
+          : portraitRef.current
+            ? BOARD_OPEN_POS_C
             : BOARD_OPEN_POS;
         const T = boardInspect
-          ? isMobile.current
-            ? BOARD_INSPECT_TGT_M
+          ? portraitRef.current
+            ? BOARD_INSPECT_TGT_C
             : BOARD_INSPECT_TGT
-          : isMobile.current
-            ? BOARD_OPEN_TGT_M
+          : portraitRef.current
+            ? BOARD_OPEN_TGT_C
             : BOARD_OPEN_TGT;
         _sampledPos[0] = P[0];
         _sampledPos[1] = P[1];

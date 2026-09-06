@@ -24,3 +24,30 @@ html {
 ::-webkit-scrollbar {
   display: none;
 }
+
+/* ------------------------------------------------------------------
+   Guardrail mobile (Lane B, additive — desktop tak berubah):
+   - overflow-x: clip pada html & body = fix luapan judul display
+     raksasa yang dirotasi (overhang tetap terlihat, TANPA scroll
+     horizontal; "clip" tidak menciptakan scroll container baru,
+     berbeda dari "hidden").
+   - touch-action pan-y pada html: sentuhan vertikal = native scroll;
+     horizontal diserahkan ke gesture system (board / cert wall).
+   - canvas: touch-action none — R3F mengelola sentuhannya sendiri.
+   ------------------------------------------------------------------ */
+html,
+body {
+  overflow-x: clip;
+}
+
+html {
+  touch-action: pan-x;
+}
+
+[data-native-scroll] {
+  touch-action: pan-y;
+}
+
+canvas {
+  touch-action: none;
+}

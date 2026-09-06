@@ -62,3 +62,61 @@ export const SHOTS: CameraShot[] = [
 export const SHOT_BY_ID = Object.fromEntries(
   SHOTS.map((shot) => [shot.id, shot])
 ) as Record<SectionId, CameraShot>;
+
+/**
+ * SHOTS_COMPACT — tabel shot untuk viewport COMPACT (portrait / layar
+ * pendek, lihat hooks/useViewportTier). Desktop memakai SHOTS apa adanya.
+ *
+ * GUARD type-level: anotasi TUPLE memaksa id per-posisi (bukan sekadar
+ * union) — bila urutan atau id salah posisi, kompilasi gagal tepat di
+ * sini. Jumlah & urutan elemen wajib identik dengan SHOTS.
+ */
+export const SHOTS_COMPACT: [
+  CameraShot & { id: "hero" },
+  CameraShot & { id: "about" },
+  CameraShot & { id: "skills" },
+  CameraShot & { id: "projects" },
+  CameraShot & { id: "contact" },
+  CameraShot & { id: "certificates" },
+] = [
+  {
+    id: "hero",
+    label: "Wide Shot",
+    position: [0, 1.55, 7.6],
+    target: [0, 1.28, 0],
+  },
+  {
+    // About: close-up wajah & tatapan di jendela atas viewport
+    id: "about",
+    label: "Close-up Kepala",
+    position: [0.65, 1.6, 3.4],
+    target: [0, 1.15, 0],
+  },
+  {
+    // Skills: sudut detail postur jas & tangan dari kanan
+    id: "skills",
+    label: "Detail Tangan",
+    position: [1.3, 1.35, 3.2],
+    target: [0.25, 1.05, 0],
+  },
+  {
+    // Education (Projects): sudut 3/4 dinamis dari kiri
+    id: "projects",
+    label: "3/4 Torso",
+    position: [-1.4, 1.4, 3.4],
+    target: [-0.1, 1.1, 0],
+  },
+  {
+    // Contact: pull-back sinematik memperlihatkan karakter & pendaran sorot
+    id: "contact",
+    label: "Pull-back",
+    position: [0, 1.5, 6.8],
+    target: [0, 1.0, 0],
+  },
+  {
+    id: "certificates",
+    label: "Sertifikat",
+    position: [0, 1.5, 6.8],
+    target: [0, 1.0, 0],
+  },
+];

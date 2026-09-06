@@ -76,11 +76,17 @@ export default function ProjectOverlay() {
     if (!project || !panelRef.current) return;
     const panel = panelRef.current;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        panel,
-        { autoAlpha: 0, x: 24 },
-        { autoAlpha: 1, x: 0, duration: 0.4, ease: "power3.out" },
-      );
+      // Entrance RELATIF (from, bukan fromTo): panel compact di-center
+      // via CSS translate(-50%,-50%) — fromTo {x:0} akan MENIMPA offset
+      // -50% itu (GSAP membake % CSS jadi px). "+=24" = slide masuk 24px
+      // dari posisi istirahat apa pun (desktop: 0→tetap; compact:
+      // ter-center tetap). autoAlpha/y dan Esc tidak berubah.
+      gsap.from(panel, {
+        autoAlpha: 0,
+        x: "+=24",
+        duration: 0.4,
+        ease: "power3.out",
+      });
     });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setActiveProjectId(null);
@@ -98,14 +104,42 @@ export default function ProjectOverlay() {
   const videoId = project.video ? extractYouTubeId(project.video) : null;
   const localVideo = project.video ? isLocalVideo(project.video) : false;
 
+  // Viewport kecil (compact portrait ≤767px ATAU landscape pendek
+  // ≤479px tinggi) — kertas jadi area scroll native; controller
+  // menyerahkan gesture HANYA ke elemen bertanda (cek presence-only),
+  // jadi atribut dipasang kondisional via matchMedia saat render.
+  const shortViewport =
+    typeof window !== "undefined" &&
+    (window.matchMedia("(max-width: 767px)").matches ||
+      window.matchMedia("(max-height: 479px)").matches);
+
   return (
-    <div
-      ref={panelRef}
-      role="dialog"
-      aria-label={`Proyek: ${project.title}`}
-      className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2"
-    >
-      <div className="relative -rotate-[0.75deg] bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15">
+    <>
+      {/* Backdrop klik-untuk-tutup — DI BAWAH panel (z-35 < z-36).
+          pointer-events default (panel menutupinya) + Esc tetap bekerja
+          (listener lama tidak disentuh). data-ui-interactive: gesture
+          system scroll MENYERAH total pada gesture yang lahir di sini
+          (controller) — sentuhan apapun yang berakhir di backdrop
+          menutup quest window via onClick; tanpa preventDefault dari
+          controller, click synthesis di iOS/Android selalu jalan. */}
+      <button
+        type="button"
+        aria-label="Tutup"
+        data-ui-interactive
+        className="fixed inset-0 z-[35] cursor-default"
+        onClick={() => setActiveProjectId(null)}
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-label={`Proyek: ${project.title}`}
+        data-ui-interactive
+        className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2 [@media(max-width:767px)]:left-1/2 [@media(max-width:767px)]:right-auto [@media(max-width:767px)]:top-1/2 [@media(max-width:767px)]:-translate-x-1/2 [@media(max-width:767px)]:-translate-y-1/2 [@media(max-width:767px)]:w-[min(86vw,380px)] [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-height:479px)]:right-3 [@media(max-height:479px)]:w-[min(60vw,360px)]"
+      >
+        <div
+          data-native-scroll={shortViewport ? true : undefined}
+          className="relative -rotate-[0.75deg] bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15 [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-width:767px)]:overflow-y-auto [@media(max-width:767px)]:p-5 [@media(max-width:767px)]:pt-6 [@media(max-height:479px)]:max-h-[calc(100dvh-2rem)] [@media(max-height:479px)]:overflow-y-auto"
+        >
         <span
           aria-hidden
           className="absolute left-1/2 top-2.5 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-[#3a2f22] shadow-[0_2px_4px_rgba(0,0,0,0.4)]"
@@ -125,7 +159,7 @@ export default function ProjectOverlay() {
           Quest Board — {project.year}
         </p>
         <div className="mt-2.5 h-[7px] w-[120px] bg-[#e8a33d]" />
-        <h3 className="mt-4 font-alt text-[21px] font-medium leading-tight tracking-[-0.01em] text-[#20201f]">
+        <h3 className="mt-4 font-alt text-[21px] font-medium leading-tight tracking-[-0.01em] text-[#20201f] [@media(max-width:767px)]:text-[19px]">
           {project.title}
         </h3>
         <p className="mt-2 font-body text-[13px] leading-[1.6] text-[#4c4c49]">
@@ -160,7 +194,7 @@ export default function ProjectOverlay() {
         )}
 
         {project.compiled && (
-          <div className="mt-3 max-h-[46vh] overflow-y-auto border-t border-[#20201f]/12 pt-3 pr-1">
+          <div className="mt-3 max-h-[46vh] overflow-y-auto border-t border-[#20201f]/12 pt-3 pr-1 [@media(max-width:767px)]:max-h-none [@media(max-height:479px)]:max-h-none">
             <MdxBody {...project.compiled} components={mdxComponents} />
           </div>
         )}
@@ -200,7 +234,7 @@ export default function ProjectOverlay() {
           <button
             type="button"
             onClick={() => setActiveProjectId(null)}
-            className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#20201f]/45 transition-colors hover:text-[#20201f]"
+            className="p-2 -m-2 font-mono text-[11px] uppercase tracking-[0.2em] text-[#20201f]/45 transition-colors hover:text-[#20201f]"
           >
             Tutup
           </button>
@@ -210,7 +244,8 @@ export default function ProjectOverlay() {
           aria-hidden
           className="pointer-events-none absolute inset-0 border-4 border-[#20201f]/8"
         />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, IBM_Plex_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -67,6 +67,20 @@ export const metadata: Metadata = {
     description: "AI × Automation × Software · portofolio 3D interaktif.",
     images: ["/opengraph-image.png"],
   },
+};
+
+/**
+ * Viewport mobile (Lane B): device-width + scale 1 tanpa zoom user
+ * (gesture system mengelola interaksi), viewport-fit cover untuk
+ * safe-area iOS (env(safe-area-inset-*)), tema hitam senada latar.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

@@ -99,7 +99,7 @@ function ArtifactFoot({
 }) {
   return (
     <p
-      className={`pt-2.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[#777773] ${className}`}
+      className={`pt-2.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[#777773] [@media(max-width:1023px)_and_(orientation:portrait)]:pt-1.5 ${className}`}
     >
       {text}
     </p>
@@ -314,32 +314,32 @@ export function AboutCard() {
           dagu terlihat (frame 3/2 lama hanya memuat atas 50% foto · 
           dagu selalu terpotong). mt-6 menjaga kartu dalam budget
           viewport pendek. Bingkai putih + strip bawah = chrome "print". */}
-      <div className="mt-6 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)]">
+      <div className="mt-5 bg-[#f1f1ed] shadow-[0_1px_2px_rgb(32_32_31_/_10%)] [@media(max-width:1023px)_and_(orientation:portrait)]:mt-1.5">
         <div className="relative aspect-[6/5] overflow-hidden">
           <Image
             src="/me.jpg"
             alt="Foto profil"
             fill
-            className="object-cover object-[center_15%]"
+            className="object-cover object-[center_28%]"
             sizes="(max-width: 640px) calc(100vw - 4rem), 332px"
           />
         </div>
       </div>
 
-      <h3 className="mt-4 font-display text-[21px] leading-tight text-[#20201f]">
+      <h3 className="mt-4 font-display text-[18px] leading-tight text-[#20201f] sm:text-[21px] [@media(max-width:1023px)_and_(orientation:portrait)]:mt-1.5 [@media(max-width:767px)]:text-[16px]">
         Tentang Saya
       </h3>
-      <p className="mt-2 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
-        Developer yang berpikir pada <strong>AI agents, automation systems,
+      <p className="mt-2 font-body text-[13px] leading-[1.55] text-[#4c4c49] [@media(max-width:1023px)_and_(orientation:portrait)]:mt-1 [@media(max-width:1023px)_and_(orientation:portrait)]:text-[11px] [@media(max-width:1023px)_and_(orientation:portrait)]:leading-[1.38]">
+        Developer yang berfokus pada <strong>AI agents, automation systems,
         dan web development</strong>. Membangun perangkat lunak yang melampaui
-        aplikasi tradisional · mengeksplorasi bagaimana AI dan otomasi bisa
-        digabung menjadi sistem yang lebih cerdas, efisien, dan mandiri.
-        Terus belajar dan bereksperimen, mengubah ide menjadi produk nyata.
+        aplikasi tradisional · menggabungkan AI dan otomasi menjadi sistem yang
+        lebih cerdas, efisien, dan mandiri.
+        <span className="hidden sm:inline"> Terus belajar dan bereksperimen, mengubah ide menjadi produk nyata.</span>
       </p>
-      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#6f5a39]">
+      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#6f5a39] [@media(max-width:1023px)_and_(orientation:portrait)]:mt-1 [@media(max-width:767px)]:text-[9px]">
         AI × Automation × Software
       </p>
-      <ArtifactFoot text="Kodak Portra 400 · Frame 01" className="mt-4" />
+      <ArtifactFoot text="Kodak Portra 400 · Frame 01" className="mt-4 [@media(max-width:1023px)_and_(orientation:portrait)]:mt-1.5" />
     </div>
   );
 }
@@ -365,7 +365,7 @@ export function SkillsCard() {
   return (
     <div>
       <PaperHead code="Skills" no="02" />
-      <h3 className="mt-4 font-display text-[21px] leading-tight text-[#20201f]">
+      <h3 className="mt-4 font-display text-[18px] leading-tight text-[#20201f] sm:text-[21px]">
         Keahlian
       </h3>
 
@@ -376,7 +376,7 @@ export function SkillsCard() {
         {skills.map((skill, i) => (
           <div
             key={skill}
-            className="relative flex h-11 items-center justify-center border border-[#20201f]/12 bg-white"
+            className="relative flex h-11 items-center justify-center border border-[#20201f]/12 bg-white [@media(max-width:1023px)_and_(orientation:portrait)]:h-9"
           >
             <span className="absolute left-1 top-0.5 font-mono text-[7px] tracking-[0.14em] text-[#a4a49f]">
               {String(i + 1).padStart(2, "0")}
@@ -388,7 +388,7 @@ export function SkillsCard() {
         ))}
       </div>
 
-      <ArtifactFoot text="Roll 01 · Contact Sheet" className="mt-4" />
+      <ArtifactFoot text="Roll 01 · Contact Sheet" className="mt-4 [@media(max-width:1023px)_and_(orientation:portrait)]:mt-3" />
     </div>
   );
 }
@@ -407,17 +407,17 @@ export function ProjectsCard() {
   return (
     <div>
       <PaperHead code="Education" no="03" />
-      <h3 className="mt-4 font-display text-[21px] leading-tight text-[#20201f]">
+      <h3 className="mt-4 font-display text-[18px] leading-tight text-[#20201f] sm:text-[21px] [@media(max-width:1023px)_and_(orientation:portrait)]:mt-2">
         Perjalanan Sekolah
       </h3>
-      <p className="mt-4 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773]">
+      <p className="mt-4 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773] [@media(max-width:1023px)_and_(orientation:portrait)]:mt-3">
         School Records · SD ke SMK
       </p>
 
       {/* Timeline pendidikan · tiap jenjang = satu entri rekaman: periode
           mono, nama sekolah, satu baris catatan. Sprocket dipertahankan:
           bahasa film "rekaman" tetap, isinya kini sekolah. */}
-      <div className="mt-3 flex gap-3.5">
+      <div className="mt-3 flex gap-3.5 [@media(max-width:1023px)_and_(orientation:portrait)]:mt-1.5">
         <div
           aria-hidden
           className="flex w-[18px] shrink-0 flex-col justify-around border-y border-[#20201f]/10"
@@ -434,14 +434,14 @@ export function ProjectsCard() {
 
         <ul className="flex-1 divide-y divide-[#20201f]/10">
           {education.map((e, index) => (
-            <li key={e.name} className="py-2.5 first:pt-1">
+            <li key={e.name} className="py-2.5 first:pt-1 [@media(max-width:1023px)_and_(orientation:portrait)]:py-1 [@media(max-width:1023px)_and_(orientation:portrait)]:first:pt-0.5">
               <span className="font-mono text-[8px] uppercase tracking-[0.22em] text-[#a4a49f]">
                 {String(index + 1).padStart(2, "0")} · {e.period}
               </span>
-              <p className="mt-0.5 font-body text-[14px] text-[#20201f]">
+              <p className="mt-0.5 font-body text-[14px] text-[#20201f] [@media(max-width:1023px)_and_(orientation:portrait)]:text-[13px]">
                 {e.name}
               </p>
-              <p className="mt-0.5 font-body text-[11px] leading-[1.45] text-[#5a5a56]">
+              <p className="mt-0.5 font-body text-[11px] leading-[1.45] text-[#5a5a56] [@media(max-width:1023px)_and_(orientation:portrait)]:leading-[1.3] [@media(max-width:1023px)_and_(orientation:portrait)]:text-[10px]">
                 {e.detail}
               </p>
             </li>
@@ -449,7 +449,7 @@ export function ProjectsCard() {
         </ul>
       </div>
 
-      <ArtifactFoot text="Roll 02 · School Records" className="mt-4" />
+      <ArtifactFoot text="Roll 02 · School Records" className="mt-4 [@media(max-width:1023px)_and_(orientation:portrait)]:mt-3" />
     </div>
   );
 }
@@ -466,7 +466,7 @@ export function ContactCard() {
       {/* Kepala kartu nama: monogram + identitas studio */}
       <div className="mt-4 flex items-start justify-between">
         <div>
-          <h3 className="font-display text-[21px] leading-tight text-[#20201f]">
+          <h3 className="font-display text-[18px] leading-tight text-[#20201f] sm:text-[21px]">
             Mari Terhubung
           </h3>
           <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.22em] text-[#777773]">
@@ -478,7 +478,7 @@ export function ContactCard() {
         </span>
       </div>
 
-      <p className="mt-3 font-body text-[13px] leading-[1.55] text-[#4c4c49]">
+      <p className="mt-3 font-body text-[13px] leading-[1.55] text-[#4c4c49] [@media(max-width:1023px)_and_(orientation:portrait)]:text-[12px]">
         Terbuka untuk kolaborasi, freelance, atau sekadar diskusi soal AI
         agents, otomasi, dan pengembangan web.
       </p>
@@ -487,7 +487,7 @@ export function ContactCard() {
       <div className="mt-3 divide-y divide-[#20201f]/10 border-t border-[#20201f]/10">
         <a
           href="mailto:anjalisaputra@gmail.com"
-          className="flex items-center justify-between py-2 font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/25 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+          className="flex items-center justify-between py-2 font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/25 underline-offset-4 transition-colors hover:text-[#6f5a39] [@media(max-width:1023px)_and_(orientation:portrait)]:py-1.5"
         >
           <span>anjalisaputra@gmail.com</span>
           <span
@@ -501,7 +501,7 @@ export function ContactCard() {
           href="https://github.com/GlorysID"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39] [@media(max-width:1023px)_and_(orientation:portrait)]:py-1.5"
         >
           <span>GitHub ↗</span>
           <span
@@ -513,7 +513,7 @@ export function ContactCard() {
         </a>
         <a
           href="/cv/CV-Anjali-Saputra.pdf"
-          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39] [@media(max-width:1023px)_and_(orientation:portrait)]:py-1.5"
         >
           <span>Unduh CV →</span>
           <span
@@ -527,7 +527,7 @@ export function ContactCard() {
           href="https://instagram.com/jalipryyy"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+          className="flex items-center justify-between py-2 font-body text-[12px] text-[#4c4c49] underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39] [@media(max-width:1023px)_and_(orientation:portrait)]:py-1.5"
         >
           <span>Instagram ↗</span>
           <span
@@ -539,7 +539,7 @@ export function ContactCard() {
         </a>
       </div>
 
-      <ArtifactFoot text="Studio Card · Cetak 2026" className="mt-4" />
+      <ArtifactFoot text="Studio Card · Cetak 2026" className="mt-4 [@media(max-width:1023px)_and_(orientation:portrait)]:mt-3" />
     </div>
   );
 }
