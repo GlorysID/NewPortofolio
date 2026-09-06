@@ -186,12 +186,14 @@ export default function CameraRig() {
       dragLastY.current = e.clientY;
       dragMovedDist.current += Math.abs(dx) + Math.abs(dy);
       const st = useScrollStore.getState();
-      // Tekan-and-drag dari papan terbuka: drag bermakna langsung
-      // PROMOSI ke inspeksi + moved=true agar klik di akhir drag
-      // ditekan. Ambang: 8px fine pointer, 14px coarse (jari lebih
-      // kasar — hindari promosi tak sengaja).
+      // Tekan-and-drag dari papan terbuka: FINE pointer saja yang
+      // di-promosi ke inspeksi (desktop: drag = zoom, perilaku lama).
+      // COARSE TIDAK promosi — swipe kiri harus tetap jadi gesture
+      // keluar (laporan HP: "swipe kiri selalu zoom terus"); inspeksi
+      // di layar sentuh = TAP kertas, bukan drag.
       const PROMOTE_AT = coarseRef.current ? 14 : 8;
       if (
+        !coarseRef.current &&
         dragMovedDist.current > PROMOTE_AT &&
         st.boardOpen &&
         !st.boardInspect

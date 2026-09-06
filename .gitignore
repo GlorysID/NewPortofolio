@@ -44,3 +44,6 @@ smoke.log
 
 # generated media copy (source of truth: content/projects/media/)
 /public/projects-media/
+
+.vercel
+.env*

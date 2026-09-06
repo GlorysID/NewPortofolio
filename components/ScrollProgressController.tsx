@@ -527,7 +527,6 @@ export default function ScrollProgressController() {
       if (!t) return;
       const dy = touchStartY - t.clientY; // geser ke atas → dy positif
       const dx = touchStartX === null ? 0 : t.clientX - touchStartX;
-      const axis = touchAxis;
       const elapsed = performance.now() - touchStartTime;
       // Salin + reset SEMUA state gesture SEBELUM return mana pun —
       // tanpa ini, return awal meninggalkan flag menyala dan gesture
@@ -544,12 +543,15 @@ export default function ScrollProgressController() {
       const wasChainBlocked = chainBlocked;
       chainBlocked = false;
 
-      const { boardOpen, activeSection, boardInspect, setBoardInspect } =
+      const { boardOpen, activeSection, boardInspect, setBoardInspect, setBoardOpen } =
         useScrollStore.getState();
+      // Dominansi dihitung ULANG saat touchend dari dx/dy aktual —
+      // axis-lock awal hanya untuk routing touchmove; lock itu membuat
+      // swipe hampir-horizontal salah klasifikasi (laporan: "geser
+      // kanan ke chalkboard susah").
       const horizontal =
-        axis === "x" &&
         Math.abs(dx) >= TOUCH_THRESHOLD &&
-        Math.abs(dx) > Math.abs(dy) * 1.2;
+        Math.abs(dx) > Math.abs(dy) * 1.15;
 
       // Kontrol UI eksplisit (backdrop "Tutup" quest, panel) — TANPA
       // logika gesture sama sekali: tap harus menghasilkan click
@@ -594,6 +596,27 @@ export default function ScrollProgressController() {
         return;
       }
 
+      // ---------------------------------------------------------------
+      // INTENT HORIZONTAL dulu (sebelum suppress boardDrag.moved):
+      // swipe kiri/kanan yang DOMINAN harus selalu bekerja — kalau
+      // dicek setelah suppress, drag-promote/drag-pan pointermove
+      // menelan swipe kiri user (laporan: "gabisa balik geser kiri").
+      // Kanan di hero = buka papan. Kiri saat papan = keluar (inspeksi
+      // → tutup). Threshold lebih rendah dari vertikal (48): gesture
+      // horizontal nyaman mulai ~40px.
+      // ---------------------------------------------------------------
+      if (horizontal && !edgeStart && !uiStart && !isLocked()) {
+        if (dx > 0 && !boardOpen && activeSection === "hero") {
+          setBoardOpen(true);
+          return;
+        }
+        if (dx < 0 && boardOpen) {
+          if (boardInspect) setBoardInspect(false);
+          else setBoardOpen(false);
+          return;
+        }
+      }
+
       // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,
       // bukan gesture keluar. BACA SAJA — jangan reset di sini: flag
       // juga dibaca resolver klik SETELAH touchend (click event
@@ -602,30 +625,17 @@ export default function ScrollProgressController() {
         return;
       }
 
-      // Board TERBUKA: horizontal kiri = staged exit (inspeksi → pan
-      // normal → tutup). Vertikal di coarse = PAN kamera (miliki
-      // CameraRig), JADI TIDAK keluar inspeksi di sini — keluar
-      // vertikal coarse dipindah ke bawah (di luar blok boardOpen).
+      // Vertikal saat inspeksi di coarse = PAN kamera (miliki
+      // CameraRig) — bukan exit. Fine pointer: vertikal tetap keluar.
       if (boardOpen) {
-        if (horizontal && dx < 0 && !isLocked()) {
-          if (boardInspect) setBoardInspect(false);
-          else setBoardOpen(false);
-        }
-        if (!coarse) {
-          // FINE pointer: vertikal saat inspeksi = keluar (desktop,
-          // tidak berubah).
-          if (!horizontal && boardInspect) setBoardInspect(false);
-        }
+        if (!coarse && boardInspect && !horizontal) setBoardInspect(false);
         return;
       }
-      // Papan tertutup: horizontal di HERO — kanan = board. Di luar
-      // hero: diabaikan.
-      if (horizontal) {
-        if (activeSection === "hero" && !isLocked()) {
-          if (dx > 0) setBoardOpen(true);
-        }
-        return;
-      }
+
+      // Papan tertutup: horizontal non-hero di luar hero diabaikan
+      // (sudah ditangani blok intent di atas; tak ada aksi lain).
+      if (horizontal) return;
+
       if (Math.abs(dy) < TOUCH_THRESHOLD) return;
       if (isLocked()) return; // Kunci aktif: cegah loncat section saat animasi berlangsung
 

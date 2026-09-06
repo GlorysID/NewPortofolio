@@ -71,7 +71,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="relative flex h-screen w-full flex-col items-start justify-center px-6 sm:px-12 [@media(max-width:1023px)_and_(orientation:portrait)]:items-start [@media(max-width:1023px)_and_(orientation:portrait)]:justify-end [@media(max-width:767px)]:pb-[calc(env(safe-area-inset-bottom)+7.2rem)] [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:pb-[calc(env(safe-area-inset-bottom)+7.8rem)]"
+      className="relative flex h-screen w-full flex-col items-start justify-center px-6 sm:px-12 [@media(max-width:1023px)_and_(orientation:portrait)]:items-start [@media(max-width:1023px)_and_(orientation:portrait)]:justify-end [@media(max-width:767px)]:pb-[calc(env(safe-area-inset-bottom)+9.6rem)] [@media(min-width:768px)_and_(max-width:1023px)_and_(orientation:portrait)]:pb-[calc(env(safe-area-inset-bottom)+7.8rem)]"
     >
       <h1
         ref={titleRef}

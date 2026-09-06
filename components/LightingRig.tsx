@@ -40,8 +40,18 @@ import { useViewportTier } from "@/hooks/useViewportTier";
 const LIGHTING = {
   key: {
     position: [2.6, 3.2, 2.2] as [number, number, number],
-    intensity: 2.2,
+    intensity: 2.6,
     color: "#ffffff",
+  },
+  // FACE LIGHT — lembut, khusus wajah: mengisi sisi wajah yang tidak
+  // diterangi key (wajah menghadap kamera dari shot about/skills).
+  // Tanpa shadow (fill-class), warna warm-netral agar tidak mengubah
+  // palet amber. Wajah user complaint: "terlalu gelap".
+  faceLight: {
+    position: [0.9, 2.6, 2.6] as [number, number, number],
+    intensity: 2.5,
+    color: "#fff4e6",
+    distance: 6,
   },
   rim: {
     position: [-1.4, 2.6, -2.2] as [number, number, number],
@@ -52,7 +62,7 @@ const LIGHTING = {
   },
   fill: {
     position: [-2.4, 1.4, 2.8] as [number, number, number],
-    intensity: 0.35,
+    intensity: 1.1,
     color: "#b8c4e0",
   },
   // Lampu sorot atas — key vertikal hangat, mengarah ke (0,0,0)
@@ -331,11 +341,24 @@ export default function LightingRig() {
         color={LIGHTING.rim.color}
       />
 
-      {/* FILL — sisi kiri-depan, netral-dingin, sangat redup */}
+      {/* FILL — sisi kiri-depan, netral-dingin (dinaikkan: sisi bayang
+          wajah dulu hampir hitam — laporan user "wajah terlalu gelap") */}
       <directionalLight
         position={LIGHTING.fill.position}
         intensity={LIGHTING.fill.intensity}
         color={LIGHTING.fill.color}
+      />
+
+      {/* FACE LIGHT — lembut depan-atas wajah, warm-netral, tanpa shadow.
+          Khusus mengangkat wajah di shot close-up (about/skills) tanpa
+          mengubah mood studio gelap. */}
+      <pointLight
+        position={LIGHTING.faceLight.position}
+        intensity={LIGHTING.faceLight.intensity}
+        color={LIGHTING.faceLight.color}
+        distance={LIGHTING.faceLight.distance}
+        decay={1.5}
+        castShadow={false}
       />
 
       {/* SOROT ATAS — key vertikal hangat dari y≈6.6 ke kaki avatar.
