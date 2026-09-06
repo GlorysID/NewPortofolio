@@ -50,4 +50,8 @@ html {
 
 canvas {
   touch-action: none;
+  /* Hilangkan frame biru tap-highlight bawaan Android saat mengetuk
+     kertas chalkboard (laporan user: "frame warna biru ketika di klik"). */
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
 }

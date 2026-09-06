@@ -595,7 +595,7 @@ export default function ScrollProgressController() {
       if (
         coarse &&
         boardInspect &&
-        dx <= -FLICK_EXIT_DX &&
+        dx >= FLICK_EXIT_DX &&
         elapsed < 450
       ) {
         setBoardInspect(false);
@@ -603,24 +603,47 @@ export default function ScrollProgressController() {
       }
 
       // ---------------------------------------------------------------
-      // INTENT HORIZONTAL dulu (sebelum suppress boardDrag.moved):
-      // swipe kiri/kanan yang DOMINAN harus selalu bekerja — kalau
-      // dicek setelah suppress, drag-promote/drag-pan pointermove
-      // menelan swipe kiri user (laporan: "gabisa balik geser kiri").
-      // Kanan di hero = buka papan. Kiri saat papan = keluar (inspeksi
-      // → tutup). Threshold lebih rendah dari vertikal (48): gesture
-      // horizontal nyaman mulai ~40px.
+      // HERO — BUKA PAPAN: aturan PALING longgar, dicek sebelum gerbang
+      // horizontal apa pun. Arc jempol saat "geser kanan" hampir selalu
+      // melengkung turun sehingga |dy| sering ≥ |dx| — gerbang horizontal
+      // ketat membuat gesture ini gugur (laporan berulang dari HP).
+      // Aturan baru: selama BUKAN vertikal murni (|dy| < 1.5×|dx|) dan
+      // komponen kanan cukup (≥36px), itu intent buka papan.
       // ---------------------------------------------------------------
-      if (horizontal && !edgeStart && !uiStart && !isLocked()) {
-        if (dx > 0 && !boardOpen && activeSection === "hero") {
-          setBoardOpen(true);
-          return;
-        }
-        if (dx < 0 && boardOpen) {
-          if (boardInspect) setBoardInspect(false);
-          else setBoardOpen(false);
-          return;
-        }
+      // ---------------------------------------------------------------
+      // INTENT HORIZONTAL (sentuh) — SEMANTIK TERBALIK sesuai laporan
+      // user: KIRI = buka papan (carousel: konten kanan "ditarik" masuk),
+      // KANAN = kembali/tutup. Dominansi longgar (|dy| < 1.5×|dx|) —
+      // arc jempol melengkung turun. Diproses SEBELUM suppress
+      // boardDrag.moved; desktop (wheel/keyboard) jalur terpisah.
+      // ---------------------------------------------------------------
+      if (
+        !boardOpen &&
+        activeSection === "hero" &&
+        dx < 0 &&
+        dx <= -36 &&
+        Math.abs(dy) < Math.abs(dx) * 1.5 &&
+        !edgeStart &&
+        !uiStart &&
+        !isLocked()
+      ) {
+        setBoardOpen(true);
+        return;
+      }
+
+      if (
+        boardOpen &&
+        dx > 0 &&
+        Math.abs(dx) >= BOARD_SWIPE_MIN &&
+        Math.abs(dy) < Math.abs(dx) * 1.5 &&
+        !edgeStart &&
+        !uiStart &&
+        !isLocked()
+      ) {
+        // KANAN = kembali/tutup (mirror dari buka-kiri).
+        if (boardInspect) setBoardInspect(false);
+        else setBoardOpen(false);
+        return;
       }
 
       // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,

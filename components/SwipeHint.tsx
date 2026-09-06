@@ -69,7 +69,7 @@ export default function SwipeHint() {
         <span className="hidden lg:inline">
           Geser kanan menggunakan arrow kanan untuk melihat project
         </span>
-        <span className="lg:hidden">Geser kanan untuk melihat project</span>
+        <span className="lg:hidden">Geser kiri untuk melihat project</span>
       </p>
     </div>
   );
