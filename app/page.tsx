@@ -11,7 +11,6 @@ import FilmGrain from "@/components/FilmGrain";
 import SectionRail from "@/components/SectionRail";
 import ProjectOverlay from "@/components/ProjectOverlay";
 import SwipeHint from "@/components/SwipeHint";
-import BoardInspectBackPill from "@/components/BoardInspectBackPill";
 import Certificates from "@/sections/Certificates";
 
 /**
@@ -51,7 +50,6 @@ export default function Home() {
       {/* Quest window project (z-[36]) + petunjuk geser tipis */}
       <ProjectOverlay />
       <SwipeHint />
-      <BoardInspectBackPill />
 
       {/* Konten scroll di depan — pointer-events-none: section-section
           ini cuma jangkar scroll-spy & teks (tanpa elemen interaktif).

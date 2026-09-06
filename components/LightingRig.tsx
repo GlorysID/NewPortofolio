@@ -270,8 +270,7 @@ function BeamFloorPool({
   );
 }
 
-const COMPACT_BOARD_APEX: [number, number, number] = [10.6, 6.6, 0.8];
-const COMPACT_BOARD_AIM: [number, number, number] = [12.55, 0, -0.2];
+const COMPACT_BOARD_APEX: [number, number, number] = [11.1, 6.6, 1.35];
 
 export default function LightingRig() {
   // Resolusi geometri dekoratif per-tier: dua kerucut additive & dua
@@ -288,12 +287,11 @@ export default function LightingRig() {
   // dinaikkan terarah; desktop tidak tersentuh.
   const compact = tier === "compact";
   const K = compact ? 1.3 : 1;
-  // Apex & aim sorot chalkboard digeser ke kiri di compact agar tepat
-  // terpusat di tengah papan (laporan: "lampu sorot di chalkboard terlalu
-  // geser ke kanan, coba geser ke kiri lagi dikit supaya jadi tengah tengah").
+  // Apex sorot chalkboard digeser ke kiri sedikit di compact (11.1 vs 11.4)
+  // agar tepat di tengah tanpa bergeser terlalu jauh. Target aim tetap kaki papan.
   // Desktop persis seperti sebelumnya.
   const boardApex = compact ? COMPACT_BOARD_APEX : LIGHTING.boardBeam.position;
-  const boardAim = compact ? COMPACT_BOARD_AIM : LIGHTING.boardBeam.aim;
+  const boardAim = LIGHTING.boardBeam.aim;
   const rimRef = useRef<THREE.SpotLight>(null);
   const rimTarget = useRef(new THREE.Object3D());
   const boardRef = useRef<THREE.SpotLight>(null);
@@ -304,11 +302,11 @@ export default function LightingRig() {
   useEffect(() => {
     const target = rimTarget.current;
     const bTarget = boardTarget.current;
-    // Target sorot chalkboard = kaki tengah papan
+    // Target sorot chalkboard = kaki papan (13, 0, 0)
     bTarget.position.set(
-      boardAim[0],
-      boardAim[1],
-      boardAim[2]
+      LIGHTING.boardBeam.aim[0],
+      LIGHTING.boardBeam.aim[1],
+      LIGHTING.boardBeam.aim[2]
     );
     if (scene) {
       if (!target.parent) {
@@ -324,7 +322,7 @@ export default function LightingRig() {
       if (target.parent) scene.remove(target);
       if (bTarget.parent) scene.remove(bTarget);
     };
-  }, [scene, compact, boardAim]);
+  }, [scene]);
 
   return (
     <>
