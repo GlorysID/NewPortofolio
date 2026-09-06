@@ -170,7 +170,10 @@ export default function CameraRig() {
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       const st = useScrollStore.getState();
-      if (!st.boardOpen) return;
+      if (!st.boardOpen) {
+        boardDrag.moved = false;
+        return;
+      }
       if (!(e.target instanceof HTMLCanvasElement)) return;
       dragActive.current = true;
       dragLastX.current = e.clientX;
@@ -201,7 +204,8 @@ export default function CameraRig() {
         st.setBoardInspect(true);
         boardDrag.moved = true;
       }
-      if (dragMovedDist.current > 24) boardDrag.moved = true;
+      const DRAG_MOVED_THRESHOLD = coarseRef.current ? 8 : 14;
+      if (dragMovedDist.current > DRAG_MOVED_THRESHOLD) boardDrag.moved = true;
       // Pan hanya bermakna saat inspeksi
       if (!st.boardInspect) return;
       // Pandangan mengikuti arah drag (push-style) — clamp per-tier:
@@ -356,6 +360,12 @@ export default function CameraRig() {
       ) {
         boardPhase.current = "open";
         settled.current = false;
+      }
+
+      // Jika papan tidak terbuka dan sudah scroll meninggalkan hero,
+      // paksa fase closed langsung agar kamera bebas mengikuti section.
+      if (!boardOpen && (activeSection !== "hero" || progress > 0.02)) {
+        boardPhase.current = "closed";
       }
 
       // Di tengah busur → jangan pernah skip update kamera.

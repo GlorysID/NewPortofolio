@@ -860,9 +860,9 @@ function BoardClickProxy({
       }}
       onPointerMissed={() => {
         // Klik yang MELESAT dari proxy papan (tap area kosong canvas /
-        // objek lain) saat inspeksi → keluar inspeksi. Pelengkap flick
-        // kiri di ScrollProgressController. Tanpa inspeksi: klik kosong
-        // = no-op (perilaku desktop utuh).
+        // objek lain) saat inspeksi → keluar inspeksi.
+        // HANYA bila pointer TIDAK digeser/drag (boardDrag.moved = false).
+        if (boardDrag.moved) return;
         const { boardInspect, setBoardInspect } =
           useScrollStore.getState();
         if (boardInspect) setBoardInspect(false);

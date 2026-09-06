@@ -63,7 +63,6 @@ const BOARD_SWIPE_MIN = 40; // px minimum khusus intent horizontal board — arc
 const EDGE_ZONE_PX = 16; // zona tepi utk guard back/forward — 24 terlalu lebar, menelan swipe sah yang mulai dekat tepi
 const SNAP_DURATION = 0.6; // detik per animasi snap
 const COOLDOWN_MS = 250; // jeda setelah snap selesai sebelum menerima input lagi
-const FLICK_EXIT_DX = 64; // px geser kiri minimum — flick keluar inspeksi (coarse)
 
 export default function ScrollProgressController() {
   useEffect(() => {
@@ -433,6 +432,10 @@ export default function ScrollProgressController() {
       touchStartTime = t ? performance.now() : 0;
       touchEdge = !!t && (t.clientX < EDGE_ZONE_PX || t.clientX > window.innerWidth - EDGE_ZONE_PX);
       chainBlocked = false;
+      const st = useScrollStore.getState();
+      if (!st.boardOpen) {
+        boardDrag.moved = false;
+      }
       const target =
         e.target instanceof Element ? e.target : null;
       const nativeMark = target?.closest("[data-native-scroll]") ?? null;
@@ -599,23 +602,19 @@ export default function ScrollProgressController() {
       // CameraRig), jadi syarat itu membuat flick exit mustahil di
       // jalur 3D. Trailing click setelah flick tetap tertelan: moved
       // sudah true dan resolver proxy meng-consume + me-reset flag.
-      // FLICK KANAN CEPAT (velocity) — satu-satunya jalan keluar papan
-      // yang boleh menembus suppress pan: flick cepat (<400ms). Slow
-      // pan kanan saat inspeksi TIDAK keluar (laporan: "geser-geser
-      // suka keluar sendiri" — dulu intent-close jalan sebelum
-      // suppress pan, memakan pan yang sah).
+      // FLICK KANAN CEPAT (velocity) saat papan terbuka (non-inspect)
       if (
         coarse &&
         boardOpen &&
-        dx >= (boardInspect ? FLICK_EXIT_DX : BOARD_SWIPE_MIN) &&
+        !boardInspect &&
+        dx >= BOARD_SWIPE_MIN &&
         elapsed < 400 &&
         Math.abs(dy) < Math.abs(dx) * 1.5 &&
         !edgeStart &&
         !uiStart &&
         !isLocked()
       ) {
-        if (boardInspect) setBoardInspect(false);
-        else setBoardOpen(false);
+        setBoardOpen(false);
         return;
       }
 
@@ -648,8 +647,21 @@ export default function ScrollProgressController() {
         return;
       }
 
+      // Edge-swipe khusus untuk keluar dari mode inspeksi (swipe dari tepi kiri)
       if (
         boardOpen &&
+        boardInspect &&
+        edgeStart &&
+        dx >= BOARD_SWIPE_MIN &&
+        !isLocked()
+      ) {
+        setBoardInspect(false);
+        return;
+      }
+
+      if (
+        boardOpen &&
+        !boardInspect &&
         dx > 0 &&
         Math.abs(dx) >= BOARD_SWIPE_MIN &&
         Math.abs(dy) < Math.abs(dx) * 1.5 &&
@@ -657,32 +669,27 @@ export default function ScrollProgressController() {
         !uiStart &&
         !isLocked()
       ) {
-        // KANAN = kembali/tutup (mirror dari buka-kiri).
-        if (boardInspect) setBoardInspect(false);
-        else setBoardOpen(false);
+        // KANAN = kembali/tutup ke Hero saat tidak sedang inspeksi
+        setBoardOpen(false);
         return;
       }
 
       // Drag-pan inspeksi baru selesai → event ini adalah akhir pan,
-      // bukan gesture keluar. BACA SAJA — jangan reset di sini: flag
-      // juga dibaca resolver klik SETELAH touchend (click event
-      // menyusul touchend); reset dilakukan pointerdown berikutnya.
-      if (boardDrag.moved) {
+      // bukan gesture keluar. HANYA abaikan jika board sedang terbuka.
+      // Jika board SUDAH tertutup, flag ini tidak boleh menelan scroll di Hero.
+      if (boardOpen && boardDrag.moved) {
         return;
       }
 
-      // Vertikal saat inspeksi di coarse = PAN kamera (miliki
-      // CameraRig) — bukan exit. Fine pointer: vertikal tetap keluar.
-      // ESCAPE HATCH (bug: "balik ke hero gabisa scroll lagi") — swipe
-      // vertikal KUAT saat papan terbuka (gesture yang TIDAK jadi pan,
-      // jadi lolos suppress) = tutup papan; scroll tak pernah mati.
+      // Vertikal saat inspeksi di coarse = PAN kamera (miliki CameraRig) — bukan exit.
+      // ESCAPE HATCH: swipe vertikal KUAT saat papan terbuka (non-inspect) = tutup papan.
       if (boardOpen) {
         if (
+          !boardInspect &&
           !isLocked() &&
           Math.abs(dy) >= 72 &&
           Math.abs(dy) > Math.abs(dx) * 1.3
         ) {
-          if (boardInspect) setBoardInspect(false);
           setBoardOpen(false);
           return;
         }

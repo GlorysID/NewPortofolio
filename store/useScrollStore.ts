@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { boardDrag } from "@/lib/boardDrag";
 
 export type SectionId =
   | "hero"
@@ -45,13 +46,17 @@ export const useScrollStore = create<ScrollState>((set) => ({
   sceneReady: false,
   setProgress: (progress) => set({ progress }),
   setActiveSection: (section) => set({ activeSection: section }),
-  // Menutup board me-reset semua turunannya — inspeksi & quest window
-  // tidak boleh selamat dari board yang sudah tertutup.
-  setBoardOpen: (open) =>
-    set({
+  // Menutup board me-reset semua turunannya — inspeksi, quest window,
+  // serta flag drag-moved agar scroll di Hero tidak pernah terblokir.
+  setBoardOpen: (open) => {
+    if (!open) {
+      boardDrag.moved = false;
+    }
+    return set({
       boardOpen: open,
       ...(open ? {} : { boardInspect: false, activeProjectId: null }),
-    }),
+    });
+  },
   setBoardInspect: (inspect) =>
     set({
       boardInspect: inspect,

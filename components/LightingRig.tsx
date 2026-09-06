@@ -270,6 +270,9 @@ function BeamFloorPool({
   );
 }
 
+const COMPACT_BOARD_APEX: [number, number, number] = [10.6, 6.6, 0.8];
+const COMPACT_BOARD_AIM: [number, number, number] = [12.55, 0, -0.2];
+
 export default function LightingRig() {
   // Resolusi geometri dekoratif per-tier: dua kerucut additive & dua
   // kolam emas dipangkas di compact (20/32) — hemat vertex/fill-rate,
@@ -285,12 +288,12 @@ export default function LightingRig() {
   // dinaikkan terarah; desktop tidak tersentuh.
   const compact = tier === "compact";
   const K = compact ? 1.3 : 1;
-  // Apex sorot chalkboard digeser ke kanan di compact — dari sudut
-  // kamera mobile, apex lama (10.25) tampak kiri dari papan (laporan:
-  // "bagian atas sorot kurang ke kanan"). Desktop persis.
-  const boardApex: [number, number, number] = compact
-    ? [11.4, 6.6, 1.4]
-    : LIGHTING.boardBeam.position;
+  // Apex & aim sorot chalkboard digeser ke kiri di compact agar tepat
+  // terpusat di tengah papan (laporan: "lampu sorot di chalkboard terlalu
+  // geser ke kanan, coba geser ke kiri lagi dikit supaya jadi tengah tengah").
+  // Desktop persis seperti sebelumnya.
+  const boardApex = compact ? COMPACT_BOARD_APEX : LIGHTING.boardBeam.position;
+  const boardAim = compact ? COMPACT_BOARD_AIM : LIGHTING.boardBeam.aim;
   const rimRef = useRef<THREE.SpotLight>(null);
   const rimTarget = useRef(new THREE.Object3D());
   const boardRef = useRef<THREE.SpotLight>(null);
@@ -301,11 +304,11 @@ export default function LightingRig() {
   useEffect(() => {
     const target = rimTarget.current;
     const bTarget = boardTarget.current;
-    // Target sorot chalkboard = kaki papan (13, 0, 0)
+    // Target sorot chalkboard = kaki tengah papan
     bTarget.position.set(
-      LIGHTING.boardBeam.aim[0],
-      LIGHTING.boardBeam.aim[1],
-      LIGHTING.boardBeam.aim[2]
+      boardAim[0],
+      boardAim[1],
+      boardAim[2]
     );
     if (scene) {
       if (!target.parent) {
@@ -321,7 +324,7 @@ export default function LightingRig() {
       if (target.parent) scene.remove(target);
       if (bTarget.parent) scene.remove(bTarget);
     };
-  }, [scene]);
+  }, [scene, compact, boardAim]);
 
   return (
     <>
@@ -412,12 +415,12 @@ export default function LightingRig() {
       />
       <BeamCone
         apex={boardApex}
-        aim={LIGHTING.boardBeam.aim}
+        aim={boardAim}
         radius={LIGHTING.beamVisual.radiusBoard}
         segments={SEG.cone}
       />
       <BeamFloorPool
-        position={[LIGHTING.boardBeam.aim[0], 0.02, LIGHTING.boardBeam.aim[2]]}
+        position={[boardAim[0], 0.02, boardAim[2]]}
         segments={SEG.pool}
       />
 
