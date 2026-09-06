@@ -87,6 +87,10 @@ function GLTFModel() {
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
+        mesh.frustumCulled = true;
+        if (mesh.geometry && !mesh.geometry.boundingSphere) {
+          mesh.geometry.computeBoundingSphere();
+        }
         // Skip dari raycast: avatar 513rb vertex tidak butuh hover —
         // klik papan lewat BoardClickProxy. R3F men-tes SEMUA mesh pada
         // SETIAP pointermove (ratusan event/detik) — tanpa skip ini,

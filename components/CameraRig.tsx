@@ -469,7 +469,15 @@ export default function CameraRig() {
 
     if (motion > SETTLE_EPSILON || !settled.current) {
       camera.lookAt(lookTarget.current);
-      if (motion < SETTLE_EPSILON) settled.current = true;
+      if (motion < SETTLE_EPSILON) {
+        if (!settled.current) {
+          settled.current = true;
+          window.dispatchEvent(new CustomEvent("camera:settled"));
+        }
+      } else if (settled.current) {
+        settled.current = false;
+        window.dispatchEvent(new CustomEvent("camera:moving"));
+      }
     }
   });
 

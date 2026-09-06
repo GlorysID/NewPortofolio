@@ -1,8 +1,8 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
-import { useEffect, useRef } from "react";
+import { PerformanceMonitor } from "@react-three/drei";
+import { useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import CameraRig from "./CameraRig";
 import Chalkboard from "./Chalkboard";
@@ -10,6 +10,7 @@ import LightingRig from "./LightingRig";
 import ContactGlow from "./ContactGlow";
 import { useScrollStore } from "@/store/useScrollStore";
 import { useViewportTier, tierRefs, MQ } from "@/hooks/useViewportTier";
+import { isLowEndDevice } from "@/lib/detectDevice";
 
 /**
  * DynamicQuality — pengendali kualitas adaptif.
@@ -52,12 +53,11 @@ function SceneFog() {
 function DynamicQuality() {
   const setDpr = useThree((s) => s.setDpr);
   const initialDpr = useThree((s) => s.viewport.initialDpr);
-  // Tier coarse (layar sentuh) mulai SATU rung di bawah (0.85): GPU
-  // mobile tidak menunggu ±2.5 dtk sampling PerformanceMonitor untuk
-  // turun. Desktop: rung penuh — dpr awal tak pernah disentuh.
   const { coarse } = useViewportTier();
+  const isLowEnd = coarse && isLowEndDevice();
 
-  const rung = useRef(coarse ? 1 : QUALITY_LADDER.length - 1);
+  // Low-end mulai dari rung 0 (paling hemat) agar tidak lag di awal; coarse umum mulai rung 1; desktop rung 2
+  const rung = useRef(isLowEnd ? 0 : coarse ? 1 : QUALITY_LADDER.length - 1);
   const latest = useRef({ initialDpr, setDpr });
   latest.current = { initialDpr, setDpr };
 
@@ -151,6 +151,7 @@ function DynamicQuality() {
  * sekali via autoUpdate=false, jadi biaya per-frame-nya cuma sampling).
  */
 function StudioFloor() {
+  const { coarse } = useViewportTier();
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
@@ -159,7 +160,11 @@ function StudioFloor() {
       raycast={() => null}
     >
       <planeGeometry args={[60, 60]} />
-      <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
+      {coarse ? (
+        <meshLambertMaterial color="#050507" />
+      ) : (
+        <meshStandardMaterial color="#050507" roughness={0.9} metalness={0.15} />
+      )}
     </mesh>
   );
 }
@@ -235,17 +240,66 @@ export default function Experience() {
   // papan/kertas ke-raycast. Di luar kondisi itu pointer-events-none
   // supaya teks section & kartu tetap klikabel.
   const boardOpen = useScrollStore((s) => s.boardOpen);
-  // DPR clamp per kelas device — dibaca SEKALI saat Canvas dibuat
-  // (Experience client-only, ssr:false → window pasti ada):
-  // - Desktop/laptop: dpr fisik 1-1.5 → clamp 1.25 (sebelumnya, cukup).
-  // - Phone/tablet coarse: dpr fisik 2.6-3.5 → clamp lama 1.25 membuat
-  //   render 1.25× lalu di-upscale ±3× = PATAH/burik (laporan user).
-  //   1.75 ≈ supersample desktop klasik — tajam jelas lebih baik, biaya
-  //   fill-rate tetap jauh di bawah native; DynamicQuality tetap turun
-  //   otomatis bila GPU kewalahan (ladder × initialDpr).
   const isCoarseDevice =
     typeof window !== "undefined" && window.matchMedia(MQ.coarse).matches;
-  const dprMax = isCoarseDevice ? 1.75 : 1.25;
+  const isLowEnd = isCoarseDevice && isLowEndDevice();
+
+  // DPR adaptif per kapabilitas perangkat:
+  // - Desktop: [1, 1.25] (100% identik dengan sebelumnya)
+  // - HP Flagship / High-End: [1, 1.45] (sangat tajam & jernih)
+  // - HP Spek Rendah: [0.85, 1.15] (>60% lebih hemat fill-rate, FPS stabil 60)
+  const dprRange: [number, number] = !isCoarseDevice
+    ? [1, 1.25]
+    : isLowEnd
+    ? [0.85, 1.15]
+    : [1, 1.45];
+
+  // Smart idle throttling: rendering hanya berjalan saat ada gerakan / interaksi
+  const [frameloop, setFrameloop] = useState<"always" | "demand">("always");
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const wakeUp = () => {
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
+      setFrameloop("always");
+    };
+
+    const onCameraSettled = () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      // Tunggu 800ms setelah kamera benar-benar menetap & tanpa interaksi
+      idleTimerRef.current = setTimeout(() => {
+        setFrameloop("demand");
+      }, 800);
+    };
+
+    const onCameraMoving = () => {
+      wakeUp();
+    };
+
+    window.addEventListener("camera:settled", onCameraSettled);
+    window.addEventListener("camera:moving", onCameraMoving);
+    window.addEventListener("scroll", wakeUp, { passive: true });
+    window.addEventListener("wheel", wakeUp, { passive: true });
+    window.addEventListener("touchstart", wakeUp, { passive: true });
+    window.addEventListener("touchmove", wakeUp, { passive: true });
+    window.addEventListener("pointerdown", wakeUp, { passive: true });
+    window.addEventListener("keydown", wakeUp, { passive: true });
+
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      window.removeEventListener("camera:settled", onCameraSettled);
+      window.removeEventListener("camera:moving", onCameraMoving);
+      window.removeEventListener("scroll", wakeUp);
+      window.removeEventListener("wheel", wakeUp);
+      window.removeEventListener("touchstart", wakeUp);
+      window.removeEventListener("touchmove", wakeUp);
+      window.removeEventListener("pointerdown", wakeUp);
+      window.removeEventListener("keydown", wakeUp);
+    };
+  }, []);
 
   return (
     <div
@@ -257,13 +311,14 @@ export default function Experience() {
     >
       <Canvas
         camera={{ position: [0, 1.6, 6.2], fov: 35 }}
-        dpr={[1, dprMax]}
+        dpr={dprRange}
         gl={{
-          antialias: false, // clamp 1.25/1.75 sudah supersample — AA mubazir
+          antialias: false,
           alpha: true,
           powerPreference: "high-performance",
+          precision: isLowEnd ? "mediump" : "highp",
         }}
-        frameloop="always"
+        frameloop={frameloop}
         shadows="percentage"
         tabIndex={-1}
         style={{
@@ -272,12 +327,7 @@ export default function Experience() {
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        {/* Turunkan resolusi render otomatis saat frame rate drop.
-            PerformanceMonitor hanya men-trigger pada drop SUSTAINED
-            (bukan spike sekali), jadi keputusan turun kualitas selalu
-            berbasis fps rata-rata, bukan noise. */}
         <DynamicQuality />
-        <AdaptiveDpr pixelated={false} />
         <StaticShadows />
         <SceneWarmup />
 

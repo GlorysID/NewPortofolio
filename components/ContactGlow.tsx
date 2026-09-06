@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { useViewportTier } from "@/hooks/useViewportTier";
 
 /**
  * ContactGlow — pool cahaya putih lembut di titik pijak avatar.
@@ -12,6 +13,8 @@ import * as THREE from "three";
  * titik cahaya, bukan hanya bayangan gelap.
  */
 export default function ContactGlow() {
+  const { tier } = useViewportTier();
+  const segments = tier === "compact" ? 24 : 48;
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 256;
@@ -46,7 +49,7 @@ export default function ContactGlow() {
       renderOrder={1}
       raycast={() => null}
     >
-      <circleGeometry args={[1.25, 48]} />
+      <circleGeometry args={[1.25, segments]} />
       <meshBasicMaterial
         map={texture}
         transparent

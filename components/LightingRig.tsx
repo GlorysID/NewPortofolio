@@ -334,7 +334,7 @@ export default function LightingRig() {
         intensity={LIGHTING.key.intensity * K}
         color={LIGHTING.key.color}
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={compact ? [512, 512] : [1024, 1024]}
         shadow-bias={-0.0002}
         shadow-camera-left={-3}
         shadow-camera-right={14.5}
