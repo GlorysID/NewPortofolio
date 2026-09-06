@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useScrollStore } from "@/store/useScrollStore";
-import { useBoardProjects } from "@/lib/useBoardProjects";
+import { useBoardProjects, type BoardProject } from "@/lib/useBoardProjects";
 import { extractYouTubeId, isLocalVideo } from "@/lib/video";
 
 const MdxBody = dynamic(() => import("./MdxBody"), { ssr: false });
@@ -68,37 +68,75 @@ export default function ProjectOverlay() {
   const activeProjectId = useScrollStore((s) => s.activeProjectId);
   const setActiveProjectId = useScrollStore((s) => s.setActiveProjectId);
   const panelRef = useRef<HTMLDivElement>(null);
+  const isClosingRef = useRef(false);
   const { projects } = useBoardProjects();
 
-  const project = projects.find((p) => p.id === activeProjectId);
+  const [displayedProject, setDisplayedProject] = useState<BoardProject | null>(null);
 
-  useEffect(() => {
-    if (!project || !panelRef.current) return;
+  // Animasi tutup: slide keluar 24px ke kanan + fade out cepat & responsif
+  const closeWithAnimation = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
     const panel = panelRef.current;
+    if (!panel) {
+      setActiveProjectId(null);
+      setDisplayedProject(null);
+      isClosingRef.current = false;
+      return;
+    }
+    gsap.killTweensOf(panel);
+    gsap.to(panel, {
+      autoAlpha: 0,
+      x: "+=24",
+      duration: 0.28,
+      ease: "power2.in",
+      onComplete: () => {
+        setActiveProjectId(null);
+        setDisplayedProject(null);
+        isClosingRef.current = false;
+      },
+    });
+  }, [setActiveProjectId]);
+
+  // Sinkronisasi activeProjectId dari global store ke state displayedProject
+  useEffect(() => {
+    if (activeProjectId) {
+      const found = projects.find((p) => p.id === activeProjectId);
+      if (found) {
+        isClosingRef.current = false;
+        setDisplayedProject(found);
+      }
+    } else if (displayedProject && !isClosingRef.current) {
+      closeWithAnimation();
+    }
+  }, [activeProjectId, projects, displayedProject, closeWithAnimation]);
+
+  // Animasi masuk (entrance) saat kertas dibuka
+  useEffect(() => {
+    if (!displayedProject || !panelRef.current) return;
+    const panel = panelRef.current;
+    gsap.killTweensOf(panel);
     const ctx = gsap.context(() => {
-      // Entrance RELATIF (from, bukan fromTo): panel compact di-center
-      // via CSS translate(-50%,-50%) — fromTo {x:0} akan MENIMPA offset
-      // -50% itu (GSAP membake % CSS jadi px). "+=24" = slide masuk 24px
-      // dari posisi istirahat apa pun (desktop: 0→tetap; compact:
-      // ter-center tetap). autoAlpha/y dan Esc tidak berubah.
       gsap.from(panel, {
         autoAlpha: 0,
         x: "+=24",
-        duration: 0.4,
+        duration: 0.38,
         ease: "power3.out",
       });
     });
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveProjectId(null);
+      if (e.key === "Escape") closeWithAnimation();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
       ctx.revert();
     };
-  }, [project, setActiveProjectId]);
+  }, [displayedProject, closeWithAnimation]);
 
-  if (!project) return null;
+  if (!displayedProject) return null;
+
+  const project = displayedProject;
 
   const coverUrl = project.cover;
   const videoId = project.video ? extractYouTubeId(project.video) : null;
@@ -127,22 +165,18 @@ export default function ProjectOverlay() {
         aria-label="Tutup"
         data-ui-interactive
         className="fixed inset-0 z-[35] cursor-default outline-none focus:outline-none focus-visible:outline-none"
-        onClick={() => setActiveProjectId(null)}
+        onClick={closeWithAnimation}
       />
       <div
         ref={panelRef}
         role="dialog"
         aria-label={`Proyek: ${project.title}`}
         data-ui-interactive
-        tabIndex={-1}
-        style={{ outline: "none" }}
-        className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2 outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:left-1/2 [@media(max-width:767px)]:right-auto [@media(max-width:767px)]:top-1/2 [@media(max-width:767px)]:-translate-x-1/2 [@media(max-width:767px)]:-translate-y-1/2 [@media(max-width:767px)]:w-[min(86vw,380px)] [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-height:479px)]:right-3 [@media(max-height:479px)]:w-[min(60vw,360px)]"
+        className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2 select-none outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:left-1/2 [@media(max-width:767px)]:right-auto [@media(max-width:767px)]:top-1/2 [@media(max-width:767px)]:-translate-x-1/2 [@media(max-width:767px)]:-translate-y-1/2 [@media(max-width:767px)]:w-[min(86vw,380px)] [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-height:479px)]:right-3 [@media(max-height:479px)]:w-[min(60vw,360px)]"
       >
         <div
           data-native-scroll={shortViewport ? true : undefined}
-          tabIndex={-1}
-          style={{ outline: "none" }}
-          className="relative -rotate-[0.75deg] bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15 outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-width:767px)]:overflow-y-auto [@media(max-width:767px)]:p-5 [@media(max-width:767px)]:pt-6 [@media(max-height:479px)]:max-h-[calc(100dvh-2rem)] [@media(max-height:479px)]:overflow-y-auto"
+          className="relative -rotate-[0.75deg] select-none bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15 outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-width:767px)]:overflow-y-auto [@media(max-width:767px)]:p-5 [@media(max-width:767px)]:pt-6 [@media(max-height:479px)]:max-h-[calc(100dvh-2rem)] [@media(max-height:479px)]:overflow-y-auto"
         >
         <span
           aria-hidden
@@ -241,17 +275,12 @@ export default function ProjectOverlay() {
           </div>
           <button
             type="button"
-            onClick={() => setActiveProjectId(null)}
+            onClick={closeWithAnimation}
             className="p-2 -m-2 font-mono text-[11px] uppercase tracking-[0.2em] text-[#20201f]/45 transition-colors hover:text-[#20201f] outline-none focus:outline-none"
           >
             Tutup
           </button>
         </div>
-
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 border-4 border-[#20201f]/8"
-        />
         </div>
       </div>
     </>

@@ -270,7 +270,7 @@ function BeamFloorPool({
   );
 }
 
-const COMPACT_BOARD_APEX: [number, number, number] = [10.72, 6.6, 1.15];
+const COMPACT_BOARD_APEX: [number, number, number] = [10.8, 6.6, 1.2];
 
 export default function LightingRig() {
   // Resolusi geometri dekoratif per-tier: dua kerucut additive & dua
