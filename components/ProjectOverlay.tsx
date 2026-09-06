@@ -126,7 +126,7 @@ export default function ProjectOverlay() {
         type="button"
         aria-label="Tutup"
         data-ui-interactive
-        className="fixed inset-0 z-[35] cursor-default"
+        className="fixed inset-0 z-[35] cursor-default outline-none focus:outline-none focus-visible:outline-none"
         onClick={() => setActiveProjectId(null)}
       />
       <div
@@ -134,11 +134,15 @@ export default function ProjectOverlay() {
         role="dialog"
         aria-label={`Proyek: ${project.title}`}
         data-ui-interactive
-        className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2 [@media(max-width:767px)]:left-1/2 [@media(max-width:767px)]:right-auto [@media(max-width:767px)]:top-1/2 [@media(max-width:767px)]:-translate-x-1/2 [@media(max-width:767px)]:-translate-y-1/2 [@media(max-width:767px)]:w-[min(86vw,380px)] [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-height:479px)]:right-3 [@media(max-height:479px)]:w-[min(60vw,360px)]"
+        tabIndex={-1}
+        style={{ outline: "none" }}
+        className="fixed right-6 top-1/2 z-[36] w-[360px] max-w-[calc(100vw-3rem)] -translate-y-1/2 outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:left-1/2 [@media(max-width:767px)]:right-auto [@media(max-width:767px)]:top-1/2 [@media(max-width:767px)]:-translate-x-1/2 [@media(max-width:767px)]:-translate-y-1/2 [@media(max-width:767px)]:w-[min(86vw,380px)] [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-height:479px)]:right-3 [@media(max-height:479px)]:w-[min(60vw,360px)]"
       >
         <div
           data-native-scroll={shortViewport ? true : undefined}
-          className="relative -rotate-[0.75deg] bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15 [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-width:767px)]:overflow-y-auto [@media(max-width:767px)]:p-5 [@media(max-width:767px)]:pt-6 [@media(max-height:479px)]:max-h-[calc(100dvh-2rem)] [@media(max-height:479px)]:overflow-y-auto"
+          tabIndex={-1}
+          style={{ outline: "none" }}
+          className="relative -rotate-[0.75deg] bg-[#f4efe4] p-6 pt-7 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#20201f]/15 outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:max-h-[min(72dvh,560px)] [@media(max-width:767px)]:overflow-y-auto [@media(max-width:767px)]:p-5 [@media(max-width:767px)]:pt-6 [@media(max-height:479px)]:max-h-[calc(100dvh-2rem)] [@media(max-height:479px)]:overflow-y-auto"
         >
         <span
           aria-hidden
@@ -194,7 +198,11 @@ export default function ProjectOverlay() {
         )}
 
         {project.compiled && (
-          <div className="mt-3 max-h-[46vh] overflow-y-auto border-t border-[#20201f]/12 pt-3 pr-1 [@media(max-width:767px)]:max-h-none [@media(max-height:479px)]:max-h-none">
+          <div
+            tabIndex={-1}
+            style={{ outline: "none" }}
+            className="mt-3 max-h-[46vh] overflow-y-auto border-t border-[#20201f]/12 pt-3 pr-1 outline-none focus:outline-none focus-visible:outline-none [@media(max-width:767px)]:max-h-none [@media(max-height:479px)]:max-h-none"
+          >
             <MdxBody {...project.compiled} components={mdxComponents} />
           </div>
         )}
@@ -215,7 +223,7 @@ export default function ProjectOverlay() {
             {project.link && (
               <a
                 href={project.link}
-                className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+                className="font-display text-[14px] text-[#20201f] underline decoration-[#20201f]/30 underline-offset-4 transition-colors hover:text-[#6f5a39] outline-none focus:outline-none"
               >
                 Buka Proyek ↗
               </a>
@@ -225,7 +233,7 @@ export default function ProjectOverlay() {
                 href={project.linkGithub}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#20201f]/60 underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39]"
+                className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#20201f]/60 underline decoration-[#20201f]/20 underline-offset-4 transition-colors hover:text-[#6f5a39] outline-none focus:outline-none"
               >
                 GitHub ↗
               </a>
@@ -234,7 +242,7 @@ export default function ProjectOverlay() {
           <button
             type="button"
             onClick={() => setActiveProjectId(null)}
-            className="p-2 -m-2 font-mono text-[11px] uppercase tracking-[0.2em] text-[#20201f]/45 transition-colors hover:text-[#20201f]"
+            className="p-2 -m-2 font-mono text-[11px] uppercase tracking-[0.2em] text-[#20201f]/45 transition-colors hover:text-[#20201f] outline-none focus:outline-none"
           >
             Tutup
           </button>

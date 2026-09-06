@@ -48,10 +48,28 @@ html {
   touch-action: pan-y;
 }
 
-canvas {
+/* Hilangkan semua outline/border biru bawaan browser & tap-highlight Android/iOS saat klik/tap */
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent !important;
+  tap-highlight-color: transparent !important;
+}
+
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+}
+
+canvas,
+canvas:focus,
+canvas:active,
+canvas:focus-visible {
   touch-action: none;
-  /* Hilangkan frame biru tap-highlight bawaan Android saat mengetuk
-     kertas chalkboard (laporan user: "frame warna biru ketika di klik"). */
-  -webkit-tap-highlight-color: transparent;
-  tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent !important;
+  tap-highlight-color: transparent !important;
+  outline: none !important;
+  user-select: none;
+  -webkit-user-select: none;
 }

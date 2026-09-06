@@ -249,7 +249,9 @@ export default function Experience() {
 
   return (
     <div
-      className={`fixed inset-0 z-0 ${
+      tabIndex={-1}
+      style={{ outline: "none", WebkitTapHighlightColor: "transparent" }}
+      className={`fixed inset-0 z-0 select-none outline-none ${
         boardOpen ? "pointer-events-auto" : "pointer-events-none"
       }`}
     >
@@ -261,19 +263,14 @@ export default function Experience() {
           alpha: true,
           powerPreference: "high-performance",
         }}
-        /* frameloop TETAP "always": toggle pause/resume via prop
-           terbukti merusak respons swipe setelah gerbang (R3F resume
-           loop tidak selalu sinkron dengan ticker gesture) — biaya
-           render di balik gerbang hitam kecil, jangan dioptimasi. */
         frameloop="always"
-        /* Shadows DIHAPUS TOTAL (fix FPS final): render target 1024² +
-           full pass me-render ulang semua model setiap bake = biaya GPU
-           murni di GPU lemah. Bayangan di lantai near-black #050507
-           nyaris tak terlihat — mood tetap via kolam emas + ContactGlow
-           + beam kerucut. */
         shadows="percentage"
-        /* Background void di-set via <color attach="background"> */
-        style={{ background: "#000000" }}
+        tabIndex={-1}
+        style={{
+          background: "#000000",
+          outline: "none",
+          WebkitTapHighlightColor: "transparent",
+        }}
       >
         {/* Turunkan resolusi render otomatis saat frame rate drop.
             PerformanceMonitor hanya men-trigger pada drop SUSTAINED
