@@ -33,8 +33,7 @@ const body = IBM_Plex_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.anjalisaputra.site"),
   title: {
-    default:
-      "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
+    default: "Anjali Saputra - Portfolio Website",
     template: "%s · Anjali Saputra",
   },
   description:
@@ -79,8 +78,7 @@ export const metadata: Metadata = {
     username: "GlorysID",
     gender: "male",
     url: "https://www.anjalisaputra.site",
-    title:
-      "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
+    title: "Anjali Saputra - Portfolio Website",
     description:
       "Portofolio resmi Anjali Saputra (Anjali BM3) — AI agents, automation systems, dan web development dalam pengalaman 3D sinematik interaktif.",
     siteName: "Anjali Saputra — Portofolio",
@@ -90,13 +88,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Anjali Saputra (Anjali BM3) — Portofolio 3D Interaktif",
+        alt: "Anjali Saputra - Portfolio Website",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
+    title: "Anjali Saputra - Portfolio Website",
     description:
       "Portofolio resmi Anjali Saputra (Anjali BM3) — AI agents, automation systems, dan web development dalam pengalaman 3D sinematik.",
     images: ["/opengraph-image.png"],
@@ -202,7 +200,7 @@ const profilePageJsonLd = {
   "@type": "ProfilePage",
   "@id": "https://www.anjalisaputra.site/#profilepage",
   url: "https://www.anjalisaputra.site",
-  name: "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
+  name: "Anjali Saputra - Portfolio Website",
   description:
     "Portofolio resmi Anjali Saputra (Anjali BM3) — Siswa SMK Bina Mandiri Multimedia (BM3). Menampilkan karya AI agents, sistem otomasi, dan web development 3D interaktif.",
   primaryImageOfPage: "https://www.anjalisaputra.site/opengraph-image.png",
