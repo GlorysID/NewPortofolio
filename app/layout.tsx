@@ -87,6 +87,16 @@ export const metadata: Metadata = {
       "Portofolio resmi Anjali Saputra (Anjali BM3) — AI, automation & web development dalam pengalaman 3D sinematik.",
     images: ["/opengraph-image.png"],
   },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   robots: {
     index: true,
     follow: true,
