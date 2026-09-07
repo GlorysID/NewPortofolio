@@ -34,39 +34,53 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://anjalisaputra.site"),
   title: {
     default:
-      "Anjali Saputra — Portofolio 3D Interaktif · AI, Automation & Web Developer",
+      "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
     template: "%s · Anjali Saputra",
   },
   description:
-    "Portofolio resmi Anjali Saputra (Anjali BM3) — AI agents, automation systems, dan web development dalam pengalaman 3D sinematik interaktif. Kenali karya, keahlian, dan perjalanan Anjali Saputra.",
+    "Portofolio resmi Anjali Saputra (Anjali BM3) — Pengembang AI agents, automation systems, dan full-stack web developer dari SMK Bina Mandiri Multimedia (BM3). Kunjungi karya proyek, sertifikat, dan keahlian Anjali Saputra.",
   keywords: [
     "Anjali",
     "Anjali Saputra",
     "Anjali BM3",
     "Anjali Portofolio",
     "Portofolio Anjali",
+    "Portofolio Anjali Saputra",
+    "Anjali Saputra BM3",
     "Anjali Saputra Portfolio",
-    "Anjali Saputra Web Developer",
-    "Anjali Saputra AI",
-    "portofolio web developer",
-    "AI agents",
-    "automation systems",
-    "web development Indonesia",
-    "three.js portfolio",
-    "react three fiber",
+    "Anjali SMK BM3",
+    "Anjali Bina Mandiri Multimedia",
+    "SMK Bina Mandiri Multimedia Anjali",
+    "Anjali Saputra Cileungsi",
+    "Anjali Saputra Website",
+    "anjalisaputra.site",
+    "Anjali Developer",
+    "Anjali AI",
+    "Anjali Automation",
+    "Anjali Web Developer",
+    "GlorysID",
+    "GlorysID GitHub",
+    "SMK BM3",
+    "Bina Mandiri Multimedia",
+    "portofolio web developer indonesia",
+    "three.js portfolio anjali",
   ],
   authors: [{ name: "Anjali Saputra", url: "https://anjalisaputra.site" }],
   creator: "Anjali Saputra",
   publisher: "Anjali Saputra",
   category: "technology",
   alternates: {
-    canonical: "/",
+    canonical: "https://anjalisaputra.site",
   },
   openGraph: {
-    type: "website",
+    type: "profile",
+    firstName: "Anjali",
+    lastName: "Saputra",
+    username: "GlorysID",
+    gender: "male",
     url: "https://anjalisaputra.site",
     title:
-      "Anjali Saputra — Portofolio 3D Interaktif · AI, Automation & Web Developer",
+      "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
     description:
       "Portofolio resmi Anjali Saputra (Anjali BM3) — AI agents, automation systems, dan web development dalam pengalaman 3D sinematik interaktif.",
     siteName: "Anjali Saputra — Portofolio",
@@ -76,15 +90,15 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Anjali Saputra — Portofolio 3D Interaktif",
+        alt: "Anjali Saputra (Anjali BM3) — Portofolio 3D Interaktif",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Anjali Saputra — Portofolio 3D Interaktif",
+    title: "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
     description:
-      "Portofolio resmi Anjali Saputra (Anjali BM3) — AI, automation & web development dalam pengalaman 3D sinematik.",
+      "Portofolio resmi Anjali Saputra (Anjali BM3) — AI agents, automation systems, dan web development dalam pengalaman 3D sinematik.",
     images: ["/opengraph-image.png"],
   },
   icons: {
@@ -110,22 +124,57 @@ export const metadata: Metadata = {
 };
 
 /**
- * JSON-LD — Person + WebSite. Ini yang memberi tahu mesin pencari
- * identitas & alias resmi ("Anjali BM3", "Anjali") sehingga query
- * variasi nama terhubung ke satu entitas yang sama (knowledge panel /
- * sitelinks). Data diambil dari kartu kontak site (GitHub/IG/email).
+ * JSON-LD — Person + WebSite + ProfilePage.
+ * Menghubungkan entitas "Anjali Saputra", "Anjali", dan "Anjali BM3"
+ * dengan sekolah (SMK Bina Mandiri Multimedia / BM3) dan akun GitHub/IG
+ * untuk Google Knowledge Graph dan Google Search sitelinks.
  */
 const personJsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
   "@id": "https://anjalisaputra.site/#person",
   name: "Anjali Saputra",
-  alternateName: ["Anjali", "Anjali BM3", "Anjali Portofolio"],
+  givenName: "Anjali",
+  familyName: "Saputra",
+  additionalName: "BM3",
+  alternateName: [
+    "Anjali",
+    "Anjali BM3",
+    "Anjali Saputra BM3",
+    "Anjali Portofolio",
+    "Portofolio Anjali",
+    "Portofolio Anjali Saputra",
+    "Anjali Saputra Portfolio",
+    "GlorysID",
+  ],
   jobTitle: "AI, Automation & Web Developer",
   description:
-    "Pengembang AI agents, automation systems, dan web development — portofolio 3D sinematik interaktif.",
+    "Pengembang AI agents, automation systems, dan full-stack web developer asal Indonesia. Siswa SMK Bina Mandiri Multimedia (SMK BM3 Cileungsi).",
   url: "https://anjalisaputra.site",
+  image: "https://anjalisaputra.site/me.jpg",
   email: "mailto:anjalisaputra@gmail.com",
+  gender: "Male",
+  nationality: {
+    "@type": "Country",
+    name: "Indonesia",
+  },
+  alumniOf: [
+    {
+      "@type": "EducationalOrganization",
+      name: "SMK Bina Mandiri Multimedia",
+      alternateName: ["SMK BM3", "BM3", "SMK Bina Mandiri Multimedia Cileungsi"],
+      url: "https://smkbm3.sch.id",
+    },
+    {
+      "@type": "EducationalOrganization",
+      name: "SMP Negeri 03 Cileungsi",
+      alternateName: ["SMPN 3 Cileungsi"],
+    },
+    {
+      "@type": "EducationalOrganization",
+      name: "SDN Limusnunggal 01",
+    },
+  ],
   sameAs: [
     "https://github.com/GlorysID",
     "https://instagram.com/jalipryyy",
@@ -135,9 +184,27 @@ const personJsonLd = {
     "AI Agents",
     "Workflow Automation",
     "Web Development",
-    "Three.js",
+    "Next.js",
     "React",
+    "TypeScript",
+    "Python",
+    "Three.js",
+    "Node.js",
+    "Tailwind CSS",
   ],
+};
+
+const profilePageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ProfilePage",
+  "@id": "https://anjalisaputra.site/#profilepage",
+  url: "https://anjalisaputra.site",
+  name: "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
+  description:
+    "Portofolio resmi Anjali Saputra (Anjali BM3) — Siswa SMK Bina Mandiri Multimedia (BM3). Menampilkan karya AI agents, sistem otomasi, dan web development 3D interaktif.",
+  primaryImageOfPage: "https://anjalisaputra.site/opengraph-image.png",
+  inLanguage: "id-ID",
+  mainEntity: { "@id": "https://anjalisaputra.site/#person" },
 };
 
 const websiteJsonLd = {
@@ -146,10 +213,18 @@ const websiteJsonLd = {
   "@id": "https://anjalisaputra.site/#website",
   url: "https://anjalisaputra.site",
   name: "Anjali Saputra — Portofolio",
-  alternateName: ["Anjali BM3 Portfolio", "Anjali Portofolio"],
-  inLanguage: "id-ID",
+  alternateName: [
+    "Anjali",
+    "Anjali BM3",
+    "Anjali Portofolio",
+    "Portofolio Anjali",
+    "Anjali Saputra Portfolio",
+    "anjalisaputra.site",
+  ],
+  inLanguage: ["id-ID", "en-US"],
   about: { "@id": "https://anjalisaputra.site/#person" },
   author: { "@id": "https://anjalisaputra.site/#person" },
+  publisher: { "@id": "https://anjalisaputra.site/#person" },
 };
 
 /** Viewport mobile (Lane B): device-width + scale 1 tanpa zoom user
@@ -178,6 +253,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(profilePageJsonLd) }}
         />
         <script
           type="application/ld+json"

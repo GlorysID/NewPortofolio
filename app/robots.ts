@@ -7,5 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
     },
     sitemap: "https://anjalisaputra.site/sitemap.xml",
+    host: "https://anjalisaputra.site",
   };
 }
