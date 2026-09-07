@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Anjali Saputra (Anjali BM3) — Portofolio",
-    short_name: "Anjali BM3",
+    name: "Anjali Saputra - Web Portfolio",
+    short_name: "Anjali Portfolio",
     description:
-      "Portofolio resmi Anjali Saputra (Anjali BM3) — AI agents, automation systems & full-stack web developer.",
+      "Portofolio resmi Anjali Saputra — AI agents, automation systems & full-stack web developer.",
     start_url: "/",
     display: "standalone",
     background_color: "#000000",
