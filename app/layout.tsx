@@ -131,9 +131,8 @@ export const metadata: Metadata = {
  * untuk Google Knowledge Graph dan Google Search sitelinks.
  */
 const personJsonLd = {
-  "@context": "https://schema.org",
   "@type": "Person",
-  "@id": "https://anjalisaputra.site/#person",
+  "@id": "https://www.anjalisaputra.site/#person",
   name: "Anjali Saputra",
   givenName: "Anjali",
   familyName: "Saputra",
@@ -204,7 +203,7 @@ const profilePageJsonLd = {
     "Portofolio resmi Anjali Saputra — Menampilkan karya AI agents, sistem otomasi, dan web development 3D interaktif.",
   primaryImageOfPage: "https://www.anjalisaputra.site/opengraph-image.png",
   inLanguage: "id-ID",
-  mainEntity: { "@id": "https://www.anjalisaputra.site/#person" },
+  mainEntity: personJsonLd,
 };
 
 const websiteJsonLd = {
@@ -251,10 +250,6 @@ export default function RootLayout({
         className={`${avermont.variable} ${display.variable} ${body.variable} bg-black font-body text-text antialiased`}
       >
         {children}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(profilePageJsonLd) }}
