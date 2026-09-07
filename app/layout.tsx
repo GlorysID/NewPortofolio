@@ -121,6 +121,9 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "Z3ogxtmPlQGBI4L-5LyLfi33aODKPZHYTQsPYuCqM5U",
+  },
 };
 
 /**
