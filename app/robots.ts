@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://anjalisaputra.site/sitemap.xml",
-    host: "https://anjalisaputra.site",
+    sitemap: "https://www.anjalisaputra.site/sitemap.xml",
+    host: "https://www.anjalisaputra.site",
   };
 }

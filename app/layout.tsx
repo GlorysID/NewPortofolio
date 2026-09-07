@@ -31,7 +31,7 @@ const body = IBM_Plex_Sans({
  * di bawah), bukan keyword-stuffing.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL("https://anjalisaputra.site"),
+  metadataBase: new URL("https://www.anjalisaputra.site"),
   title: {
     default:
       "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
   publisher: "Anjali Saputra",
   category: "technology",
   alternates: {
-    canonical: "https://anjalisaputra.site",
+    canonical: "https://www.anjalisaputra.site",
   },
   openGraph: {
     type: "profile",
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     lastName: "Saputra",
     username: "GlorysID",
     gender: "male",
-    url: "https://anjalisaputra.site",
+    url: "https://www.anjalisaputra.site",
     title:
       "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
     description:
@@ -153,8 +153,8 @@ const personJsonLd = {
   jobTitle: "AI, Automation & Web Developer",
   description:
     "Pengembang AI agents, automation systems, dan full-stack web developer asal Indonesia. Siswa SMK Bina Mandiri Multimedia (SMK BM3 Cileungsi).",
-  url: "https://anjalisaputra.site",
-  image: "https://anjalisaputra.site/me.jpg",
+  url: "https://www.anjalisaputra.site",
+  image: "https://www.anjalisaputra.site/me.jpg",
   email: "mailto:anjalisaputra@gmail.com",
   gender: "Male",
   nationality: {
@@ -200,21 +200,21 @@ const personJsonLd = {
 const profilePageJsonLd = {
   "@context": "https://schema.org",
   "@type": "ProfilePage",
-  "@id": "https://anjalisaputra.site/#profilepage",
-  url: "https://anjalisaputra.site",
+  "@id": "https://www.anjalisaputra.site/#profilepage",
+  url: "https://www.anjalisaputra.site",
   name: "Anjali Saputra (Anjali BM3) — Portofolio AI, Automation & Web Developer",
   description:
     "Portofolio resmi Anjali Saputra (Anjali BM3) — Siswa SMK Bina Mandiri Multimedia (BM3). Menampilkan karya AI agents, sistem otomasi, dan web development 3D interaktif.",
-  primaryImageOfPage: "https://anjalisaputra.site/opengraph-image.png",
+  primaryImageOfPage: "https://www.anjalisaputra.site/opengraph-image.png",
   inLanguage: "id-ID",
-  mainEntity: { "@id": "https://anjalisaputra.site/#person" },
+  mainEntity: { "@id": "https://www.anjalisaputra.site/#person" },
 };
 
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "@id": "https://anjalisaputra.site/#website",
-  url: "https://anjalisaputra.site",
+  "@id": "https://www.anjalisaputra.site/#website",
+  url: "https://www.anjalisaputra.site",
   name: "Anjali Saputra — Portofolio",
   alternateName: [
     "Anjali",
@@ -223,11 +223,12 @@ const websiteJsonLd = {
     "Portofolio Anjali",
     "Anjali Saputra Portfolio",
     "anjalisaputra.site",
+    "www.anjalisaputra.site",
   ],
   inLanguage: ["id-ID", "en-US"],
-  about: { "@id": "https://anjalisaputra.site/#person" },
-  author: { "@id": "https://anjalisaputra.site/#person" },
-  publisher: { "@id": "https://anjalisaputra.site/#person" },
+  about: { "@id": "https://www.anjalisaputra.site/#person" },
+  author: { "@id": "https://www.anjalisaputra.site/#person" },
+  publisher: { "@id": "https://www.anjalisaputra.site/#person" },
 };
 
 /** Viewport mobile (Lane B): device-width + scale 1 tanpa zoom user
